@@ -84,6 +84,9 @@ private struct YorySettingsDetailView: View {
     @AppStorage("yory.emoji.dedicatedKey", store: yorySettingsStore) private var emojiDedicatedKey = true
     @AppStorage("yory.emoji.recentFirst", store: yorySettingsStore) private var emojiRecentFirst = true
     @AppStorage("yory.layout.numberRow", store: yorySettingsStore) private var numberRow = false
+    @AppStorage("yory.layout.numberPosition", store: yorySettingsStore) private var numberPosition = "top"
+    @AppStorage("yory.layout.longPressDuration", store: yorySettingsStore) private var longPressDuration = 0.45
+    @AppStorage("yory.haptics.intensity", store: yorySettingsStore) private var hapticIntensity = 0.45
     @AppStorage("yory.layout.longPressSymbols", store: yorySettingsStore) private var longPressSymbols = true
     @AppStorage("yory.layout.accentedCharacters", store: yorySettingsStore) private var accentedCharacters = true
     @AppStorage("yory.layout.arrowKeys", store: yorySettingsStore) private var arrowKeys = false
@@ -121,11 +124,27 @@ private struct YorySettingsDetailView: View {
                 case "Layout & keys":
                     Section {
                         glassToggle("Number row", detail: "Always show a number row above letters", isOn: $numberRow)
+                        Picker("Number position", selection: $numberPosition) {
+                            Text("Top").tag("top")
+                            Text("Bottom").tag("bottom")
+                        }
+                        .pickerStyle(.segmented)
+                        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                         glassToggle("Long-press symbols", detail: "Show secondary symbols on letter keys", isOn: $longPressSymbols)
                         glassToggle("Accented characters", detail: "Long-press to see available accents", isOn: $accentedCharacters)
                         glassToggle("Arrow keys", detail: "Show cursor movement keys", isOn: $arrowKeys)
                         glassToggle("Key pop-ups", detail: "Show a pop-up when tapping keys", isOn: $keyPopups)
                         glassToggle("Large key text", detail: "Use larger labels on keyboard keys", isOn: $largeKeyText)
+                        VStack(alignment: .leading, spacing: 7) {
+                            HStack {
+                                Text("Long-press duration").foregroundStyle(.white)
+                                Spacer()
+                                Text("\(Int(longPressDuration * 1000)) ms").foregroundStyle(.white.opacity(0.6))
+                            }
+                            Slider(value: $longPressDuration, in: 0.2...0.9, step: 0.05)
+                                .tint(Color(red: 0.62, green: 0.76, blue: 1.0))
+                        }
+                        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                     }
                     Section("KEYBOARD SIZE") {
                         Text("Resize, spacing, corner radius and lettering are controlled in Themes.")
@@ -135,6 +154,19 @@ private struct YorySettingsDetailView: View {
                     Section {
                         glassToggle("Keypress sound", detail: "Play a sound when a key is pressed", isOn: $soundEnabled)
                         glassToggle("Keypress vibration", detail: "Use haptic feedback for key presses", isOn: $hapticsEnabled)
+                        VStack(alignment: .leading, spacing: 7) {
+                            HStack {
+                                Text("Haptic intensity").foregroundStyle(.white)
+                                Spacer()
+                                Text("\(Int(hapticIntensity * 100))%").foregroundStyle(.white.opacity(0.6))
+                            }
+                            Slider(value: $hapticIntensity, in: 0...1, step: 0.05)
+                                .tint(Color(red: 0.62, green: 0.76, blue: 1.0))
+                        }
+                        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                        Text("Key click sound volume follows the iOS keyboard/system sound settings.")
+                            .font(.footnote).foregroundStyle(.white.opacity(0.6))
+                            .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                     }
                 case "Rich input":
                     Section {
