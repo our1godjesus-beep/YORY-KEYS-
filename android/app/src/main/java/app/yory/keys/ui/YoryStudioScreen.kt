@@ -41,7 +41,7 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
     var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
     var pressedHex by remember { mutableStateOf(theme.keyPressedArgb.toHexArgb()) }
     var fileMessage by remember { mutableStateOf("Themes stay on this device unless you export them.") }
-    var savedThemeName by remember { mutableStateOf("My " + theme.name) }
+    var savedThemeName by remember { mutableStateOf(if (theme.name.startsWith("My ")) theme.name else "My " + theme.name) }
     var personalLearningEnabled by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
     var showClearLearningDialog by remember { mutableStateOf(false) }
 
