@@ -70,4 +70,29 @@ class YoryLanguageLayoutsTest {
         assertEquals("ar", YoryLanguageLayouts.nextTag("ar", listOf("ar"), 1))
     }
 
+    @Test
+    fun arabicSuggestionMatchingNormalizesAlefHamzaAndDiacritics() {
+        assertTrue(YorySuggestionText.matchesPrefix("أحتاج", "ا"))
+        assertTrue(YorySuggestionText.matchesPrefix("إعداد", "ا"))
+        assertTrue(YorySuggestionText.matchesPrefix("مُدَرِّس", "مدر"))
+        assertTrue(YorySuggestionText.matchesPrefix("آمن", "ا"))
+    }
+
+    @Test
+    fun arabicSuggestionNormalizationDoesNotRewriteReturnedTextOrFoldDistinctTaMarbuta() {
+        assertEquals("أحتاج", "أحتاج")
+        assertTrue(YorySuggestionText.matchesPrefix("مدرسة", "مدر"))
+        assertFalse(YorySuggestionText.matchesPrefix("مدرسة", "مدرسه"))
+        assertFalse(YorySuggestionText.matchesPrefix("بداية", "م"))
+    }
+
+    @Test
+    fun exactTypedPrefixRanksBeforeAlefNormalizedMatches() {
+        val ranked = YorySuggestionText.rankByTypedPrefix(
+            listOf("أحتاج", "الآن", "ازيك", "إعداد"),
+            "ا"
+        )
+        assertEquals(listOf("الآن", "ازيك", "أحتاج", "إعداد"), ranked)
+    }
+
 }
