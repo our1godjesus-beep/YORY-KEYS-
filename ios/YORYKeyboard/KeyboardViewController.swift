@@ -540,6 +540,34 @@ final class KeyboardViewController: UIInputViewController {
         updateSuggestions()
     }
 
+    private var returnKeyTitle: String {
+        let returnType = textDocumentProxy.returnKeyType ?? UIReturnKeyType.default
+        switch returnType {
+        case .go:
+            return "Go"
+        case .google:
+            return "Google"
+        case .join:
+            return "Join"
+        case .next:
+            return "Next"
+        case .route:
+            return "Route"
+        case .search:
+            return "Search"
+        case .send:
+            return "Send"
+        case .done:
+            return "Done"
+        case .emergencyCall:
+            return "Call"
+        case .continue:
+            return "Continue"
+        default:
+            return "↵"
+        }
+    }
+
     @objc private func insertReturn() {
         learnCurrentWord()
         playKeyClick()
