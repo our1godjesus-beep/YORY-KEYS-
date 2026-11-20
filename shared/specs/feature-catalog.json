@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "product": "YORY KEYS",
+  "principle": "Never describe a scaffold or UI-only control as a finished capability.",
+  "features": [
+    {
+      "id": "native-android-ime",
+      "name": "Android native keyboard input",
+      "status": "implemented_unverified",
+      "platforms": [
+        "android"
+      ],
+      "notes": "InputMethodService commits text through InputConnection; real device QA is pending."
+    },
+    {
+      "id": "native-ios-keyboard",
+      "name": "iOS Custom Keyboard Extension",
+      "status": "source_implemented_unverified",
+      "platforms": [
+        "ios"
+      ],
+      "notes": "UIInputViewController source and XcodeGen project definition; Xcode build and device signing are pending."
+    },
+    {
+      "id": "arabic-english-layouts",
+      "name": "Arabic and English layouts",
+      "status": "basic_scaffold",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Basic letter rows and language switch; full language layouts, punctuation, dead keys and RTL QA remain."
+    },
+    {
+      "id": "theme-studio",
+      "name": "YORY Studio",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Local preset, color, opacity and geometry controls; live IME reload behavior requires device verification and further controls."
+    },
+    {
+      "id": "glass-rendering",
+      "name": "Tinted glass rendering",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Translucent panel and key surfaces; platform-specific background blur/refraction is not yet implemented."
+    },
+    {
+      "id": "offline-word-completion",
+      "name": "Offline word completion",
+      "status": "prototype",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Small local word lists and prefix matching only; not neural prediction."
+    },
+    {
+      "id": "neural-prediction",
+      "name": "Neural next-word prediction",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "autocorrect",
+      "name": "Context-aware autocorrect",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "personal-learning",
+      "name": "Personal learning dictionary",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "swipe-typing",
+      "name": "Swipe typing",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "emoji-picker",
+      "name": "Emoji picker",
+      "status": "basic_scaffold",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Starter emoji row; searchable categories and skin-tone support are not implemented."
+    },
+    {
+      "id": "emoji-art-packs",
+      "name": "Alternative emoji artwork",
+      "status": "planned",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Artwork licenses and recipient-app rendering constraints must be respected."
+    },
+    {
+      "id": "clipboard-manager",
+      "name": "Clipboard history manager",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "screenshot-import",
+      "name": "Screenshot/image import",
+      "status": "planned",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "User-initiated image selection only where supported; no promise of background screenshot harvesting."
+    },
+    {
+      "id": "sticker-studio",
+      "name": "Sticker creator",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "translation-tools",
+      "name": "Translation and writing tools",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "sound-packs",
+      "name": "Custom sound packs",
+      "status": "ui_scaffold_only",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "haptics",
+      "name": "Keyboard haptics",
+      "status": "ui_scaffold_only",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "120-language-target",
+      "name": "120-language target catalogue",
+      "status": "catalog_added",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Catalogue only. Language packs and quality certification are not shipped."
+    },
+    {
+      "id": "supabase-auth",
+      "name": "Supabase authentication",
+      "status": "not_connected",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "theme-marketplace",
+      "name": "Theme marketplace",
+      "status": "schema_scaffold",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "encrypted-dictionary-backup",
+      "name": "Encrypted dictionary backup",
+      "status": "schema_scaffold",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "No user words are uploaded in plaintext; client-side encryption implementation is still required."
+    },
+    {
+      "id": "signed-language-packs",
+      "name": "Signed language pack distribution",
+      "status": "schema_scaffold",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    },
+    {
+      "id": "offline-first-sync",
+      "name": "Offline-first sync queue",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ]
+    }
+  ]
+}
