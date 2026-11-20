@@ -3,6 +3,7 @@ package app.yory.keys.theme
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import java.util.UUID
 
 /**
  * Portable cross-platform .yorytheme file codec.
@@ -33,10 +34,7 @@ object YoryThemeFile {
 
         val root = JsonObject().apply {
             addProperty("schemaVersion", 1)
-            addProperty(
-                "id",
-                "local-" + theme.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").take(32)
-            )
+            addProperty("id", UUID.randomUUID().toString())
             addProperty("name", theme.name.take(48))
             add("appearance", appearance)
             add("glass", glass)
