@@ -18,6 +18,7 @@ final class KeyboardViewController: UIInputViewController {
     private let suggestionRow = UIStackView()
     private var toolsMode = false
     private let keysStack = UIStackView()
+    private var keyboardHeightConstraint: NSLayoutConstraint?
 
     override func loadView() {
         view = YoryKeyboardRootView()
@@ -94,6 +95,7 @@ final class KeyboardViewController: UIInputViewController {
     private func applyCurrentTheme() {
         view.backgroundColor = UIColor.black.withAlphaComponent(0.94)
         if isViewLoaded {
+            updateKeyboardHeight()
             rebuildKeys()
         }
     }
@@ -103,13 +105,16 @@ final class KeyboardViewController: UIInputViewController {
         root.spacing = YoryThemeReader.keySpacing
         root.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(root)
+        let heightConstraint = view.heightAnchor.constraint(equalToConstant: 270)
+        keyboardHeightConstraint = heightConstraint
         NSLayoutConstraint.activate([
             root.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5),
             root.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -5),
             root.topAnchor.constraint(equalTo: view.topAnchor, constant: 7),
             root.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -7),
-            view.heightAnchor.constraint(equalToConstant: 270)
+            heightConstraint
         ])
+        updateKeyboardHeight()
 
         let toolbar = UIStackView()
         toolbar.axis = .horizontal
@@ -194,7 +199,7 @@ final class KeyboardViewController: UIInputViewController {
             rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
         }
 
-        if YoryThemeReader.numberRowEnabled {
+        if YoryThemeReader.numberRowEnabled && YoryThemeReader.numberPosition == "top" {
             keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
         }
         for (index, rowText) in rows.enumerated() {
@@ -221,6 +226,13 @@ final class KeyboardViewController: UIInputViewController {
         bottom.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
         space.widthAnchor.constraint(equalTo: bottom.widthAnchor, multiplier: 0.38).isActive = true
         keysStack.addArrangedSubview(bottom)
+        if YoryThemeReader.numberRowEnabled && YoryThemeReader.numberPosition == "bottom" {
+            keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
+        }
+        if YoryThemeReader.arrowKeysEnabled {
+            keysStack.addArrangedSubview(makeArrowRow())
+        }
+        updateKeyboardHeight()
     }
 
     private func makeRow(_ labels: [String]) -> UIStackView {
@@ -242,13 +254,106 @@ final class KeyboardViewController: UIInputViewController {
         return row
     }
 
+    private func updateKeyboardHeight() {
+        let rowCount: CGFloat
+        if numericInput {
+            rowCount = 5
+        } else {
+            rowCount = CGFloat(4 + (YoryThemeReader.numberRowEnabled ? 1 : 0) + (YoryThemeReader.arrowKeysEnabled ? 1 : 0))
+        }
+        let innerGaps = max(0, rowCount - 1) * 6
+        let required = 84 + rowCount * YoryThemeReader.keyHeight + innerGaps
+        keyboardHeightConstraint?.constant = min(430, max(240, required))
+    }
+
+    private func longPressMenu(for title: String) -> UIMenu? {
+        guard title.count == 1, title.first?.isLetter == true else { return nil }
+        var choices: [String] = []
+        let key = title.lowercased()
+        if YoryThemeReader.longPressSymbolsEnabled && !isArabic {
+            let symbols: [String: String] = [
+                "q":"1","w":"2","e":"3","r":"4","t":"5","y":"6","u":"7","i":"8","o":"9","p":"0",
+                "a":"@","s":"$","d":"&","f":"-","g":"+","h":"(","j":")","k":"/","l":":",
+                "z":"!","x":"?","c":"'","v":"\"","b":";","n":"_","m":"."
+            ]
+            if let symbol = symbols[key] { choices.append(symbol) }
+        }
+        if YoryThemeReader.accentedCharactersEnabled {
+            let accents: [String: [String]]
+            if isArabic {
+                accents = ["ا":["أ","إ","آ"], "و":["ؤ"], "ي":["ئ","ى"], "ه":["ة"]]
+            } else if languageTag == "de" {
+                accents = ["a":["ä"], "o":["ö"], "u":["ü"], "s":["ß"]]
+            } else {
+                accents = [
+                    "a":["á","à","â","ä","ã","å"], "e":["é","è","ê","ë"],
+                    "i":["í","ì","î","ï"], "o":["ó","ò","ô","ö","õ"],
+                    "u":["ú","ù","û","ü"], "n":["ñ"], "c":["ç"], "y":["ý","ÿ"]
+                ]
+            }
+            choices.append(contentsOf: accents[key] ?? [])
+        }
+        let unique = Array(NSOrderedSet(array: choices)) as? [String] ?? choices
+        guard !unique.isEmpty else { return nil }
+        let actions = unique.map { candidate in
+            UIAction(title: candidate) { [weak self] _ in
+                self?.playKeyClick()
+                self?.textDocumentProxy.insertText(candidate)
+                self?.refreshAutomaticShift()
+                self?.updateSuggestions()
+            }
+        }
+        return UIMenu(title: "", children: actions)
+    }
+
+    private func makeArrowRow() -> UIStackView {
+        let row = UIStackView()
+        row.axis = .horizontal
+        row.spacing = YoryThemeReader.keySpacing
+        row.distribution = .fillEqually
+        for (symbol, direction) in [("←", -1), ("↑", -2), ("↓", -3), ("→", 1)] {
+            let button = keyButton(symbol, action: #selector(moveCursor(_:)))
+            button.tag = direction
+            row.addArrangedSubview(button)
+        }
+        return row
+    }
+
+    @objc private func moveCursor(_ sender: UIButton) {
+        playKeyClick()
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        let after = textDocumentProxy.documentContextAfterInput ?? ""
+        let beforeLine = before.components(separatedBy: "\n")
+        let afterLine = after.components(separatedBy: "\n")
+        let currentColumn = beforeLine.last?.count ?? 0
+        switch sender.tag {
+        case -1:
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: -1)
+        case 1:
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: 1)
+        case -2:
+            guard beforeLine.count > 1 else { return }
+            let previousLineLength = beforeLine[beforeLine.count - 2].count
+            let offset = -(currentColumn + 1 + previousLineLength - min(currentColumn, previousLineLength))
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        case -3:
+            guard afterLine.count > 1 else { return }
+            let nextLineLength = afterLine[1].count
+            let currentLineTail = afterLine[0].count
+            let offset = currentLineTail + 1 + min(currentColumn, nextLineLength)
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        default:
+            break
+        }
+        updateSuggestions()
+    }
+
     private func keyButton(_ title: String, action: Selector? = #selector(insertKey(_:))) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = keyboardFont(
-            size: title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize,
-            weight: .medium
-        )
+        let baseFontSize = title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize
+        let displayedFontSize = YoryThemeReader.largeKeyTextEnabled ? baseFontSize * 1.08 : baseFontSize
+        button.titleLabel?.font = keyboardFont(size: displayedFontSize, weight: .medium)
         button.setTitleColor(YoryThemeReader.textColor, for: .normal)
         button.backgroundColor = UIColor.white.withAlphaComponent(0.055)
         button.layer.cornerRadius = {
@@ -277,7 +382,11 @@ final class KeyboardViewController: UIInputViewController {
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        button.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        button.heightAnchor.constraint(equalToConstant: YoryThemeReader.keyHeight).isActive = true
+        if let menu = longPressMenu(for: title) {
+            button.menu = menu
+            button.showsMenuAsPrimaryAction = false
+        }
         return button
     }
 
