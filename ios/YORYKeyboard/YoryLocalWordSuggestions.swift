@@ -35,12 +35,57 @@ enum YoryLocalWordSuggestions {
         ]
     ]
 
+
+    private static let personalWordsKey = "yory.personal.words.v1"
+
+    /// Personal words are stored only inside the keyboard extension's own sandbox.
+    /// The host app controls the opt-in switch through the read-only App Group setting.
+    static func learnAcceptedWord(_ rawWord: String, languageTag: String) {
+        guard YoryThemeReader.personalLearningEnabled else { return }
+        let word = rawWord.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard word.count >= 2, word.count <= 32,
+              word.range(of: "^[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) != nil else {
+            return
+        }
+        let language = languageTag.lowercased().hasPrefix("ar") ? "ar" : "en"
+        let defaults = UserDefaults.standard
+        var all = defaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        var languageWords = all[language] ?? [:]
+        languageWords[word] = min((languageWords[word] ?? 0) + 1, 100)
+        languageWords = Dictionary(
+            uniqueKeysWithValues: languageWords.sorted { $0.value > $1.value }.prefix(1500)
+        )
+        all[language] = languageWords
+        defaults.set(all, forKey: personalWordsKey)
+    }
+
+    static func clearPersonalWords() {
+        UserDefaults.standard.removeObject(forKey: personalWordsKey)
+    }
+
+    private static func personalSuggestions(prefix: String, language: String, limit: Int) -> [String] {
+        guard YoryThemeReader.personalLearningEnabled else { return [] }
+        let all = UserDefaults.standard.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        return (all[language] ?? [:])
+            .filter { $0.key.hasPrefix(prefix) && $0.key != prefix }
+            .sorted { $0.value > $1.value }
+            .prefix(max(1, min(limit, 5)))
+            .map { $0.key }
+    }
+
     static func suggestions(prefix: String, languageTag: String, limit: Int = 3) -> [String] {
         let clean = prefix.lowercased()
         guard !clean.isEmpty else { return [] }
         let language = languageTag.lowercased().hasPrefix("ar") ? "ar" : "en"
-        return (words[language] ?? [])
+        let personal = personalSuggestions(prefix: clean, language: language, limit: limit)
+        let bundled = (words[language] ?? [])
             .filter { $0.hasPrefix(clean) && $0.caseInsensitiveCompare(clean) != .orderedSame }
+        return (personal + bundled)
+            .reduce(into: [String]()) { result, word in
+                if !result.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame }) {
+                    result.append(word)
+                }
+            }
             .prefix(max(1, min(limit, 5)))
             .map { $0 }
     }
