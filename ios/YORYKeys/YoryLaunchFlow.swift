@@ -18,12 +18,12 @@ struct YoryLaunchFlowView: View {
                     introCompleted = true
                 }
             } else if authenticated {
-                ContentView {
+                ContentView(onSignOut: {
                     Task {
                         await YoryAuthService.signOut()
                         authenticated = false
                     }
-                }
+                })
             } else {
                 YoryAuthGateView {
                     authenticated = true
