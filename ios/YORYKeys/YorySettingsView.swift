@@ -19,6 +19,7 @@ struct ContentView: View {
         YorySettingsItem(title: "Typing", subtitle: "Suggestions and personal dictionary", symbol: "textformat"),
         YorySettingsItem(title: "Emoji", subtitle: "Emoji predictions and keyboard key", symbol: "face.smiling"),
         YorySettingsItem(title: "Rich input", subtitle: "Clipboard and input tools", symbol: "mic"),
+        YorySettingsItem(title: "Keyboard toolbar", subtitle: "Choose and arrange keyboard shortcuts", symbol: "slider.horizontal.3"),
         YorySettingsItem(title: "Layout & keys", subtitle: "Size, rows, symbols and key behavior", symbol: "keyboard"),
         YorySettingsItem(title: "Sound & vibration", subtitle: "Key click and haptic feedback", symbol: "speaker.wave.2"),
         YorySettingsItem(title: "Privacy", subtitle: "Your data and on-device controls", symbol: "hand.raised"),
@@ -63,6 +64,8 @@ struct ContentView: View {
                 .navigationDestination(for: String.self) { title in
                     if title == "Themes" {
                         YoryThemeGalleryView()
+                    } else if title == "Keyboard toolbar" {
+                        YoryToolbarCustomizationView()
                     } else {
                         YorySettingsDetailView(title: title, onSignOut: onSignOut)
                     }

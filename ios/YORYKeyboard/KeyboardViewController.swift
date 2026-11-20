@@ -121,13 +121,33 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.axis = .horizontal
         toolbar.distribution = .fillEqually
         toolbar.spacing = 5
-        if YoryThemeReader.emojiKeyEnabled {
-            toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+        let toolbarDefaults = UserDefaults(suiteName: "group.app.yory.keys")
+        let defaultOrder = ["emoji", "language", "symbols", "switch", "tools"]
+        let storedOrder = toolbarDefaults?.stringArray(forKey: "yory.toolbar.order") ?? defaultOrder
+        let order = storedOrder.filter { defaultOrder.contains($0) } + defaultOrder.filter { !storedOrder.contains($0) }
+        let visible = Set(toolbarDefaults?.stringArray(forKey: "yory.toolbar.visible") ?? defaultOrder)
+        for tool in order where visible.contains(tool) {
+            switch tool {
+            case "emoji":
+                if YoryThemeReader.emojiKeyEnabled {
+                    toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+                }
+            case "language":
+                toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
+            case "symbols":
+                toolbar.addArrangedSubview(toolButton("Aa", action: #selector(toggleSymbols)))
+            case "switch":
+                toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+            case "tools":
+                toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
+            default:
+                break
+            }
         }
-        toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
-        toolbar.addArrangedSubview(toolButton("Aa", action: #selector(toggleSymbols)))
-        toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
-        toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
+        if toolbar.arrangedSubviews.isEmpty {
+            toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
+            toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+        }
         toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         toolbarRow = toolbar
         root.addArrangedSubview(toolbar)
