@@ -6,6 +6,10 @@ import android.media.AudioManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
+import android.os.Handler
+import android.os.Looper
+import android.widget.PopupWindow
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.text.TextUtils
@@ -332,10 +336,17 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun addKey(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
+        val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val handler = Handler(Looper.getMainLooper())
+        var longPressConsumed = false
+        var pendingLongPressOptions: List<String> = emptyList()
+        val longPressTask = Runnable {
+            pendingLongPressOptions = longPressOptions(label)
+            longPressConsumed = pendingLongPressOptions.isNotEmpty()
+        }
         val view = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             val baseSize = if (label == "space" || label == "English" || label == "العربية" || label == "Deutsch") {
                 (theme.fontSizeSp - 6f).coerceAtLeast(10f)
             } else theme.fontSizeSp
@@ -353,16 +364,40 @@ class YoryInputMethodService : InputMethodService() {
             setOnTouchListener { touched, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
+                        longPressConsumed = false
+                        pendingLongPressOptions = emptyList()
                         background = keyBackground(label, pressed = true)
+                        if (label.length == 1 && label[0].isLetter()) {
+                            val duration = settings.getInt("long_press_duration", 450).coerceIn(200, 900).toLong()
+                            handler.removeCallbacks(longPressTask)
+                            handler.postDelayed(longPressTask, duration)
+                        }
+                        if (settings.getBoolean("key_popups", true) && label.length == 1) {
+                            showKeyPreviewPopup(touched, label, handler)
+                        }
                     }
-                    android.view.MotionEvent.ACTION_UP,
+                    android.view.MotionEvent.ACTION_UP -> {
+                        handler.removeCallbacks(longPressTask)
+                        background = keyBackground(label)
+                        if (longPressConsumed && pendingLongPressOptions.isNotEmpty()) {
+                            showLongPressOptionsPopup(touched, pendingLongPressOptions)
+                        }
+                    }
                     android.view.MotionEvent.ACTION_CANCEL -> {
+                        handler.removeCallbacks(longPressTask)
                         background = keyBackground(label)
                     }
                 }
                 false
             }
-            setOnClickListener { performKeyFeedback(this); action() }
+            setOnClickListener {
+                if (longPressConsumed) {
+                    longPressConsumed = false
+                } else {
+                    performKeyFeedback(this)
+                    action()
+                }
+            }
             contentDescription = when (label) {
                 "⌫" -> "Delete"
                 "↵" -> "Return"
@@ -376,6 +411,106 @@ class YoryInputMethodService : InputMethodService() {
             setMargins(gap, dp(3), gap, dp(3))
         }
         parent.addView(view, params)
+    }
+
+    private fun longPressOptions(label: String): List<String> {
+        if (label.length != 1 || !label[0].isLetter()) return emptyList()
+        val key = label.lowercase()
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val options = mutableListOf<String>()
+        if (prefs.getBoolean("long_press_symbols", true) && !languageTag.startsWith("ar")) {
+            val symbol = when (key) {
+                "q" -> "1"; "w" -> "2"; "e" -> "3"; "r" -> "4"; "t" -> "5"
+                "y" -> "6"; "u" -> "7"; "i" -> "8"; "o" -> "9"; "p" -> "0"
+                "a" -> "@"; "s" -> "$"; "d" -> "&"; "f" -> "-"; "g" -> "+"
+                "h" -> "("; "j" -> ")"; "k" -> "/"; "l" -> ":"
+                "z" -> "!"; "x" -> "?"; "c" -> "'"; "v" -> "\""; "b" -> ";"
+                "n" -> "_"; "m" -> "."
+                else -> null
+            }
+            if (symbol != null) options.add(symbol)
+        }
+        if (prefs.getBoolean("accented_chars", true)) {
+            val accents = when {
+                languageTag.startsWith("ar") -> when (key) {
+                    "ا" -> listOf("أ", "إ", "آ")
+                    "و" -> listOf("ؤ")
+                    "ي" -> listOf("ئ", "ى")
+                    "ه" -> listOf("ة")
+                    else -> emptyList()
+                }
+                languageTag.startsWith("de") -> when (key) {
+                    "a" -> listOf("ä"); "o" -> listOf("ö"); "u" -> listOf("ü"); "s" -> listOf("ß")
+                    else -> emptyList()
+                }
+                else -> when (key) {
+                    "a" -> listOf("á", "à", "â", "ä", "ã", "å")
+                    "e" -> listOf("é", "è", "ê", "ë")
+                    "i" -> listOf("í", "ì", "î", "ï")
+                    "o" -> listOf("ó", "ò", "ô", "ö", "õ")
+                    "u" -> listOf("ú", "ù", "û", "ü")
+                    "n" -> listOf("ñ")
+                    "c" -> listOf("ç")
+                    "y" -> listOf("ý", "ÿ")
+                    else -> emptyList()
+                }
+            }
+            options.addAll(accents)
+        }
+        return options.distinct().take(8)
+    }
+
+    private fun showKeyPreviewPopup(anchor: View, label: String, handler: Handler) {
+        val preview = TextView(this).apply {
+            text = label.uppercase()
+            gravity = Gravity.CENTER
+            textSize = theme.fontSizeSp + 8f
+            setTextColor(theme.textArgb)
+            background = keyBackground(label, pressed = true)
+        }
+        val popup = PopupWindow(preview, dp(48), dp(52), false).apply {
+            elevation = dp(8).toFloat()
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+        runCatching { popup.showAsDropDown(anchor, 0, -dp(62)) }
+        handler.postDelayed({ if (popup.isShowing) popup.dismiss() }, 260)
+    }
+
+    private fun showLongPressOptionsPopup(anchor: View, options: List<String>) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(6), dp(4), dp(6), dp(4))
+            background = GradientDrawable().apply {
+                setColor(Color.argb(244, 29, 34, 48))
+                cornerRadius = dp(16).toFloat()
+                setStroke(dp(1), Color.argb(125, 255, 255, 255))
+            }
+        }
+        lateinit var popup: PopupWindow
+        options.forEach { candidate ->
+            val choice = TextView(this).apply {
+                text = candidate
+                gravity = Gravity.CENTER
+                textSize = theme.fontSizeSp
+                setTextColor(theme.textArgb)
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                setOnClickListener {
+                    performKeyFeedback(this)
+                    currentInputConnection?.commitText(candidate, 1)
+                    refreshAutomaticShift()
+                    updateSuggestions()
+                    popup.dismiss()
+                }
+            }
+            row.addView(choice, LinearLayout.LayoutParams(dp(42), dp(44)))
+        }
+        popup = PopupWindow(row, WindowManager.LayoutParams.WRAP_CONTENT, dp(54), true).apply {
+            elevation = dp(12).toFloat()
+            isOutsideTouchable = true
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            runCatching { showAsDropDown(anchor, 0, -dp(68)) }
+        }
     }
 
     private fun addToolbarButton(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
