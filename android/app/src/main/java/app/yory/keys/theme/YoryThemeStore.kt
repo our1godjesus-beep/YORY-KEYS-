@@ -26,7 +26,10 @@ object YoryThemeStore {
             keyShape = prefs.getString("key_shape", fallback.keyShape)?.takeIf {
                 it in setOf("rounded", "squircle", "pill", "circle", "rect")
             } ?: fallback.keyShape,
-            fontSizeSp = prefs.getFloat("font_size", fallback.fontSizeSp).coerceIn(12f, 26f)
+            fontSizeSp = prefs.getFloat("font_size", fallback.fontSizeSp).coerceIn(12f, 26f),
+            fontFamily = prefs.getString("font_family", fallback.fontFamily)?.takeIf {
+                it in setOf("system", "rounded", "serif", "mono")
+            } ?: fallback.fontFamily
         )
     }
 
@@ -49,6 +52,9 @@ object YoryThemeStore {
                 it in setOf("rounded", "squircle", "pill", "circle", "rect")
             } ?: "rounded")
             .putFloat("font_size", theme.fontSizeSp.coerceIn(12f, 26f))
+            .putString("font_family", theme.fontFamily.takeIf {
+                it in setOf("system", "rounded", "serif", "mono")
+            } ?: "system")
             .apply()
     }
 }
