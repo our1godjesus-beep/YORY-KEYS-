@@ -40,6 +40,7 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
     var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
     var pressedHex by remember { mutableStateOf(theme.keyPressedArgb.toHexArgb()) }
     var fileMessage by remember { mutableStateOf("Themes stay on this device unless you export them.") }
+    var savedThemeName by remember { mutableStateOf("My " + theme.name) }
     var personalLearningEnabled by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
     var showClearLearningDialog by remember { mutableStateOf(false) }
 
@@ -238,6 +239,31 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
                     ) { Text("Import theme") }
                 }
                 Text(fileMessage, color = Color(0xFF8994AA), fontSize = 11.sp)
+
+                Text("MY THEMES", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                OutlinedTextField(
+                    value = savedThemeName,
+                    onValueChange = { savedThemeName = it.take(48) },
+                    label = { Text("Theme name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(
+                    onClick = {
+                        val cleanName = savedThemeName.trim().take(48)
+                        if (cleanName.isBlank()) {
+                            fileMessage = "Enter a name before saving this theme."
+                        } else {
+                            val saved = theme.copy(name = cleanName)
+                            YoryThemeStore.save(context, saved)
+                            YoryThemeLibraryStore.save(context, saved)
+                            theme = saved
+                            fileMessage = "${cleanName} was saved to My Themes."
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Save to My Themes") }
+                Text("Saved themes stay on this device and are available offline.", color = Color(0xFF8994AA), fontSize = 11.sp)
 
                 Text("PERSONAL DICTIONARY", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 SwitchSetting("Learn words on this device", personalLearningEnabled) {

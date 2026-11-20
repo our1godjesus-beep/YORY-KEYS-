@@ -48,6 +48,23 @@ struct YoryThemeStudioView: View {
                         preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
                     }
 
+                    sectionTitle("MY THEMES")
+                    TextField("Theme name", text: $themeName)
+                        .textInputAutocapitalization(.words)
+                        .padding(12)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.18), lineWidth: 0.7))
+                    Button(action: saveThemeToLibrary) {
+                        Text("Save to My Themes")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.28), lineWidth: 0.8))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(red: 0.66, green: 0.78, blue: 1.0))
+
                     sectionTitle("THEME FILES")
                     HStack(spacing: 10) {
                         Button("Export .yorytheme") {
@@ -399,6 +416,22 @@ struct YoryThemeStudioView: View {
         themeName = String((document["name"] as? String ?? "Imported Theme").prefix(48))
     }
 
+    private func saveThemeToLibrary() {
+        let cleanName = String(themeName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(48))
+        guard !cleanName.isEmpty, let defaults = yoryGroup else {
+            fileMessage = "Enter a theme name before saving."
+            return
+        }
+        themeName = cleanName
+        persistTheme()
+        let document = encodeTheme()
+        var entries = defaults.array(forKey: "yory.saved.themes") as? [[String: String]] ?? []
+        entries.removeAll { $0["name"]?.caseInsensitiveCompare(cleanName) == .orderedSame }
+        entries.append(["name": cleanName, "document": document.base64EncodedString()])
+        defaults.set(entries, forKey: "yory.saved.themes")
+        fileMessage = "\(cleanName) was saved to My Themes."
+    }
+
     private func persistTheme() {
         guard let defaults = yoryGroup else { return }
         defaults.set(themeName, forKey: "themeName")
@@ -435,14 +468,21 @@ private struct YoryGalleryPreset: Identifiable {
     let opacity: Double
     let radius: Double
     let keyHeight: Double
+    let keySpacing: Double
+    let fontSize: Double
+    let fontFamily: String
+    let keyShape: String
+    let soundEnabled: Bool
+    let hapticsEnabled: Bool
+    let isCustom: Bool
     var id: String { name }
 
     static let all: [YoryGalleryPreset] = [
-        .init(name: "Tinted Glass", category: "Dark", background: "#1A1D2B", key: "#E8F1F3", text: "#171923", accent: "#78B8F8", pressed: "#78B8F8", opacity: 0.92, radius: 14, keyHeight: 44),
-        .init(name: "Midnight", category: "Dark", background: "#10121B", key: "#292D3B", text: "#F6F7FC", accent: "#9B8CFF", pressed: "#9B8CFF", opacity: 0.98, radius: 12, keyHeight: 46),
-        .init(name: "Arctic", category: "Light", background: "#DDE7F5", key: "#FFFFFF", text: "#202432", accent: "#5598DB", pressed: "#5598DB", opacity: 0.88, radius: 16, keyHeight: 46),
-        .init(name: "Neon", category: "Colorful", background: "#171928", key: "#252B3B", text: "#F7F8FF", accent: "#51E5DC", pressed: "#51E5DC", opacity: 0.95, radius: 11, keyHeight: 46),
-        .init(name: "Rose", category: "Colorful", background: "#F3DDE5", key: "#FFFFFF", text: "#32212B", accent: "#DE7297", pressed: "#DE7297", opacity: 0.90, radius: 18, keyHeight: 46)
+        .init(name: "Tinted Glass", category: "Dark", background: "#1A1D2B", key: "#E8F1F3", text: "#171923", accent: "#78B8F8", pressed: "#78B8F8", opacity: 0.92, radius: 14, keyHeight: 44, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
+        .init(name: "Midnight", category: "Dark", background: "#10121B", key: "#292D3B", text: "#F6F7FC", accent: "#9B8CFF", pressed: "#9B8CFF", opacity: 0.98, radius: 12, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
+        .init(name: "Arctic", category: "Light", background: "#DDE7F5", key: "#FFFFFF", text: "#202432", accent: "#5598DB", pressed: "#5598DB", opacity: 0.88, radius: 16, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
+        .init(name: "Neon", category: "Colorful", background: "#171928", key: "#252B3B", text: "#F7F8FF", accent: "#51E5DC", pressed: "#51E5DC", opacity: 0.95, radius: 11, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
+        .init(name: "Rose", category: "Colorful", background: "#F3DDE5", key: "#FFFFFF", text: "#32212B", accent: "#DE7297", pressed: "#DE7297", opacity: 0.90, radius: 18, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false)
     ]
 }
 
@@ -453,28 +493,50 @@ struct YoryThemeGalleryView: View {
     @State private var showEditor = false
     private let categories = ["All", "Yours", "Dark", "Light", "Colorful"]
 
-    private var galleryPresets: [YoryGalleryPreset] {
-        let builtIns = YoryGalleryPreset.all
-        guard !builtIns.contains(where: { $0.name == appliedTheme }) else { return builtIns }
+    private var savedPresets: [YoryGalleryPreset] {
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
-        let custom = YoryGalleryPreset(
-            name: appliedTheme,
-            category: "Yours",
-            background: defaults?.string(forKey: "backgroundHex") ?? "#1A1D2B",
-            key: defaults?.string(forKey: "keyHex") ?? "#E8F1F3",
-            text: defaults?.string(forKey: "textHex") ?? "#171923",
-            accent: defaults?.string(forKey: "accentHex") ?? "#78B8F8",
-            pressed: defaults?.string(forKey: "keyPressedHex") ?? "#78B8F8",
-            opacity: defaults?.object(forKey: "opacity") == nil ? 0.92 : defaults!.double(forKey: "opacity"),
-            radius: defaults?.object(forKey: "cornerRadius") == nil ? 14 : defaults!.double(forKey: "cornerRadius"),
-            keyHeight: defaults?.object(forKey: "keyHeight") == nil ? 44 : defaults!.double(forKey: "keyHeight")
-        )
-        return [custom] + builtIns
+        let entries = defaults?.array(forKey: "yory.saved.themes") as? [[String: String]] ?? []
+        return entries.compactMap { entry in
+            guard let name = entry["name"],
+                  let encoded = entry["document"],
+                  let data = Data(base64Encoded: encoded),
+                  let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                  let appearance = root["appearance"] as? [String: Any] else { return nil }
+            let glass = root["glass"] as? [String: Any] ?? [:]
+            let geometry = root["geometry"] as? [String: Any] ?? [:]
+            let typography = root["typography"] as? [String: Any] ?? [:]
+            let sound = root["sound"] as? [String: Any] ?? [:]
+            let haptics = root["haptics"] as? [String: Any] ?? [:]
+            return YoryGalleryPreset(
+                name: name,
+                category: "Yours",
+                background: appearance["background"] as? String ?? "#1A1D2B",
+                key: appearance["key"] as? String ?? "#E8F1F3",
+                text: appearance["text"] as? String ?? "#171923",
+                accent: appearance["accent"] as? String ?? "#78B8F8",
+                pressed: appearance["keyPressed"] as? String ?? "#78B8F8",
+                opacity: (glass["opacity"] as? NSNumber)?.doubleValue ?? 0.92,
+                radius: (geometry["cornerRadius"] as? NSNumber)?.doubleValue ?? 14,
+                keyHeight: (geometry["keyHeight"] as? NSNumber)?.doubleValue ?? 44,
+                keySpacing: (geometry["keySpacing"] as? NSNumber)?.doubleValue ?? 4,
+                fontSize: (typography["fontSize"] as? NSNumber)?.doubleValue ?? 18,
+                fontFamily: typography["fontFamily"] as? String ?? "system",
+                keyShape: geometry["keyShape"] as? String ?? "rounded",
+                soundEnabled: sound["enabled"] as? Bool ?? true,
+                hapticsEnabled: haptics["enabled"] as? Bool ?? true,
+                isCustom: true
+            )
+        }
+    }
+
+    private var galleryPresets: [YoryGalleryPreset] {
+        let savedNames = Set(savedPresets.map { $0.name.lowercased() })
+        return savedPresets + YoryGalleryPreset.all.filter { !savedNames.contains($0.name.lowercased()) }
     }
 
     private var visiblePresets: [YoryGalleryPreset] {
         switch category {
-        case "Yours": return galleryPresets.filter { $0.name == appliedTheme }
+        case "Yours": return savedPresets
         case "All": return galleryPresets
         default: return galleryPresets.filter { $0.category == category }
         }
@@ -518,15 +580,21 @@ struct YoryThemeGalleryView: View {
                         .padding(.vertical, 2)
                     }
 
-                    if category == "All" || category == "Yours" {
-                        Text("YOURS").font(.caption.weight(.bold)).tracking(1.6).foregroundStyle(.white.opacity(0.62))
+                    if category == "All" {
+                        Text("AVAILABLE THEMES").font(.caption.weight(.bold)).tracking(1.6).foregroundStyle(.white.opacity(0.62))
+                    } else if category == "Yours" {
+                        Text("YOUR SAVED THEMES").font(.caption.weight(.bold)).tracking(1.6).foregroundStyle(.white.opacity(0.62))
                     }
 
                     if visiblePresets.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("No themes in this category yet").foregroundStyle(.white.weight(.semibold))
-                            Text("Choose another category or customize your current look.")
+                            Text(category == "Yours" ? "No saved themes yet" : "No themes in this category")
+                                .foregroundStyle(.white.weight(.semibold))
+                            Text("Customize a preset, name it and save it here for offline use.")
                                 .font(.footnote).foregroundStyle(.white.opacity(0.62))
+                            Button("Create your theme") { showEditor = true }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color(hex: "#A7C7FF"))
                         }
                         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
@@ -605,8 +673,12 @@ struct YoryThemeGalleryView: View {
         defaults.set(preset.opacity, forKey: "opacity")
         defaults.set(preset.radius, forKey: "cornerRadius")
         defaults.set(preset.keyHeight, forKey: "keyHeight")
-        defaults.set(4.0, forKey: "keySpacing")
-        defaults.set(18.0, forKey: "fontSize")
+        defaults.set(preset.keySpacing, forKey: "keySpacing")
+        defaults.set(preset.fontSize, forKey: "fontSize")
+        defaults.set(preset.fontFamily, forKey: "fontFamily")
+        defaults.set(preset.keyShape, forKey: "keyShape")
+        defaults.set(preset.soundEnabled, forKey: "soundEnabled")
+        defaults.set(preset.hapticsEnabled, forKey: "hapticsEnabled")
         appliedTheme = preset.name
         statusMessage = "\(preset.name) is now active."
     }
@@ -652,7 +724,7 @@ private struct YoryGalleryThemeCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(preset.name).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
-                    Text(isApplied ? "Currently applied" : "On this device")
+                    Text(isApplied ? "Currently applied" : (preset.isCustom ? "Saved by you" : "Built-in preset"))
                         .font(.caption2).foregroundStyle(isApplied ? Color(hex: "#A7C7FF") : .white.opacity(0.58))
                 }
                 Spacer(minLength: 0)

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
+import app.yory.keys.theme.YoryThemeLibraryStore
 
 private val GalleryBackground = Color(0xFF0A0D16)
 private val GalleryMuted = Color(0xFFB0B6C4)
@@ -38,19 +39,19 @@ internal fun YoryThemeGalleryScreen(
     var category by remember { mutableStateOf("All") }
     var feedback by remember { mutableStateOf("") }
 
-    val themes = if (YoryTheme.presets.any { it.name == activeTheme.name }) {
-        YoryTheme.presets
-    } else {
-        listOf(activeTheme) + YoryTheme.presets
+    val savedThemes = YoryThemeLibraryStore.list(context)
+    val builtInThemes = YoryTheme.presets.filterNot { preset ->
+        savedThemes.any { it.name.equals(preset.name, ignoreCase = true) }
     }
-    val visibleThemes = themes.filter { theme ->
-        when (category) {
-            "Yours" -> theme.name == activeTheme.name
-            "Dark" -> theme.name in setOf("Tinted Glass", "Midnight", "Neon", "Custom")
-            "Light" -> theme.name in setOf("Arctic", "Rose")
-            "Colorful" -> theme.name in setOf("Neon", "Rose", "Arctic")
-            else -> true
-        }
+    val themes = savedThemes + builtInThemes + listOf(activeTheme).filter { current ->
+        savedThemes.none { it.name == current.name } && builtInThemes.none { it.name == current.name }
+    }
+    val visibleThemes = when (category) {
+        "Yours" -> savedThemes
+        "Dark" -> themes.filter { it.name in setOf("Tinted Glass", "Midnight", "Neon", "Custom") }
+        "Light" -> themes.filter { it.name in setOf("Arctic", "Rose") }
+        "Colorful" -> themes.filter { it.name in setOf("Neon", "Rose", "Arctic") }
+        else -> themes
     }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(
@@ -96,19 +97,23 @@ internal fun YoryThemeGalleryScreen(
                 }
             }
 
-            if (category == "All" || category == "Yours") {
-                Text("YOURS", color = GalleryMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            if (category == "All") {
+                Text("AVAILABLE THEMES", color = GalleryMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            } else if (category == "Yours") {
+                Text("YOUR SAVED THEMES", color = GalleryMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
             }
             if (visibleThemes.isEmpty()) {
                 GalleryPanel {
-                    Text("No themes in this category yet", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    Text("Choose another category or customize your current look.", color = GalleryMuted, fontSize = 12.sp)
+                    Text(if (category == "Yours") "No saved themes yet" else "No themes in this category", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Customize a preset, give it a name, then save it here for offline use.", color = GalleryMuted, fontSize = 12.sp)
+                    OutlinedButton(onClick = onCreate) { Text("Create your theme", color = GalleryAccent) }
                 }
             } else if (compact) {
                 visibleThemes.forEach { theme ->
                     GalleryThemeCard(
                         theme = theme,
                         selected = activeTheme.name == theme.name,
+                        saved = savedThemes.any { it.name == theme.name },
                         onApply = {
                             YoryThemeStore.save(context, theme)
                             activeTheme = theme
@@ -129,6 +134,7 @@ internal fun YoryThemeGalleryScreen(
                                 GalleryThemeCard(
                                     theme = theme,
                                     selected = activeTheme.name == theme.name,
+                                    saved = savedThemes.any { it.name == theme.name },
                                     onApply = {
                                         YoryThemeStore.save(context, theme)
                                         activeTheme = theme
@@ -169,6 +175,7 @@ internal fun YoryThemeGalleryScreen(
 private fun GalleryThemeCard(
     theme: YoryTheme,
     selected: Boolean,
+    saved: Boolean,
     onApply: () -> Unit,
     onCustomize: () -> Unit
 ) {
@@ -223,7 +230,15 @@ private fun GalleryThemeCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(theme.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                Text(if (selected) "Currently applied" else "On this device", color = if (selected) GalleryAccent else GalleryMuted, fontSize = 10.sp)
+                Text(
+                    when {
+                        selected -> "Currently applied"
+                        saved -> "Saved by you"
+                        else -> "Built-in preset"
+                    },
+                    color = if (selected) GalleryAccent else GalleryMuted,
+                    fontSize = 10.sp
+                )
             }
             if (selected) Text("✓", color = GalleryAccent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
