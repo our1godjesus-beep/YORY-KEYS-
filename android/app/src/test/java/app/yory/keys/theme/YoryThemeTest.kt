@@ -44,7 +44,9 @@ class YoryThemeTest {
             keyShape = "pill",
             fontSizeSp = 20f
         )
-        assertEquals(original, YoryThemeFile.decode(YoryThemeFile.encode(original)))
+        val encoded = YoryThemeFile.encode(original)
+        assertTrue(encoded.contains("#112233DD"))
+        assertEquals(original, YoryThemeFile.decode(encoded))
     }
 
     @Test
