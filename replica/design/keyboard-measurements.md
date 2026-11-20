@@ -65,6 +65,7 @@ Dense rows are a keyboard-specific exception to the normal utility touch-target 
 
 ## 6. Spacebar language swipe
 
+- The visible spacebar label shows subtle left/right chevrons around the active language name to signal the gesture.
 - Tap inserts exactly one space and retains normal learning/suggestion behavior.
 - Swipe left advances to the next added language.
 - Swipe right selects the previous added language.
