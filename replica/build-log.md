@@ -74,3 +74,16 @@ Status: **source implemented on Android and iOS; automated builds pending**.
 - iOS Rich input setting persists `yory.input.compactMode` in the App Group; keyboard extension shortens the suggestion row and limits suggestions to two.
 - This changes suggestion display only. It does not change inserted text, editor selection or the keyboard input connection.
 - UI/physical-device checks remain pending.
+
+
+## Milestone T3 — Privacy, clipboard and build stabilization (2026-11-20)
+
+- Android clipboard history is encrypted at rest with AES-GCM and Android Keystore; migration from the earlier local JSON preference is included.
+- Android clipboard tools include a full Studio manager with pin/unpin, copy again, individual delete, undo-last-delete and clear-all confirmation. Unpinned clips expire after 24 hours; maximum 50 entries.
+- Android and iOS both include session-scoped Incognito mode. It pauses local predictions and personal learning; Android also disables clipboard capture while active.
+- Toolbar customization includes optional Incognito mode on both platforms and persists ordering/visibility.
+- Android edge-to-edge and safe-drawing insets are applied to the Studio screens and keyboard quick action.
+- iOS context-aware return-key label support was restored and the iOS build passed on commit aceda3f1ce1cee93c35be218c89c11e22766e546.
+- Latest iOS privacy-default/incognito guard commit bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a is pending CI confirmation at the time of this log update.
+- Android CI passed on df746dd31bf38e73542141dbc09e2076d7b98102; repository contracts passed on bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a.
+- Device QA, visual screenshot-diff, iOS clipboard history, voice typing, swipe typing, neural prediction and autocorrect remain open.

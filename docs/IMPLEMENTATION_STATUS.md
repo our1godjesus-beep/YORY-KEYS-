@@ -159,3 +159,30 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Android CI passed on the Gradle config change (run 44748310187); iOS CI passed on the iOS config-template change (run 44748319738); repository contract validation passed on the 0006 migration commit (run 44748691380).
 - Supabase Auth signup/sign-in code is configured to use this project, but no live test account was created and no physical-device end-to-end registration was performed. Do not call auth production-verified until that test passes.
 - The keyboard remains independent from account login and must remain usable offline. Raw typing, passwords, surrounding editor context, clipboard content and plaintext dictionaries are not sent to Supabase.
+
+
+## Current implementation addendum — 2026-11-20
+
+The following code work supersedes older "not implemented" bullets above where noted. This is not a production-ready sign-off.
+
+### Additional completed source slices
+- Android and iOS theme library detail views are present, with larger previews, apply/customize, favorites, duplication, rename and delete for user-saved themes. Built-in presets cannot be renamed or deleted.
+- Android and iOS keyboard toolbars have local visibility/order customization. Keyboard extensions read those preferences when the keyboard appears.
+- Android clipboard history is opt-in and encrypted at rest using AES-GCM with a key held in Android Keystore. It is limited to 50 items; unpinned items expire after 24 hours; pin/unpin, copy again, individual delete, undo-last-delete and clear-all are implemented. OTP/PIN/payment-number detection remains heuristic, not guaranteed.
+- Incognito mode is session-scoped on both platforms. It suppresses local suggestions and word learning; Android also stops clipboard capture. It resets when a new keyboard input session begins.
+- Android edge-to-edge/safe-drawing insets are wired in Studio screens. Physical navigation-mode verification remains open.
+- The iOS keyboard includes context-aware return-key labels and editor-aware keyboard type layouts.
+- Voice typing remains disconnected. iOS automatic clipboard history is not implemented; no background clipboard reading is claimed.
+
+### Latest validation evidence
+- Android CI passed on commit `df746dd31bf38e73542141dbc09e2076d7b98102` (run 44764347406), including `:app:assembleDebug` and `:app:testDebugUnitTest`. This commit includes Android clipboard manager, toolbar controls, incognito handling and edge-to-edge source.
+- iOS CI passed on commit `aceda3f1ce1cee93c35be218c89c11e22766e546` (run 44764745857), including the app and keyboard extension build plus iOS Simulator app artifact generation.
+- Repository contract validation passed on commit `bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a` (run 44765880468).
+- iOS CI for `bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a` was in progress when this addendum was prepared; verify its result before treating the latest commit as build-verified.
+
+### Still open
+- No physical Android phone or iPhone was available for this source-editing pass. Keyboard activation, Arabic mixed-bidi, privacy transitions, safe-area/IME insets and Dynamic Type require real-device QA.
+- The gallery preview is illustrative and is not yet a single shared renderer with the live keyboard.
+- Android resize is key-height adjustment, not drag-to-resize width or floating position.
+- Voice typing, swipe typing, context-aware autocorrect, neural prediction, emoji search/skin tones, sticker creation and iOS clipboard history remain unimplemented.
+- Supabase auth and marketplace code need separate integration/security/release verification; app-store signing and release artifacts are not complete.

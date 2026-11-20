@@ -10,7 +10,7 @@ Typing is a local operation. YORY KEYS does not send keystrokes, surrounding tex
 - Installed dictionaries and language models.
 - Personal dictionary and learning profile.
 - Keyboard layout and accessibility settings.
-- Clipboard history where the operating system permits collection and the user explicitly enables the feature.
+- Android clipboard history, only when the user enables it: encrypted locally with AES-GCM and an Android Keystore key, capped at 50 items, unpinned items expire after 24 hours, pinned items remain until removed. OTP/PIN/payment-number pattern filtering is heuristic and cannot guarantee detection of every secret.
 - Sticker drafts and locally selected images.
 
 ## Optional cloud data
@@ -35,8 +35,8 @@ Never upload:
 
 ## Platform permission behavior
 
-- Android: detect secure editor input types and disable suggestions/learning/clipboard features in those fields. Follow Android clipboard access rules.
-- iOS: work with Open Access disabled. Do not imply that the iOS extension can read arbitrary text or inspect every app.
+- Android: detect secure editor input types and disable suggestions/learning/clipboard features in those fields. Follow Android clipboard access rules. Incognito mode pauses local suggestions, learning and clipboard capture for the current input session.
+- iOS: work with Open Access disabled. Do not imply that the iOS extension can read arbitrary text or inspect every app. Incognito mode pauses local suggestions and learning; automatic clipboard history/background clipboard monitoring is not implemented.
 - Explain each requested permission in context; do not ask for all permissions during first launch.
 
 ## User controls

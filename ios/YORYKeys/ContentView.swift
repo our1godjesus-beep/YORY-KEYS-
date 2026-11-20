@@ -706,7 +706,14 @@ struct YoryThemeGalleryView: View {
                     isFavorite: favoriteNames.contains(preset.name.lowercased()),
                     onApply: { apply(preset) },
                     onFavorite: { setFavorite(preset.name, $0) },
-                    onRename: { renameSavedTheme(preset, newName: $0) },
+                    onRename: { newName in
+                        let saved = renameSavedTheme(preset, newName: newName)
+                        if saved {
+                            showDetail = false
+                            detailPreset = nil
+                        }
+                        return saved
+                    },
                     onDuplicate: { duplicateTheme(preset, newName: $0) },
                     onDelete: { deleteSavedTheme(preset) },
                     onCustomize: {

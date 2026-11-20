@@ -17,12 +17,12 @@
 - Local tokenization and language detection.
 - Quality-tested word lists and autocorrect rules.
 - N-gram baseline, then compact quantized neural models if product quality justifies them.
-- Personal dictionary with opt-in learning and clear/reset controls.
+- [x] Personal dictionary with opt-in learning and clear/reset controls (local baseline; physical-device QA remains).
 - Swipe typing only after stable core input behavior.
 - Per-language quality metrics and regression corpus.
 
 ## Milestone D — Productivity features
-- Explicit clipboard history with expiry and sensitive-data filtering.
+- [x] Android explicit clipboard history with expiry, pin/unpin, deletion, undo and clear; iOS history is intentionally not advertised.
 - Emoji search, recents, categories and contextual suggestions.
 - Host-app sticker creation and supported insertion/share flows.
 - Translation and writing assistance as optional tools.

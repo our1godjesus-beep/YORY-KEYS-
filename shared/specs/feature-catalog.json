@@ -19,7 +19,7 @@
       "platforms": [
         "ios"
       ],
-      "notes": "UIInputViewController source and XcodeGen project definition; Xcode build and device signing are pending."
+      "notes": "The native UIInputViewController and keyboard extension build successfully in iOS Simulator CI on commit aceda3f1ce1cee93c35be218c89c11e22766e546. The newer privacy update is rebuilding; physical-device install/signing and system keyboard QA remain pending."
     },
     {
       "id": "arabic-english-layouts",
@@ -82,11 +82,12 @@
     {
       "id": "personal-learning",
       "name": "Personal learning dictionary",
-      "status": "not_implemented",
+      "status": "partial_implementation",
       "platforms": [
         "android",
         "ios"
-      ]
+      ],
+      "notes": "Opt-in local word learning is implemented in the Android IME with AES-GCM encryption through Android Keystore and in the iOS keyboard extension's private sandbox. Incognito mode pauses learning; secure-field and editor-trait exclusions apply. Neither platform has production-quality language modelling or device-level privacy QA yet."
     },
     {
       "id": "swipe-typing",
@@ -124,7 +125,7 @@
       "platforms": [
         "android"
       ],
-      "notes": "Optional, local-only Android text clipboard history with a 50-item cap and basic sensitive-code filtering. iOS automatic clipboard history is not implemented because the platform model differs."
+      "notes": "Android-only, opt-in text history. Entries are encrypted with AES-GCM under an Android Keystore key, capped at 50, unpinned items expire after 24 hours, and the local manager supports pin/unpin, re-copy, delete, undo and clear. OTP/PIN/payment-number filters are heuristic and not a guarantee; iOS background clipboard history is not provided."
     },
     {
       "id": "screenshot-import",
@@ -298,11 +299,12 @@
     {
       "id": "theme-library-management",
       "name": "Named themes, duplicate, favorite and reset",
-      "status": "planned",
+      "status": "partial_implementation",
       "platforms": [
-        "android"
+        "android",
+        "ios"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "Named local themes with detail preview, apply, favorites, duplicate, rename and delete are present on Android and iOS. Built-in presets are protected. Cross-platform lifecycle, persistence and preview parity still require device QA."
     },
     {
       "id": "theme-preview-parity",
@@ -351,12 +353,12 @@
     },
     {
       "id": "clipboard-pin-expiry-search",
-      "name": "Pinned, searchable and expiring local clipboard items",
+      "name": "Pinned, expiring and manageable local clipboard items",
       "status": "partial_implementation",
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "Android clipboard manager supports pin/unpin, 24-hour expiry for unpinned clips, copy again, delete, undo last deletion and clear all. Full-text search/filter is not implemented; sensitive-value detection is heuristic."
     },
     {
       "id": "sticker-image-editor",
@@ -484,6 +486,26 @@
         "android"
       ],
       "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "keyboard-toolbar-customization",
+      "name": "Keyboard toolbar visibility and ordering",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Platform-specific tools can be reordered and shown/hidden with local persisted preferences; essential keyboard-switch/settings actions are retained. Verify extension lifecycle refresh and all widths on physical devices."
+    },
+    {
+      "id": "incognito-mode",
+      "name": "Session-scoped incognito typing",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Session toggle suppresses predictions and local learning on both platforms; Android also pauses clipboard capture. It resets when a new keyboard input session appears. Physical-device privacy tests remain pending."
     }
   ]
 }
