@@ -36,6 +36,7 @@ fun YoryStudioScreen() {
     var keyHex by remember { mutableStateOf(theme.keyArgb.toHexArgb()) }
     var textHex by remember { mutableStateOf(theme.textArgb.toHexArgb()) }
     var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
+    var pressedHex by remember { mutableStateOf(theme.keyPressedArgb.toHexArgb()) }
     var fileMessage by remember { mutableStateOf("Themes stay on this device unless you export them.") }
 
     fun applyTheme(next: YoryTheme) {
@@ -44,6 +45,7 @@ fun YoryStudioScreen() {
         keyHex = next.keyArgb.toHexArgb()
         textHex = next.textArgb.toHexArgb()
         accentHex = next.accentArgb.toHexArgb()
+        pressedHex = next.keyPressedArgb.toHexArgb()
         YoryThemeStore.save(context, next)
     }
 
@@ -149,6 +151,9 @@ fun YoryStudioScreen() {
                 HexColorInput("Accent", accentHex, { accentHex = it }) {
                     parseHexArgb(accentHex)?.let { color -> applyTheme(theme.copy(accentArgb = color, name = "Custom")) }
                 }
+                HexColorInput("Pressed key", pressedHex, { pressedHex = it }) {
+                    parseHexArgb(pressedHex)?.let { color -> applyTheme(theme.copy(keyPressedArgb = color, name = "Custom")) }
+                }
 
                 SliderSetting("Glass opacity", theme.opacity, 0.35f..1f, (theme.opacity * 100).toInt().toString() + "%") {
                     applyTheme(theme.copy(opacity = it))
@@ -158,6 +163,22 @@ fun YoryStudioScreen() {
                 }
                 SliderSetting("Key height", theme.keyHeightDp, 36f..60f, theme.keyHeightDp.toInt().toString() + " dp") {
                     applyTheme(theme.copy(keyHeightDp = it))
+                }
+                SliderSetting("Key spacing", theme.keySpacingDp, 0f..12f, theme.keySpacingDp.toInt().toString() + " dp") {
+                    applyTheme(theme.copy(keySpacingDp = it))
+                }
+                SliderSetting("Letter size", theme.fontSizeSp, 12f..26f, theme.fontSizeSp.toInt().toString() + " sp") {
+                    applyTheme(theme.copy(fontSizeSp = it))
+                }
+                Text("KEY SHAPE", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf("rounded", "squircle", "pill", "rect").forEach { shape ->
+                        FilterChip(
+                            selected = theme.keyShape == shape,
+                            onClick = { applyTheme(theme.copy(keyShape = shape)) },
+                            label = { Text(shape.replaceFirstChar { it.uppercase() }, fontSize = 10.sp) }
+                        )
+                    }
                 }
 
                 Text("THEME FILES", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
@@ -226,12 +247,12 @@ private fun KeyboardPreview(theme: YoryTheme) {
                     row.forEach { char ->
                         Box(
                             modifier = Modifier.weight(1f).height((theme.keyHeightDp * 0.68f).dp)
-                                .clip(RoundedCornerShape(theme.cornerRadiusDp.dp))
+                                .clip(themeShape(theme))
                                 .background(Color(theme.keyArgb))
-                                .border(0.7.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(theme.cornerRadiusDp.dp)),
+                                .border(0.7.dp, Color.White.copy(alpha = 0.2f), themeShape(theme)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(char.toString(), color = Color(theme.textArgb), fontSize = 13.sp)
+                            Text(char.toString(), color = Color(theme.textArgb), fontSize = theme.fontSizeSp.sp)
                         }
                     }
                 }
@@ -240,7 +261,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
                 listOf("!#1", "◎", "English", "↵").forEach { label ->
                     Box(
                         modifier = Modifier.weight(if (label == "English") 3f else 1f).height(32.dp)
-                            .clip(RoundedCornerShape(theme.cornerRadiusDp.dp)).background(Color(theme.keyArgb)),
+                            .clip(themeShape(theme)).background(Color(theme.keyArgb)),
                         contentAlignment = Alignment.Center
                     ) { Text(label, color = Color(theme.textArgb), fontSize = 10.sp) }
                 }
@@ -296,6 +317,16 @@ private fun SwitchSetting(title: String, checked: Boolean, onCheckedChange: (Boo
         Text(title, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
+}
+
+private fun themeShape(theme: YoryTheme): RoundedCornerShape {
+    val radius = when (theme.keyShape) {
+        "pill", "circle" -> (theme.keyHeightDp / 2f).dp
+        "squircle" -> (theme.cornerRadiusDp * 1.3f).dp
+        "rect" -> 3.dp
+        else -> theme.cornerRadiusDp.dp
+    }
+    return RoundedCornerShape(radius)
 }
 
 private fun Int.toHexArgb(): String = "#%08X".format(this)
