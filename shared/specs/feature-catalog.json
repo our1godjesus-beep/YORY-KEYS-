@@ -379,11 +379,12 @@
     {
       "id": "personal-dictionary",
       "name": "Local editable personal dictionary and learning controls",
-      "status": "not_implemented",
+      "status": "partial_implementation",
       "platforms": [
-        "android"
+        "android",
+        "ios"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "Opt-in local learning is implemented in Android with AES-GCM encryption via Android Keystore and in the iOS keyboard extension sandbox; it can be disabled and cleared locally. Requires physical-device privacy/lifecycle QA and richer model evaluation."
     },
     {
       "id": "local-autocorrect",
