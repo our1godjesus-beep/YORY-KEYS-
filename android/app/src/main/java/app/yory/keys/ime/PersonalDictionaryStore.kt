@@ -69,7 +69,7 @@ object PersonalDictionaryStore {
         val language = languageTag.substringBefore('-').lowercase().take(12)
         val words = readDocument(context).optJSONObject(language) ?: return emptyList()
         return words.keys().asSequence()
-            .filter { it.startsWith(clean) && it != clean }
+            .filter { YorySuggestionText.matchesPrefix(it, clean) }
             .sortedByDescending { words.optInt(it, 0) }
             .take(limit.coerceIn(1, 5))
             .toList()
