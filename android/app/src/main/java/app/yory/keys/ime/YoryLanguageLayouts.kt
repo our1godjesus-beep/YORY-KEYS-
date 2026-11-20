@@ -44,8 +44,8 @@ internal object YoryLanguageLayouts {
         if (enabled.size == 1) return enabled.first().tag
 
         val index = enabled.indexOfFirst { it.tag.equals(current, ignoreCase = true) }
-        val safeIndex = if (index < 0) 0 else index
+        if (index < 0) return enabled.first().tag
         val step = if (direction < 0) -1 else 1
-        return enabled[(safeIndex + step + enabled.size) % enabled.size].tag
+        return enabled[(index + step + enabled.size) % enabled.size].tag
     }
 }
