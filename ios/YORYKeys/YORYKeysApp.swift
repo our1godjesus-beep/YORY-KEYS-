@@ -4,7 +4,7 @@ import SwiftUI
 struct YORYKeysApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            YoryLaunchFlowView()
         }
     }
 }
