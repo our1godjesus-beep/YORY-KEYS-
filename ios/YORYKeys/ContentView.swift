@@ -496,37 +496,70 @@ struct YoryThemeGalleryView: View {
     private var savedPresets: [YoryGalleryPreset] {
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
         let entries = defaults?.array(forKey: "yory.saved.themes") as? [[String: String]] ?? []
-        return entries.compactMap { entry in
-            guard let name = entry["name"],
-                  let encoded = entry["document"],
-                  let data = Data(base64Encoded: encoded),
-                  let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-                  let appearance = root["appearance"] as? [String: Any] else { return nil }
-            let glass = root["glass"] as? [String: Any] ?? [:]
-            let geometry = root["geometry"] as? [String: Any] ?? [:]
-            let typography = root["typography"] as? [String: Any] ?? [:]
-            let sound = root["sound"] as? [String: Any] ?? [:]
-            let haptics = root["haptics"] as? [String: Any] ?? [:]
-            return YoryGalleryPreset(
-                name: name,
-                category: "Yours",
-                background: appearance["background"] as? String ?? "#1A1D2B",
-                key: appearance["key"] as? String ?? "#E8F1F3",
-                text: appearance["text"] as? String ?? "#171923",
-                accent: appearance["accent"] as? String ?? "#78B8F8",
-                pressed: appearance["keyPressed"] as? String ?? "#78B8F8",
-                opacity: (glass["opacity"] as? NSNumber)?.doubleValue ?? 0.92,
-                radius: (geometry["cornerRadius"] as? NSNumber)?.doubleValue ?? 14,
-                keyHeight: (geometry["keyHeight"] as? NSNumber)?.doubleValue ?? 44,
-                keySpacing: (geometry["keySpacing"] as? NSNumber)?.doubleValue ?? 4,
-                fontSize: (typography["fontSize"] as? NSNumber)?.doubleValue ?? 18,
-                fontFamily: typography["fontFamily"] as? String ?? "system",
-                keyShape: geometry["keyShape"] as? String ?? "rounded",
-                soundEnabled: sound["enabled"] as? Bool ?? true,
-                hapticsEnabled: haptics["enabled"] as? Bool ?? true,
-                isCustom: true
-            )
+        var result: [YoryGalleryPreset] = []
+        for entry in entries {
+            if let preset = decodeSavedPreset(entry) {
+                result.append(preset)
+            }
         }
+        return result
+    }
+
+    private func decodeSavedPreset(_ entry: [String: String]) -> YoryGalleryPreset? {
+        guard let name = entry["name"],
+              let encoded = entry["document"],
+              let data = Data(base64Encoded: encoded) else { return nil }
+
+        let jsonObject: Any
+        do {
+            jsonObject = try JSONSerialization.jsonObject(with: data)
+        } catch {
+            return nil
+        }
+        guard let root = jsonObject as? [String: Any],
+              let appearance = root["appearance"] as? [String: Any] else { return nil }
+
+        let glass = root["glass"] as? [String: Any] ?? [:]
+        let geometry = root["geometry"] as? [String: Any] ?? [:]
+        let typography = root["typography"] as? [String: Any] ?? [:]
+        let sound = root["sound"] as? [String: Any] ?? [:]
+        let haptics = root["haptics"] as? [String: Any] ?? [:]
+
+        let background = appearance["background"] as? String ?? "#1A1D2B"
+        let key = appearance["key"] as? String ?? "#E8F1F3"
+        let text = appearance["text"] as? String ?? "#171923"
+        let accent = appearance["accent"] as? String ?? "#78B8F8"
+        let pressed = appearance["keyPressed"] as? String ?? accent
+        let opacity = (glass["opacity"] as? NSNumber)?.doubleValue ?? 0.92
+        let radius = (geometry["cornerRadius"] as? NSNumber)?.doubleValue ?? 14
+        let keyHeight = (geometry["keyHeight"] as? NSNumber)?.doubleValue ?? 44
+        let keySpacing = (geometry["keySpacing"] as? NSNumber)?.doubleValue ?? 4
+        let fontSize = (typography["fontSize"] as? NSNumber)?.doubleValue ?? 18
+        let fontFamily = typography["fontFamily"] as? String ?? "system"
+        let keyShape = geometry["keyShape"] as? String ?? "rounded"
+        let soundEnabled = sound["enabled"] as? Bool ?? true
+        let hapticsEnabled = haptics["enabled"] as? Bool ?? true
+
+        let preset = YoryGalleryPreset(
+            name: name,
+            category: "Yours",
+            background: background,
+            key: key,
+            text: text,
+            accent: accent,
+            pressed: pressed,
+            opacity: opacity,
+            radius: radius,
+            keyHeight: keyHeight,
+            keySpacing: keySpacing,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            keyShape: keyShape,
+            soundEnabled: soundEnabled,
+            hapticsEnabled: hapticsEnabled,
+            isCustom: true
+        )
+        return preset
     }
 
     private var galleryPresets: [YoryGalleryPreset] {
