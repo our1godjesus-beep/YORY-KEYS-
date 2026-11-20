@@ -29,7 +29,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                yoryGlassBackground
+                yoryGlassBackground()
                 List(items) { item in
                     NavigationLink(value: item.title) {
                         HStack(spacing: 15) {
@@ -215,7 +215,7 @@ private struct YorySettingsDetailView: View {
     }
 }
 
-private var yoryGlassBackground: some View {
+private func yoryGlassBackground() -> some View {
     LinearGradient(
         colors: [Color(red: 0.12, green: 0.16, blue: 0.25), Color(red: 0.025, green: 0.035, blue: 0.065), Color(red: 0.10, green: 0.09, blue: 0.17)],
         startPoint: .topLeading,
