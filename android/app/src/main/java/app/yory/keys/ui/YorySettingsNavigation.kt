@@ -114,6 +114,11 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     val prefs = remember { context.getSharedPreferences("yory_user_settings", Context.MODE_PRIVATE) }
     var refresh by remember { mutableIntStateOf(0) }
     var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
+    var addedLanguages by remember {
+        mutableStateOf(
+            (prefs.getStringSet("added_languages", setOf("en-US", "ar")) ?: setOf("en-US", "ar")).toSet()
+        )
+    }
     var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
     var showResizeEditor by remember { mutableStateOf(false) }
     var showClipboardHistory by remember { mutableStateOf(false) }
@@ -136,7 +141,29 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     }
     fun chooseLanguage(tag: String) {
         activeLanguage = tag
-        prefs.edit().putString("active_language", tag).apply()
+        addedLanguages = addedLanguages + tag
+        prefs.edit()
+            .putString("active_language", tag)
+            .putStringSet("added_languages", addedLanguages)
+            .apply()
+        refresh++
+    }
+
+    fun setLanguageAdded(tag: String, enabled: Boolean) {
+        val updated = if (enabled) {
+            addedLanguages + tag
+        } else if (addedLanguages.size > 1) {
+            addedLanguages - tag
+        } else {
+            addedLanguages
+        }
+        addedLanguages = updated
+        prefs.edit().putStringSet("added_languages", updated).apply()
+        if (!enabled && activeLanguage == tag && tag !in updated) {
+            activeLanguage = updated.first()
+            prefs.edit().putString("active_language", activeLanguage).apply()
+        }
+        refresh++
     }
 
     if (page == "Layout & keys" && showResizeEditor) {
@@ -167,13 +194,13 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
             when (page) {
                 "Languages" -> {
                     Text("YOUR LANGUAGES", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
-                    LanguageChoice("English (US)", "QWERTY · starter word list", "en-US", activeLanguage == "en-US") { chooseLanguage("en-US") }
-                    LanguageChoice("العربية (مصر)", "Arabic 123 (PC) · starter word list", "ar", activeLanguage == "ar") { chooseLanguage("ar") }
-                    LanguageChoice("Deutsch (DE)", "QWERTZ · layout only", "de", activeLanguage == "de") { chooseLanguage("de") }
-                    LanguageChoice("Español", "QWERTY · layout only", "es", activeLanguage == "es") { chooseLanguage("es") }
-                    LanguageChoice("Français", "AZERTY · layout only", "fr", activeLanguage == "fr") { chooseLanguage("fr") }
-                    LanguageChoice("Português", "QWERTY · layout only", "pt", activeLanguage == "pt") { chooseLanguage("pt") }
-                    LanguageChoice("Italiano", "QWERTY · layout only", "it", activeLanguage == "it") { chooseLanguage("it") }
+                    LanguageChoice("English (US)", "QWERTY · starter word list", "en-US", activeLanguage == "en-US", "en-US" in addedLanguages, { chooseLanguage("en-US") }) { enabled -> setLanguageAdded("en-US", enabled) }
+                    LanguageChoice("العربية (مصر)", "Arabic 123 (PC) · starter word list", "ar", activeLanguage == "ar", "ar" in addedLanguages, { chooseLanguage("ar") }) { enabled -> setLanguageAdded("ar", enabled) }
+                    LanguageChoice("Deutsch (DE)", "QWERTZ · layout only", "de", activeLanguage == "de", "de" in addedLanguages, { chooseLanguage("de") }) { enabled -> setLanguageAdded("de", enabled) }
+                    LanguageChoice("Español", "QWERTY · layout only", "es", activeLanguage == "es", "es" in addedLanguages, { chooseLanguage("es") }) { enabled -> setLanguageAdded("es", enabled) }
+                    LanguageChoice("Français", "AZERTY · layout only", "fr", activeLanguage == "fr", "fr" in addedLanguages, { chooseLanguage("fr") }) { enabled -> setLanguageAdded("fr", enabled) }
+                    LanguageChoice("Português", "QWERTY · layout only", "pt", activeLanguage == "pt", "pt" in addedLanguages, { chooseLanguage("pt") }) { enabled -> setLanguageAdded("pt", enabled) }
+                    LanguageChoice("Italiano", "QWERTY · layout only", "it", activeLanguage == "it", "it" in addedLanguages, { chooseLanguage("it") }) { enabled -> setLanguageAdded("it", enabled) }
                     GlassPanel(Modifier.fillMaxWidth()) {
                         Text("Layouts and dictionaries are separate", color = Color.White, fontWeight = FontWeight.SemiBold)
                         Text("Seven keyboard layouts are available offline. Bundled starter word lists are currently available only for English and Arabic; the other languages can use personal learning, but do not have shipped prediction dictionaries yet. The full 120-language catalogue is a target list, not 120 ready-to-use languages.", color = GlassMuted, fontSize = 13.sp)
@@ -356,15 +383,40 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
 }
 
 @Composable
-private fun LanguageChoice(title: String, subtitle: String, tag: String, selected: Boolean, onClick: () -> Unit) {
-    GlassPanel(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+private fun LanguageChoice(
+    title: String,
+    subtitle: String,
+    tag: String,
+    selected: Boolean,
+    added: Boolean,
+    onSelect: () -> Unit,
+    onAddedChange: (Boolean) -> Unit
+) {
+    GlassPanel(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontSize = 17.sp)
+            Column(
+                Modifier.weight(1f).clickable(onClick = onSelect).padding(vertical = 3.dp)
+            ) {
+                Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(3.dp))
-                Text(subtitle, color = GlassMuted, fontSize = 13.sp)
+                Text(subtitle, color = GlassMuted, fontSize = 12.sp)
+                if (selected) {
+                    Text("Active layout", color = GlassAccent, fontSize = 11.sp)
+                }
             }
-            Text(if (selected) "●" else "○", color = if (selected) GlassAccent else GlassMuted, fontSize = 21.sp)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(if (added) "Added" else "Add", color = if (added) GlassAccent else GlassMuted, fontSize = 10.sp)
+                Switch(
+                    checked = added,
+                    onCheckedChange = onAddedChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF0A0D16),
+                        checkedTrackColor = GlassAccent,
+                        uncheckedThumbColor = Color(0xFFB5BBC8),
+                        uncheckedTrackColor = Color.White.copy(alpha = 0.12f)
+                    )
+                )
+            }
         }
     }
 }
