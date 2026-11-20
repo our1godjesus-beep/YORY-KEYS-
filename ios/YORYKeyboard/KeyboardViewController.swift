@@ -71,7 +71,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func buildInterface() {
         root.axis = .vertical
-        root.spacing = 7
+        root.spacing = YoryThemeReader.keySpacing
         root.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(root)
         NSLayoutConstraint.activate([
@@ -192,7 +192,7 @@ final class KeyboardViewController: UIInputViewController {
         let row = UIStackView()
         row.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
-        row.spacing = 4
+        row.spacing = YoryThemeReader.keySpacing
         row.distribution = .fillEqually
         labels.forEach { label in
             if label == "⇧" {
@@ -210,16 +210,33 @@ final class KeyboardViewController: UIInputViewController {
     private func keyButton(_ title: String, action: Selector? = #selector(insertKey(_:))) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: title.count > 2 ? 12 : 18, weight: .medium)
+        button.titleLabel?.font = .systemFont(ofSize: title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize, weight: .medium)
         button.setTitleColor(YoryThemeReader.textColor, for: .normal)
         button.backgroundColor = YoryThemeReader.keyColor
-        button.layer.cornerRadius = YoryThemeReader.cornerRadius
+        button.layer.cornerRadius = {
+            switch YoryThemeReader.keyShape {
+            case "pill", "circle": return 18.0
+            case "squircle": return YoryThemeReader.cornerRadius * 1.3
+            case "rect": return 3.0
+            default: return YoryThemeReader.cornerRadius
+            }
+        }()
         button.layer.borderWidth = 0.5
         button.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
         button.accessibilityLabel = title
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
+        button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
+        button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         button.heightAnchor.constraint(equalToConstant: 36).isActive = true
         return button
+    }
+
+    @objc private func keyTouchDown(_ sender: UIButton) {
+        sender.backgroundColor = YoryThemeReader.keyPressedColor
+    }
+
+    @objc private func keyTouchUp(_ sender: UIButton) {
+        sender.backgroundColor = YoryThemeReader.keyColor
     }
 
     private func toolButton(_ title: String, action: Selector) -> UIButton {
