@@ -15,11 +15,13 @@ The mobile app uses Supabase Auth with the project's publishable key. The publis
 Use the currently installed Supabase CLI and consult `supabase --help` before running commands. Supabase CLI v3 changes local/hosted workflow defaults; inspect the current CLI docs before any hosted mutation.
 
 Recommended workflow:
-1. Start a local Supabase stack.
+1. Start a local Supabase stack for future schema changes.
 2. Apply repository migrations to the local database.
-3. Run the RLS/security checks.
+3. Run RLS/security tests and the Supabase advisors.
 4. Test Edge Functions locally with an authenticated user.
-5. Deploy reviewed migrations to the confirmed YORY development project.
+5. Review and deploy any new migrations deliberately to the confirmed YORY development project.
+
+Migrations 0001–0006 are already deployed to this development project. Nine public tables have RLS enabled, the 24 database/RLS access-contract checks pass, and the Security Advisor reports zero findings. The theme-publishing Edge Function is still source-only.
 
 ## Secrets
 
