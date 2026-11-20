@@ -57,6 +57,10 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func refreshAutomaticShift() {
+        guard YoryThemeReader.autoCapsEnabled else {
+            isShifted = false
+            return
+        }
         switch textDocumentProxy.autocapitalizationType {
         case .none:
             isShifted = false
@@ -111,7 +115,9 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.axis = .horizontal
         toolbar.distribution = .fillEqually
         toolbar.spacing = 5
-        toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+        if YoryThemeReader.emojiKeyEnabled {
+            toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+        }
         toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
         toolbar.addArrangedSubview(toolButton("Aa", action: #selector(toggleSymbols)))
         toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
@@ -188,7 +194,9 @@ final class KeyboardViewController: UIInputViewController {
             rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
         }
 
-        keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
+        if YoryThemeReader.numberRowEnabled {
+            keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
+        }
         for (index, rowText) in rows.enumerated() {
             var labels = Array(rowText).map(String.init)
             if index == 2 {
@@ -409,8 +417,8 @@ final class KeyboardViewController: UIInputViewController {
             suggestionRow.removeArrangedSubview(item)
             item.removeFromSuperview()
         }
-        suggestionRow.isHidden = emojiMode || numericInput
-        guard !emojiMode && !numericInput else { return }
+        suggestionRow.isHidden = emojiMode || numericInput || !YoryThemeReader.wordSuggestionsEnabled
+        guard !emojiMode && !numericInput && YoryThemeReader.wordSuggestionsEnabled else { return }
         if toolsMode {
             suggestionRow.addArrangedSubview(toolActionButton("Clear learned words", action: #selector(clearLearnedWords)))
             suggestionRow.addArrangedSubview(toolActionButton("Done", action: #selector(toggleTools)))
