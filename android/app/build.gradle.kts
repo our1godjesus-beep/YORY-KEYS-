@@ -1,17 +1,17 @@
 import java.util.Properties
 
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
 val localSupabaseConfig = Properties().apply {
     val configFile = rootProject.file("local.properties")
     if (configFile.exists()) configFile.inputStream().use { load(it) }
 }
 val supabaseUrlValue = localSupabaseConfig.getProperty("SUPABASE_URL", "")
 val supabasePublishableKeyValue = localSupabaseConfig.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
-
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
-}
 
 android {
     namespace = "app.yory.keys"
