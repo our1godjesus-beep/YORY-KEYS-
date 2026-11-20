@@ -12,7 +12,21 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = YoryThemeReader.backgroundColor.withAlphaComponent(YoryThemeReader.opacity)
+        isArabic = YoryThemeReader.isArabic
+        applyCurrentTheme()
         buildInterface()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        applyCurrentTheme()
+    }
+
+    private func applyCurrentTheme() {
+        view.backgroundColor = YoryThemeReader.backgroundColor.withAlphaComponent(YoryThemeReader.opacity)
+        if isViewLoaded {
+            rebuildKeys()
+        }
     }
 
     private func buildInterface() {
