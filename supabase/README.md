@@ -1,6 +1,14 @@
 # Supabase backend
 
-Supabase is optional for core typing. The keyboard must keep working when no Supabase project is configured or the network is unavailable.
+Supabase is optional for core typing. The keyboard must keep working when the network is unavailable or account services are not configured.
+
+## Confirmed development project
+
+The YORY KEYS development project has been confirmed and is active:
+- Project reference: `qyiipvwjwojrikokwjgz`
+- Project URL: `https://qyiipvwjwojrikokwjgz.supabase.co`
+
+The mobile app uses Supabase Auth with the project's publishable key. The publishable key may be present in mobile builds; it does not grant administrative access. All user-owned records must be protected with RLS.
 
 ## Local development
 
@@ -11,16 +19,12 @@ Recommended workflow:
 2. Apply repository migrations to the local database.
 3. Run the RLS/security checks.
 4. Test Edge Functions locally with an authenticated user.
-5. Only then link a verified YORY hosted project and apply migrations.
-
-## Hosted project safety
-
-Do not link this repository to an unrelated project. One connected Supabase project was visible during this session and its status was ACTIVE_HEALTHY. Its generic project name does not prove it is intended for YORY, so no hosted schema or data was changed. Confirm the project identity before deployment.
+5. Deploy reviewed migrations to the confirmed YORY development project.
 
 ## Secrets
 
 - Mobile clients may contain only the Supabase project URL and publishable key.
-- Never place a service-role key or secret key in Android, iOS, or a public repository.
+- Never place a service-role or secret key in Android, iOS, or a public repository.
 - Store Edge Function secrets in the Supabase project environment, never in source control.
 
 ## Data boundary
