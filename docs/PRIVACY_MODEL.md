@@ -36,7 +36,7 @@ Never upload:
 ## Platform permission behavior
 
 - Android: detect secure editor input types and disable suggestions/learning/clipboard features in those fields. Follow Android clipboard access rules. Incognito mode pauses local suggestions, learning and clipboard capture for the current input session.
-- iOS: work with Open Access disabled. Do not imply that the iOS extension can read arbitrary text or inspect every app. Incognito mode pauses local suggestions and learning; automatic clipboard history/background clipboard monitoring is not implemented.
+- iOS: `RequestsOpenAccess=true` exposes the optional “Allow Full Access” switch; it does not enable Full Access automatically. Basic typing must work with the switch off. The current App Group personal-learning write/clear actions and shared preference writes are gated on Full Access; the keyboard does not use this access to upload keystrokes or editor context. Do not imply that the extension can read arbitrary text or inspect every app. Incognito mode pauses local suggestions and learning; automatic clipboard history/background clipboard monitoring is not implemented.
 - Explain each requested permission in context; do not ask for all permissions during first launch.
 
 ## User controls
