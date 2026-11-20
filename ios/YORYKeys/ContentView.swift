@@ -1,26 +1,217 @@
 import SwiftUI
+import UIKit
+
+private let yoryGroup = UserDefaults(suiteName: "group.app.yory.keys")
 
 struct ContentView: View {
+    @State private var background = Color(red: 0.10, green: 0.11, blue: 0.16)
+    @State private var key = Color(red: 0.92, green: 0.94, blue: 0.98)
+    @State private var text = Color(red: 0.09, green: 0.10, blue: 0.14)
+    @State private var accent = Color(red: 0.47, green: 0.72, blue: 0.97)
+    @State private var opacity = 0.92
+    @State private var cornerRadius = 13.0
+    @State private var soundEnabled = true
+    @State private var hapticsEnabled = true
+    @State private var selectedLanguage = "English"
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 18) {
-                Text("YORY KEYS")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                Text("Your keyboard. Your universe.")
-                    .foregroundStyle(.secondary)
-                Image(systemName: "keyboard")
-                    .font(.system(size: 52, weight: .light))
-                    .padding(.vertical, 18)
-                Text("Enable YORY KEYS in Settings → General → Keyboard → Keyboards.")
-                    .multilineTextAlignment(.center)
-                    .font(.callout)
-                Text("The keyboard works without Full Access. Optional online features will explain their permissions before use.")
-                    .multilineTextAlignment(.center)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+        ZStack {
+            Color(red: 0.04, green: 0.05, blue: 0.09).ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("YORY KEYS").font(.caption.weight(.bold)).tracking(2.4).foregroundStyle(accent)
+                        Text("YORY Studio").font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                        Text("Your keyboard. Your universe.").foregroundStyle(.white.opacity(0.62))
+                    }
+
+                    keyboardPreview
+
+                    sectionTitle("MAKE IT YOURS")
+                    HStack(spacing: 9) {
+                        preset("Tinted", bg: "#1A1D2B", key: "#E8F1F3", accent: "#78B8F8")
+                        preset("Midnight", bg: "#10121B", key: "#292D3B", accent: "#9B8CFF")
+                        preset("Arctic", bg: "#DDE7F5", key: "#FFFFFF", accent: "#5598DB")
+                        preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
+                    }
+
+                    sectionTitle("COLORS")
+                    colorPickerRow("Background", selection: $background)
+                    colorPickerRow("Key surface", selection: $key)
+                    colorPickerRow("Key labels", selection: $text)
+                    colorPickerRow("Accent", selection: $accent)
+
+                    sectionTitle("GLASS & GEOMETRY")
+                    valueSlider("Glass opacity", value: $opacity, range: 0.35...1.0, suffix: "%", multiplier: 100)
+                    valueSlider("Key corner radius", value: $cornerRadius, range: 4...28, suffix: " pt")
+
+                    sectionTitle("SENSORY EXPERIENCE")
+                    Toggle("Keyboard sounds", isOn: $soundEnabled).tint(accent).foregroundStyle(.white)
+                    Toggle("Haptic feedback", isOn: $hapticsEnabled).tint(accent).foregroundStyle(.white)
+
+                    sectionTitle("LANGUAGE")
+                    Picker("Primary layout", selection: $selectedLanguage) {
+                        Text("English").tag("English")
+                        Text("العربية").tag("العربية")
+                    }
+                    .pickerStyle(.segmented)
+
+                    Button(action: persistTheme) {
+                        Text("Save my keyboard")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(accent, in: RoundedRectangle(cornerRadius: 16))
+                            .foregroundStyle(.black)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("ACTIVATE YORY").font(.caption.weight(.bold)).tracking(1.5).foregroundStyle(accent)
+                        Text("Settings → General → Keyboard → Keyboards → Add New Keyboard → YORY KEYS")
+                            .font(.footnote).foregroundStyle(.white.opacity(0.7))
+                        Text("Typing works without Open Access. The extension does not send keystrokes or text to a server.")
+                            .font(.footnote).foregroundStyle(.white.opacity(0.55))
+                    }
+                }
+                .padding(20)
             }
-            .padding(28)
-            .navigationTitle("Welcome")
         }
+        .preferredColorScheme(.dark)
+        .onAppear(perform: loadTheme)
+        .onChange(of: background) { _ in persistTheme() }
+        .onChange(of: key) { _ in persistTheme() }
+        .onChange(of: text) { _ in persistTheme() }
+        .onChange(of: accent) { _ in persistTheme() }
+        .onChange(of: opacity) { _ in persistTheme() }
+        .onChange(of: cornerRadius) { _ in persistTheme() }
+        .onChange(of: soundEnabled) { _ in persistTheme() }
+        .onChange(of: hapticsEnabled) { _ in persistTheme() }
+        .onChange(of: selectedLanguage) { _ in persistTheme() }
+    }
+
+    private var keyboardPreview: some View {
+        VStack(spacing: 7) {
+            HStack {
+                ForEach(["☺", "✦", "文", "⚙", "•••"], id: \.self) {
+                    Text($0).foregroundStyle(accent).frame(maxWidth: .infinity)
+                }
+            }
+            ForEach(["qwertyuiop", "asdfghjkl", "⇧zxcvbnm⌫"], id: \.self) { row in
+                HStack(spacing: 4) {
+                    ForEach(Array(row), id: \.self) { character in
+                        Text(String(character))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(text)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 35)
+                            .background(key, in: RoundedRectangle(cornerRadius: cornerRadius))
+                    }
+                }
+            }
+            HStack(spacing: 5) {
+                previewKey("!#1")
+                previewKey("◎")
+                previewKey("English")
+                previewKey(".")
+                previewKey("↵")
+            }
+        }
+        .padding(12)
+        .background(background.opacity(opacity), in: RoundedRectangle(cornerRadius: 23))
+        .overlay(RoundedRectangle(cornerRadius: 23).stroke(.white.opacity(0.18), lineWidth: 1))
+    }
+
+    private func previewKey(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(text)
+            .frame(maxWidth: label == "English" ? .infinity : 42)
+            .frame(height: 34)
+            .background(key, in: RoundedRectangle(cornerRadius: cornerRadius))
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title).font(.caption.weight(.bold)).tracking(1.5).foregroundStyle(.white.opacity(0.62))
+    }
+
+    private func preset(_ name: String, bg: String, key: String, accent: String) -> some View {
+        Button {
+            background = Color(hex: bg)
+            self.key = Color(hex: key)
+            self.accent = Color(hex: accent)
+            persistTheme()
+        } label: {
+            Text(name).font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color(hex: key), in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Color(hex: "#202432"))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func colorPickerRow(_ title: String, selection: Binding<Color>) -> some View {
+        HStack {
+            Text(title).foregroundStyle(.white)
+            Spacer()
+            ColorPicker("", selection: selection, supportsOpacity: false).labelsHidden()
+        }
+    }
+
+    private func valueSlider(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, suffix: String, multiplier: Double = 1) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(title).foregroundStyle(.white)
+                Spacer()
+                Text("\(Int(value.wrappedValue * multiplier))\(suffix)").foregroundStyle(.white.opacity(0.6))
+            }
+            Slider(value: value, in: range).tint(accent)
+        }
+    }
+
+    private func loadTheme() {
+        guard let defaults = yoryGroup else { return }
+        background = Color(hex: defaults.string(forKey: "backgroundHex") ?? "#1A1D2B")
+        key = Color(hex: defaults.string(forKey: "keyHex") ?? "#F1F3FA")
+        text = Color(hex: defaults.string(forKey: "textHex") ?? "#171923")
+        accent = Color(hex: defaults.string(forKey: "accentHex") ?? "#78B8F8")
+        opacity = defaults.object(forKey: "opacity") == nil ? 0.92 : defaults.double(forKey: "opacity")
+        cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
+        soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
+        hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
+    }
+
+    private func persistTheme() {
+        guard let defaults = yoryGroup else { return }
+        defaults.set(background.hexString, forKey: "backgroundHex")
+        defaults.set(key.hexString, forKey: "keyHex")
+        defaults.set(text.hexString, forKey: "textHex")
+        defaults.set(accent.hexString, forKey: "accentHex")
+        defaults.set(opacity, forKey: "opacity")
+        defaults.set(cornerRadius, forKey: "cornerRadius")
+        defaults.set(soundEnabled, forKey: "soundEnabled")
+        defaults.set(hapticsEnabled, forKey: "hapticsEnabled")
+        defaults.set(selectedLanguage, forKey: "language")
+    }
+}
+
+private extension Color {
+    init(hex: String) {
+        let raw = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        let value = UInt64(raw, radix: 16) ?? 0x1A1D2B
+        self.init(
+            .sRGB,
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255,
+            opacity: 1
+        )
+    }
+
+    var hexString: String {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: nil)
+        return String(format: "#%02X%02X%02X", Int(red * 255), Int(green * 255), Int(blue * 255))
     }
 }
