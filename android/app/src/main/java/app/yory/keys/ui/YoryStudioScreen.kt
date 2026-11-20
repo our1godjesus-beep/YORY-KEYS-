@@ -131,6 +131,13 @@ fun YoryStudioScreen() {
                 SwitchSetting("Haptic feedback", theme.hapticsEnabled) {
                     applyTheme(theme.copy(hapticsEnabled = it))
                 }
+                SwitchSetting("Local clipboard history", theme.clipboardEnabled) {
+                    applyTheme(theme.copy(clipboardEnabled = it))
+                }
+                Text(
+                    "Clipboard history is optional, stays on this device, and filters common one-time codes. Review and clear saved items from the keyboard.",
+                    color = Color(0xFF8994AA), fontSize = 11.sp
+                )
 
                 Spacer(Modifier.weight(1f))
                 Button(onClick = { context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) {
