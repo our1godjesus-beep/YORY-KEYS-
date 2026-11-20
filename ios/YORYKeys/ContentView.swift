@@ -450,13 +450,33 @@ struct YoryThemeGalleryView: View {
     @State private var category = "All"
     @State private var appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
     @State private var statusMessage = ""
+    @State private var showEditor = false
     private let categories = ["All", "Yours", "Dark", "Light", "Colorful"]
+
+    private var galleryPresets: [YoryGalleryPreset] {
+        let builtIns = YoryGalleryPreset.all
+        guard !builtIns.contains(where: { $0.name == appliedTheme }) else { return builtIns }
+        let defaults = UserDefaults(suiteName: "group.app.yory.keys")
+        let custom = YoryGalleryPreset(
+            name: appliedTheme,
+            category: "Yours",
+            background: defaults?.string(forKey: "backgroundHex") ?? "#1A1D2B",
+            key: defaults?.string(forKey: "keyHex") ?? "#E8F1F3",
+            text: defaults?.string(forKey: "textHex") ?? "#171923",
+            accent: defaults?.string(forKey: "accentHex") ?? "#78B8F8",
+            pressed: defaults?.string(forKey: "keyPressedHex") ?? "#78B8F8",
+            opacity: defaults?.object(forKey: "opacity") == nil ? 0.92 : defaults!.double(forKey: "opacity"),
+            radius: defaults?.object(forKey: "cornerRadius") == nil ? 14 : defaults!.double(forKey: "cornerRadius"),
+            keyHeight: defaults?.object(forKey: "keyHeight") == nil ? 44 : defaults!.double(forKey: "keyHeight")
+        )
+        return [custom] + builtIns
+    }
 
     private var visiblePresets: [YoryGalleryPreset] {
         switch category {
-        case "Yours": return YoryGalleryPreset.all.filter { $0.name == appliedTheme }
-        case "All": return YoryGalleryPreset.all
-        default: return YoryGalleryPreset.all.filter { $0.category == category }
+        case "Yours": return galleryPresets.filter { $0.name == appliedTheme }
+        case "All": return galleryPresets
+        default: return galleryPresets.filter { $0.category == category }
         }
     }
 
@@ -505,9 +525,15 @@ struct YoryThemeGalleryView: View {
                     } else {
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 14) {
                             ForEach(visiblePresets) { preset in
-                                YoryGalleryThemeCard(preset: preset, isApplied: appliedTheme == preset.name) {
-                                    apply(preset)
-                                }
+                                YoryGalleryThemeCard(
+                                    preset: preset,
+                                    isApplied: appliedTheme == preset.name,
+                                    onApply: { apply(preset) },
+                                    onCustomize: {
+                                        apply(preset)
+                                        showEditor = true
+                                    }
+                                )
                             }
                         }
                     }
@@ -516,8 +542,8 @@ struct YoryThemeGalleryView: View {
                         Text("Make it yours").font(.headline).foregroundStyle(.white)
                         Text("Adjust key colors, glass opacity, spacing, shape and lettering in the theme editor.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.64))
-                        NavigationLink {
-                            YoryThemeStudioView()
+                        Button {
+                            showEditor = true
                         } label: {
                             Label("Customize current theme", systemImage: "slider.horizontal.3")
                                 .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
@@ -541,9 +567,9 @@ struct YoryThemeGalleryView: View {
         .navigationTitle("Themes")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    YoryThemeStudioView()
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showEditor = true
                 } label: {
                     Text("Create").fontWeight(.semibold).foregroundStyle(Color(hex: "#A7C7FF"))
                 }
@@ -551,6 +577,9 @@ struct YoryThemeGalleryView: View {
         }
         .onAppear {
             appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
+        }
+        .navigationDestination(isPresented: $showEditor) {
+            YoryThemeStudioView()
         }
     }
 
@@ -579,6 +608,7 @@ private struct YoryGalleryThemeCard: View {
     let preset: YoryGalleryPreset
     let isApplied: Bool
     let onApply: () -> Void
+    let onCustomize: () -> Void
     private let rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
 
     var body: some View {
@@ -631,9 +661,7 @@ private struct YoryGalleryThemeCard: View {
             }
             .buttonStyle(.plain)
 
-            NavigationLink {
-                YoryThemeStudioView()
-            } label: {
+            Button(action: onCustomize) {
                 Text("Customize").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
                     .foregroundStyle(Color(hex: "#A7C7FF"))
             }
