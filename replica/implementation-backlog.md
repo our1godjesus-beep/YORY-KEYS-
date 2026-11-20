@@ -123,5 +123,6 @@ No runtime keyboard source files were changed by this reference-audit pass; this
 - Spacebar tap remains a normal space insertion; a horizontal swipe changes language without inserting text.
 - Android and iOS now have two symbol pages, expanded Arabic key rows, secondary Arabic digit legends, a collapsible suggestion row, and a platform-appropriate More grid.
 - Exact dimensions and responsive targets are documented in `design/keyboard-measurements.md`.
-- The first CI pass caught an Android callback-overload issue and an outdated unknown-language unit expectation; both were corrected in source. Re-run CI on the latest commit before marking this work validated.
+- The first CI pass caught an Android callback-overload issue and an outdated unknown-language unit expectation; both were corrected in source. Android and iOS CI have each passed on preceding runtime commits; the latest visual-affordance and documentation commits are undergoing their own workflow runs.
+- The keyboard's spacebar label now includes visible left/right chevrons around the active language name. The accessibility hint explains the same direction.
 - No physical-device QA has been performed by this change set; gesture accuracy, Arabic typing, system navigation and extension height remain release gates.
