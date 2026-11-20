@@ -127,7 +127,7 @@ private fun YoryGlassIntroScreen(onContinue: () -> Unit) {
             Text("YORY KEYS", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
             Text("YOUR WORDS. YOUR FLOW.", color = LaunchMuted, fontSize = 11.sp, letterSpacing = 2.3.sp)
             Spacer(Modifier.height(18.dp))
-            LaunchGlassButton("GET STARTED", onContinue)
+            LaunchGlassButton(label = "GET STARTED", onClick = onContinue)
             Text("A keyboard shaped around you", color = LaunchMuted.copy(alpha = 0.75f), fontSize = 12.sp)
         }
     }
@@ -265,7 +265,7 @@ private fun LaunchTextField(
 }
 
 @Composable
-private fun LaunchGlassButton(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+private fun LaunchGlassButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         enabled = enabled,
