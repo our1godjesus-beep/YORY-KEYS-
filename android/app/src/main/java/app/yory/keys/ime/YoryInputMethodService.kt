@@ -711,7 +711,12 @@ class YoryInputMethodService : InputMethodService() {
             val volume = settings.getFloat("keypress_volume", 0.35f).coerceIn(0f, 1f)
             if (volume > 0f) {
                 val audio = getSystemService(AUDIO_SERVICE) as AudioManager
-                audio.playSoundEffect(SoundEffectConstants.CLICK, volume)
+                val effect = when (settings.getString("sound_profile", "Modern")) {
+                    "Classic" -> AudioManager.FX_KEYPRESS_STANDARD
+                    "Soft" -> AudioManager.FX_KEYPRESS_SPACEBAR
+                    else -> SoundEffectConstants.CLICK
+                }
+                audio.playSoundEffect(effect, volume)
             }
         }
     }
