@@ -1,3 +1,12 @@
+import java.util.Properties
+
+val localSupabaseConfig = Properties().apply {
+    val configFile = rootProject.file("local.properties")
+    if (configFile.exists()) configFile.inputStream().use { load(it) }
+}
+val supabaseUrlValue = localSupabaseConfig.getProperty("SUPABASE_URL", "")
+val supabasePublishableKeyValue = localSupabaseConfig.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -16,7 +25,15 @@ android {
         versionName = "0.1.0"
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrlValue\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"$supabasePublishableKeyValue\"")
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
