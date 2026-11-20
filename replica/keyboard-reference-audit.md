@@ -172,3 +172,22 @@ Recommended direction: build a YORY More-tools grid driven by a typed capability
 ## 5. Open validation work
 
 The screenshots establish appearance and visible controls, not exact tap results, hidden states or network behavior. A manual reference pass is still needed for the Reorder items behavior, exact symbol-page transition, microphone permission flow, screenshot insertion support, GIF/sticker source, search scope and per-platform resize controls. Mark these unknown until tested; do not infer implementation details from the screenshots alone.
+
+
+## 6. Implementation status after the parity pass — 2026-11-20
+
+The following runtime changes have now been written to the current source on `main`:
+- Android/iOS Arabic primary rows include all 28 standard letters. Arabic first-row keys display small secondary digit legends; those legends do not change the inserted character.
+- Android/iOS have two symbol pages with matched ordered content, ABC return and page controls.
+- The suggestion row can be collapsed and expanded; it remains hidden in sensitive, Incognito and restricted editor contexts.
+- Native More-tools grids are present on both platforms. Each grid currently exposes only actions connected in that platform build; no non-functional microphone, GIF, sticker, screenshot, Rewards or Microsoft-branded tiles are advertised.
+- Studio language settings distinguish the active layout from layouts marked Added. Selecting a language also adds it. The spacebar tap inserts one space, while swipe left selects the next Added language and swipe right selects the previous Added language. The cycle ignores layouts not marked Added and leaves a single-language cycle unchanged.
+- Android toolbar customization now includes a More entry. The keyboard's Studio shortcut remains an app launch, not a direct deep link to the reorder screen.
+- Responsive dimensions and layout targets are recorded in `design/keyboard-measurements.md`.
+
+Validation notes:
+- Android CI succeeded on commit `5d10170ed89bec7a0c3a37630b2d536e8e6f4aad`, after the key-callback compatibility fix; a newer Android run is in progress for the subsequent symbol correction.
+- iOS CI succeeded on commit `dd483e2e8cb2e3a500ded1969f7aa0b8eae041eb`; a newer run is in progress after symbol-panel transition adjustments.
+- Repository contract validation has passed for the measurement spec and latest documentation updates.
+- No physical Android/iOS device test or reference screenshot-diff has been run in this implementation pass. Gesture recognition, Arabic typing accuracy, adjacent-key taps, RTL punctuation, navigation insets, screen-reader ordering and keyboard-extension height remain release gates.
+- Voice typing, image/screenshot paste, GIF/stickers and keyboard search remain intentionally unconnected; they require real platform permissions/content sources/host-editor compatibility before an interactive button can truthfully be shown.
