@@ -2,6 +2,7 @@
 .gradle/
 **/build/
 local.properties
+android/supabase.local.properties
 *.hprof
 
 # Xcode
