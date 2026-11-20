@@ -239,6 +239,16 @@
         "ios"
       ],
       "notes": "Uses platform-standard click/haptic APIs and local user preferences; physical-device QA is pending."
+    },
+    {
+      "id": "portable-theme-files",
+      "name": "Cross-platform .yorytheme import/export",
+      "status": "implemented_unverified",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Versioned schema v1, validation, local file import/export in both host apps; cross-platform round-trip needs device QA."
     }
   ]
 }
