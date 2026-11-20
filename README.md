@@ -37,6 +37,8 @@ Add these two repository Actions secrets:
 
 In GitHub, open repository Settings → Secrets and variables → Actions → New repository secret. Enter the Supabase project URL and its publishable key. Android and iOS workflows generate their ignored local configuration files from these secrets during each CI build. If the secrets are absent, the app still compiles, but account sign-in and cloud features remain unconfigured.
 
+Detailed steps and the encryption/performance rules are in docs/GITHUB_ACTIONS_SETUP.md.
+
 Never put a service_role key, sb_secret key, database password, or other privileged credential in a mobile app or repository file. A privileged key, if ever needed by a server-only job, must be stored separately as a GitHub Actions secret and never shipped in an app.
 
 ## Repository map
