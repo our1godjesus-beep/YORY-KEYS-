@@ -2,7 +2,16 @@
 Date: 2026-11-20
 Scope: Android IME and iOS keyboard extension; native implementation only.
 
-This is the measurement contract for a responsive keyboard inspired by the interaction patterns in the user's screenshots. Use YORY's own visual identity, glass surface, icons and labels. Dimensions are starting targets, not pixel-perfect constants: the renderer must adapt to actual safe width, key count, font scale, theme and host-provided keyboard height.
+This is the measurement contract for a responsive keyboard inspired by the interaction patterns in the user's screenshots. Use YORY's own visual identity, matte graphite surfaces, champagne accents, original icons and labels. Dimensions are starting targets, not pixel-perfect constants: the renderer must adapt to actual safe width, key count, font scale, theme and host-provided keyboard height.
+
+## 1A. Obsidian Luxe visual baseline
+
+- Panel: #090A0C, near-black and opaque.
+- Keycap: #202328 with #F2EEE7 text; champagne #C9AE80 is a restrained utility/selection accent.
+- Standard key height: 46 dp/pt, with an allowed runtime range around 42–50 dp/pt.
+- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range.
+- Corner radius: approximately 12 dp/pt; use the same geometry in the Studio preview and runtime keyboard.
+- Use matte keycaps and restrained depth, not blur-heavy glass effects.
 
 ## 1. Layout breakpoints
 

@@ -2,6 +2,17 @@
 
 The source of truth for values is design/tokens.json. Use native components in Jetpack Compose and SwiftUI/UIKit; do not add a web/Tailwind layer to this native app.
 
+## Obsidian Luxe visual direction
+
+- Runtime panel: near-black #090A0C with a restrained vertical tonal shift, not a blue/purple glow.
+- Keycaps: matte graphite #202328, opaque by default, with a slight top highlight, soft black drop shadow and fine neutral outline.
+- Key legends: warm ivory #F2EEE7; secondary legends use muted warm grey.
+- Accent: champagne #C9AE80 for toolbar icons, selected states and subtle modifier outlines only. Press feedback is muted bronze #B8945D; avoid large gold-filled keys.
+- Runtime keys do not use blurred translucent glass. Studio previews must resemble the actual native renderer on both platforms.
+- Default geometry: 46dp Android / 46pt iOS key height, 4dp/pt spacing, 12dp/pt radius, 18sp/pt glyph size. On compact widths, preserve touch width before reducing glyph size.
+- The visual pass must not alter the key order, language layouts, special actions, long-press menus, spacebar language swipes or delete behavior.
+
+
 ## Navigation model
 
 - Root route is a vertically scrolling Settings list.

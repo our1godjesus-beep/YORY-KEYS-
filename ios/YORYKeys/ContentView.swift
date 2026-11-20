@@ -43,7 +43,7 @@ struct YoryThemeStudioView: View {
                     sectionTitle("MAKE IT YOURS")
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 9) {
-                            preset("Obsidian", bg: "#090A0C", key: "#202328", accent: "#C9AE80")
+                            preset("Obsidian Luxe", bg: "#090A0C", key: "#202328", accent: "#C9AE80")
                             preset("Midnight", bg: "#10121B", key: "#292D3B", accent: "#9B8CFF")
                             preset("Arctic", bg: "#DDE7F5", key: "#FFFFFF", accent: "#5598DB")
                             preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
@@ -289,7 +289,7 @@ struct YoryThemeStudioView: View {
             self.pressedKey = Color(hex: accent)
             persistTheme()
         } label: {
-            Text(name).font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
+            Text(name).font(.caption.weight(.semibold)).frame(width: 98).padding(.vertical, 12)
                 .background(Color(hex: bg).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: accent).opacity(0.30), lineWidth: 0.7))
                 .foregroundStyle((name == "Arctic" || name == "Rose") ? Color(hex: "#202432") : Color(hex: "#F2EEE7"))
