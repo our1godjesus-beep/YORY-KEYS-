@@ -109,3 +109,30 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Android build and repository validation are running for the latest preference-wiring commits; earlier commits for the new settings navigation and initial German layout passed Android CI.
 - iOS CI is still running for the latest settings and keyboard preference commits. The earlier iOS settings view compile errors were corrected and a subsequent iOS simulator build passed at commit 43dd0df6ed2b90b75b4beef7eb6d85889109442b.
 - Physical-device validation is still outstanding. The iOS build remains an unsigned simulator build, not an installable signed iPhone release.
+
+
+## First-run app experience and detailed keyboard settings (2026-11-20)
+
+### Settings app flow (host app only)
+- Android main activity and iOS SwiftUI app root now start with a first-launch Glass intro screen. The intro is persisted as completed after the user continues.
+- The intro leads to Create Account by default, with a Sign In switch for existing users. Successful sign-in moves into the settings home; the Account page exposes Sign Out.
+- Android Supabase Auth REST calls support email/password signup, sign-in, email-verification-required state, refresh and sign-out. The session is encrypted using Android Keystore AES-GCM.
+- iOS Supabase Auth REST calls support the same basic flow. Session tokens are stored in Keychain.
+- The **keyboard extension/IME is not gated by this flow**. It remains separately enabled through operating-system keyboard settings and is designed to keep working offline without an app session.
+
+### Setup dependency
+- Mobile clients read only the Supabase Project URL and publishable key. Android reads them from ignored `android/local.properties`; iOS reads `SupabaseConfig.plist` in the main app bundle. Example files are provided.
+- A generic Supabase project is visible in the connected account but has not been confirmed by the owner as the YORY production project. No YORY production DB migration or client project key was deployed/embedded in this pass. Auth shows a configuration error until the correct project configuration is supplied.
+- The requested `LOGO7.jpeg` asset was not present in the attached/current file sources. The intro code loads it from Android assets / the iOS app bundle and uses a temporary brand mark fallback until the real image is supplied.
+
+### Reference keyboard controls
+- Android settings expose number-row placement, long-press duration, long-press symbol/accent choices, key pop-up preview, larger key labels, keyboard height, key height/spacing/radius, font family, sound profile/volume and haptic mode/duration.
+- Android IME applies number-row placement, cursor arrow keys, large-key text, key preview, timed long-press option menu, sound profile/volume and haptic preferences.
+- iOS app and keyboard share number-row placement, arrow keys, key height, spacing, key shape, font size/family, long-press symbol/accent menu, large-key text and haptic intensity. iOS uses native long-press menu timing; the custom duration slider is not yet used by UIKit's menu trigger.
+- Existing main key rows remain in place for English QWERTY and Arabic. German QWERTZ is now an additional basic layout. The 120-language catalogue remains broader than the language layouts currently implemented.
+
+### Remaining limitations and verification
+- Voice typing, multi-modal voice, online search/translation, advanced emoji catalogue/recent prediction, iOS clipboard history, some marketplace/theme-download flows and several account/cloud profile features are not implemented end-to-end.
+- Android compilation passed at the earlier verified commits including the app launch and keyboard settings; the latest sound-profile change is undergoing a fresh Android CI run.
+- iOS simulator build and repository validation passed for the latest iOS code at commit `6afea2fd`. The build is an unsigned simulator build, not a signed installable iPhone release.
+- No physical Android/iPhone interaction test has been performed in this pass.
