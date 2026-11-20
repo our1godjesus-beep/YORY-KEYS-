@@ -15,7 +15,7 @@ object YoryThemeFile {
         val appearance = JsonObject().apply {
             addProperty("background", theme.backgroundArgb.toRgbaHex())
             addProperty("key", theme.keyArgb.toRgbaHex())
-            addProperty("keyPressed", theme.accentArgb.toRgbaHex())
+            addProperty("keyPressed", theme.keyPressedArgb.toRgbaHex())
             addProperty("text", theme.textArgb.toRgbaHex())
             addProperty("accent", theme.accentArgb.toRgbaHex())
         }
@@ -23,10 +23,13 @@ object YoryThemeFile {
             addProperty("keyShape", "rounded")
             addProperty("cornerRadius", theme.cornerRadiusDp)
             addProperty("keyHeight", theme.keyHeightDp)
+            addProperty("keySpacing", theme.keySpacingDp)
+            addProperty("keyShape", theme.keyShape)
         }
         val sound = JsonObject().apply { addProperty("enabled", theme.soundEnabled) }
         val haptics = JsonObject().apply { addProperty("enabled", theme.hapticsEnabled) }
         val glass = JsonObject().apply { addProperty("opacity", theme.opacity) }
+        val typography = JsonObject().apply { addProperty("fontSize", theme.fontSizeSp) }
 
         val root = JsonObject().apply {
             addProperty("schemaVersion", 1)
@@ -40,6 +43,7 @@ object YoryThemeFile {
             add("geometry", geometry)
             add("sound", sound)
             add("haptics", haptics)
+            add("typography", typography)
         }
         return GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(root)
     }
@@ -63,6 +67,7 @@ object YoryThemeFile {
             val geometry = root.objectValue("geometry") ?: JsonObject()
             val sound = root.objectValue("sound") ?: JsonObject()
             val haptics = root.objectValue("haptics") ?: JsonObject()
+            val typography = root.objectValue("typography") ?: JsonObject()
 
             return YoryTheme(
                 name = name,
@@ -70,6 +75,7 @@ object YoryThemeFile {
                 keyArgb = parseColor(appearance.stringValue("key", "#F1F3FAE8")),
                 textArgb = parseColor(appearance.stringValue("text", "#171923FF")),
                 accentArgb = parseColor(appearance.stringValue("accent", "#78B8F8FF")),
+                keyPressedArgb = parseColor(appearance.stringValue("keyPressed", appearance.stringValue("accent", "#78B8F8FF"))),
                 opacity = glass.floatValue("opacity", 0.92f).coerceIn(0.35f, 1f),
                 cornerRadiusDp = geometry.floatValue(
                     "cornerRadius",
@@ -79,6 +85,11 @@ object YoryThemeFile {
                     "keyHeight",
                     geometry.floatValue("keyHeightDp", 46f)
                 ).coerceIn(36f, 60f),
+                keySpacingDp = geometry.floatValue("keySpacing", 4f).coerceIn(0f, 12f),
+                keyShape = geometry.stringValue("keyShape", "rounded").takeIf {
+                    it in setOf("rounded", "squircle", "pill", "circle", "rect")
+                } ?: "rounded",
+                fontSizeSp = typography.floatValue("fontSize", 18f).coerceIn(12f, 26f),
                 soundEnabled = sound.booleanValue("enabled", true),
                 hapticsEnabled = haptics.booleanValue("enabled", true)
             )
