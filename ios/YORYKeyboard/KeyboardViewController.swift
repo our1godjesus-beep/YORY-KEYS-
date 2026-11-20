@@ -11,6 +11,7 @@ final class KeyboardViewController: UIInputViewController {
     private var symbolMode = false
     private let root = UIStackView()
     private let emojiRow = UIStackView()
+    private let suggestionRow = UIStackView()
     private let keysStack = UIStackView()
 
     override func loadView() {
@@ -20,7 +21,8 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = YoryThemeReader.backgroundColor.withAlphaComponent(YoryThemeReader.opacity)
-        isArabic = YoryThemeReader.isArabic
+        isArabic = UserDefaults.standard.object(forKey: "yory.keyboard.arabic") as? Bool ?? YoryThemeReader.isArabic
+        primaryLanguage = isArabic ? "ar" : "en-US"
         applyCurrentTheme()
         buildInterface()
     }
@@ -61,6 +63,12 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleEmoji)))
         root.addArrangedSubview(toolbar)
 
+        suggestionRow.axis = .horizontal
+        suggestionRow.distribution = .fillEqually
+        suggestionRow.spacing = 8
+        root.addArrangedSubview(suggestionRow)
+        suggestionRow.heightAnchor.constraint(equalToConstant: 28).isActive = true
+
         emojiRow.axis = .horizontal
         emojiRow.distribution = .fillEqually
         emojiRow.spacing = 4
@@ -74,6 +82,7 @@ final class KeyboardViewController: UIInputViewController {
         keysStack.spacing = 6
         root.addArrangedSubview(keysStack)
         rebuildKeys()
+        updateSuggestions()
     }
 
     private func rebuildKeys() {
@@ -167,6 +176,7 @@ final class KeyboardViewController: UIInputViewController {
             isShifted = false
             rebuildKeys()
         }
+        updateSuggestions()
     }
 
     private func playKeyClick() {
@@ -183,16 +193,19 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func deleteBackward() {
         playKeyClick()
         textDocumentProxy.deleteBackward()
+        updateSuggestions()
     }
 
     @objc private func insertSpace() {
         playKeyClick()
         textDocumentProxy.insertText(" ")
+        updateSuggestions()
     }
 
     @objc private func insertReturn() {
         playKeyClick()
         textDocumentProxy.insertText("\n")
+        updateSuggestions()
     }
 
     @objc private func toggleShift() {
@@ -204,8 +217,11 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func toggleLanguage() {
         playKeyClick()
         isArabic.toggle()
+        UserDefaults.standard.set(isArabic, forKey: "yory.keyboard.arabic")
+        primaryLanguage = isArabic ? "ar" : "en-US"
         symbolMode = false
         rebuildKeys()
+        updateSuggestions()
     }
 
     @objc private func toggleSymbols() {
@@ -218,6 +234,50 @@ final class KeyboardViewController: UIInputViewController {
         playKeyClick()
         emojiMode.toggle()
         emojiRow.isHidden = !emojiMode
+        updateSuggestions()
+    }
+
+    private func updateSuggestions() {
+        suggestionRow.arrangedSubviews.forEach { item in
+            suggestionRow.removeArrangedSubview(item)
+            item.removeFromSuperview()
+        }
+        suggestionRow.isHidden = emojiMode
+        guard !emojiMode else { return }
+
+        let context = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) else {
+            return
+        }
+        let prefix = String(context[range])
+        let language = isArabic ? "ar" : "en"
+        let suggestions = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: language)
+
+        for suggestion in suggestions {
+            let button = UIButton(type: .system)
+            button.setTitle(suggestion, for: .normal)
+            button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            button.accessibilityLabel = "Use suggestion " + suggestion
+            button.addAction(UIAction { [weak self] _ in
+                self?.replaceCurrentWord(with: suggestion)
+            }, for: .touchUpInside)
+            suggestionRow.addArrangedSubview(button)
+        }
+    }
+
+    private func replaceCurrentWord(with suggestion: String) {
+        let context = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) else {
+            return
+        }
+        let prefix = String(context[range])
+        for _ in 0..<prefix.count {
+            textDocumentProxy.deleteBackward()
+        }
+        playKeyClick()
+        textDocumentProxy.insertText(suggestion)
+        updateSuggestions()
     }
 
     @objc private func switchKeyboard() { advanceToNextInputMode() }
