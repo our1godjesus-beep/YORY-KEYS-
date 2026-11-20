@@ -43,12 +43,28 @@ enum YoryThemeReader {
 
     static var isArabic: Bool { languageTag == "ar" }
 
+    static var numberRowEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.numberRow") ?? false
+    }
+
+    static var emojiKeyEnabled: Bool {
+        settings?.bool(forKey: "yory.emoji.dedicatedKey") ?? true
+    }
+
+    static var wordSuggestionsEnabled: Bool {
+        settings?.bool(forKey: "yory.typing.suggestions") ?? true
+    }
+
+    static var autoCapsEnabled: Bool {
+        settings?.bool(forKey: "yory.typing.autoCaps") ?? true
+    }
+
     static var soundEnabled: Bool {
-        settings?.object(forKey: "soundEnabled") as? Bool ?? true
+        settings?.object(forKey: "soundEnabled") as? Bool ?? settings?.object(forKey: "yory.sound.enabled") as? Bool ?? true
     }
 
     static var hapticsEnabled: Bool {
-        settings?.object(forKey: "hapticsEnabled") as? Bool ?? true
+        settings?.object(forKey: "hapticsEnabled") as? Bool ?? settings?.object(forKey: "yory.haptics.enabled") as? Bool ?? true
     }
 
     static var personalLearningEnabled: Bool {
