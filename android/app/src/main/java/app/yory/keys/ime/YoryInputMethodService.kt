@@ -14,6 +14,7 @@ import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.WindowManager
 import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
