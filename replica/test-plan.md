@@ -67,3 +67,5 @@ Environment: Android emulator/device and iOS simulator/device. No test in this d
 
 | E01-H3 | Favorite emoji | happy | Long-press an emoji; open Favorites; remove it from Favorites | Favorite state persists locally; removal updates Favorites immediately | UI + persistence test on both platforms | Not run |
 | E01-E2 | Empty Favorites category | edge | Open Favorites without any saved emoji | Helpful empty state explains how to add an emoji; no blank or broken panel | UI test on both platforms | Not run |
+
+| F07-N3 | Hide clipboard UI for restricted fields | privacy | Switch between normal text, password, numeric PIN, email and URL fields while the keyboard is open | Clipboard shortcut and saved clips are hidden for restricted fields; capture listener is detached and does not collect copied content | Android manual security QA | Not run |

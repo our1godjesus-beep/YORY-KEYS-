@@ -177,7 +177,8 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                 }
                 "settings" -> addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
-                "clipboard" -> if (theme.clipboardEnabled && !incognitoMode) {
+                "clipboard" -> if (theme.clipboardEnabled && !incognitoMode &&
+                    !sensitiveField && !numericField && !emailField && !urlField) {
                     addToolbarButton(toolbar, "▣", 1f) {
                         clipboardMode = !clipboardMode
                         refreshKeyboard()
@@ -223,7 +224,10 @@ class YoryInputMethodService : InputMethodService() {
 
         emojiRow?.visibility = if (emojiMode) View.VISIBLE else View.GONE
         suggestionRow?.visibility = if (sensitiveField || numericField || emojiMode || clipboardMode) View.GONE else View.VISIBLE
-        clipboardRow?.visibility = if (theme.clipboardEnabled && clipboardMode && !sensitiveField && !numericField) View.VISIBLE else View.GONE
+        clipboardRow?.visibility = if (
+            theme.clipboardEnabled && clipboardMode && !sensitiveField &&
+            !numericField && !emailField && !urlField && !incognitoMode
+        ) View.VISIBLE else View.GONE
 
         if (numericField) {
             addNumericLayout(container)
@@ -797,7 +801,8 @@ class YoryInputMethodService : InputMethodService() {
     private fun refreshClipboardRow() {
         val row = clipboardRow ?: return
         row.removeAllViews()
-        if (!theme.clipboardEnabled || sensitiveField || emailField || urlField || incognitoMode || !clipboardMode) {
+        if (!theme.clipboardEnabled || sensitiveField || numericField || emailField || urlField ||
+            incognitoMode || !clipboardMode) {
             row.visibility = View.GONE
             return
         }
