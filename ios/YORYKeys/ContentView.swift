@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var keyShape = "rounded"
     @State private var soundEnabled = true
     @State private var hapticsEnabled = true
+    @State private var personalLearningEnabled = false
     @State private var selectedLanguage = "English"
     @State private var themeName = "Tinted Glass"
     @State private var fileMessage = "Themes stay on this device unless you export them."
@@ -85,6 +86,12 @@ struct ContentView: View {
                     Toggle("Keyboard sounds", isOn: $soundEnabled).tint(accent).foregroundStyle(.white)
                     Toggle("Haptic feedback", isOn: $hapticsEnabled).tint(accent).foregroundStyle(.white)
 
+                    sectionTitle("PERSONAL DICTIONARY")
+                    Toggle("Learn words on this device", isOn: $personalLearningEnabled)
+                        .tint(accent).foregroundStyle(.white)
+                    Text("Optional local learning. Words are learned only when you finish typing them in ordinary text fields. Nothing is uploaded. Use the ••• key to clear learned words from the keyboard.")
+                        .font(.footnote).foregroundStyle(.white.opacity(0.55))
+
                     sectionTitle("LANGUAGE")
                     Picker("Primary layout", selection: $selectedLanguage) {
                         Text("English").tag("English")
@@ -126,6 +133,7 @@ struct ContentView: View {
         .onChange(of: keyShape) { _ in persistTheme() }
         .onChange(of: soundEnabled) { _ in persistTheme() }
         .onChange(of: hapticsEnabled) { _ in persistTheme() }
+        .onChange(of: personalLearningEnabled) { _ in persistTheme() }
         .onChange(of: selectedLanguage) { _ in persistTheme() }
         .fileExporter(
             isPresented: $showExporter,
@@ -262,6 +270,7 @@ struct ContentView: View {
         keyShape = defaults.string(forKey: "keyShape") ?? "rounded"
         soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
         hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
+        personalLearningEnabled = defaults.object(forKey: "personalLearningEnabled") as? Bool ?? false
     }
 
     private func encodeTheme() -> Data {
@@ -350,6 +359,7 @@ struct ContentView: View {
         defaults.set(keyShape, forKey: "keyShape")
         defaults.set(soundEnabled, forKey: "soundEnabled")
         defaults.set(hapticsEnabled, forKey: "hapticsEnabled")
+        defaults.set(personalLearningEnabled, forKey: "personalLearningEnabled")
         defaults.set(selectedLanguage, forKey: "language")
     }
 }
