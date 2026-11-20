@@ -1,0 +1,972 @@
+{
+  "schemaVersion": 1,
+  "count": 120,
+  "policy": "A target-language catalogue, not a claim that all 120 language models or layouts are implemented. Runtime capability is tracked separately by release and platform.",
+  "tiers": {
+    "tier1": "Highest implementation priority. No language is marked production-ready until its tests pass.",
+    "tier2": "Next expansion wave.",
+    "tier3": "Long-tail expansion wave."
+  },
+  "languages": [
+    {
+      "tag": "ar",
+      "name": "Arabic",
+      "tier": "tier1",
+      "implementationStatus": "basic_layout_scaffold",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "en",
+      "name": "English",
+      "tier": "tier1",
+      "implementationStatus": "basic_layout_scaffold",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "es",
+      "name": "Spanish",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fr",
+      "name": "French",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "de",
+      "name": "German",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "hi",
+      "name": "Hindi",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "zh-Hans",
+      "name": "Chinese (Simplified)",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "pt",
+      "name": "Portuguese",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "tr",
+      "name": "Turkish",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ur",
+      "name": "Urdu",
+      "tier": "tier1",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "it",
+      "name": "Italian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ru",
+      "name": "Russian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ja",
+      "name": "Japanese",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ko",
+      "name": "Korean",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "nl",
+      "name": "Dutch",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sv",
+      "name": "Swedish",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "no",
+      "name": "Norwegian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "da",
+      "name": "Danish",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fi",
+      "name": "Finnish",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "pl",
+      "name": "Polish",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "cs",
+      "name": "Czech",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sk",
+      "name": "Slovak",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "uk",
+      "name": "Ukrainian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ro",
+      "name": "Romanian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "hu",
+      "name": "Hungarian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "el",
+      "name": "Greek",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "he",
+      "name": "Hebrew",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fa",
+      "name": "Persian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "bn",
+      "name": "Bengali",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ta",
+      "name": "Tamil",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "te",
+      "name": "Telugu",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ml",
+      "name": "Malayalam",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "mr",
+      "name": "Marathi",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "gu",
+      "name": "Gujarati",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "pa",
+      "name": "Punjabi",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "id",
+      "name": "Indonesian",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ms",
+      "name": "Malay",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "th",
+      "name": "Thai",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "vi",
+      "name": "Vietnamese",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fil",
+      "name": "Filipino",
+      "tier": "tier2",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sw",
+      "name": "Swahili",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "af",
+      "name": "Afrikaans",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "am",
+      "name": "Amharic",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ha",
+      "name": "Hausa",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "yo",
+      "name": "Yoruba",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ig",
+      "name": "Igbo",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "zu",
+      "name": "Zulu",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "xh",
+      "name": "Xhosa",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "so",
+      "name": "Somali",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "om",
+      "name": "Oromo",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ti",
+      "name": "Tigrinya",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ne",
+      "name": "Nepali",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "si",
+      "name": "Sinhala",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "my",
+      "name": "Burmese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "km",
+      "name": "Khmer",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "lo",
+      "name": "Lao",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "mn",
+      "name": "Mongolian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "kk",
+      "name": "Kazakh",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "uz",
+      "name": "Uzbek",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "az",
+      "name": "Azerbaijani",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "hy",
+      "name": "Armenian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ka",
+      "name": "Georgian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sq",
+      "name": "Albanian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "bs",
+      "name": "Bosnian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "hr",
+      "name": "Croatian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sr",
+      "name": "Serbian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "mk",
+      "name": "Macedonian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "bg",
+      "name": "Bulgarian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sl",
+      "name": "Slovenian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "lt",
+      "name": "Lithuanian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "lv",
+      "name": "Latvian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "et",
+      "name": "Estonian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "is",
+      "name": "Icelandic",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ga",
+      "name": "Irish",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "cy",
+      "name": "Welsh",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "eu",
+      "name": "Basque",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ca",
+      "name": "Catalan",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "gl",
+      "name": "Galician",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fo",
+      "name": "Faroese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "mt",
+      "name": "Maltese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "lb",
+      "name": "Luxembourgish",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "be",
+      "name": "Belarusian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "tk",
+      "name": "Turkmen",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ky",
+      "name": "Kyrgyz",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "tg",
+      "name": "Tajik",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ps",
+      "name": "Pashto",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ku",
+      "name": "Kurdish",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sd",
+      "name": "Sindhi",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "as",
+      "name": "Assamese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "or",
+      "name": "Odia",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sa",
+      "name": "Sanskrit",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "bo",
+      "name": "Tibetan",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ug",
+      "name": "Uyghur",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "yue",
+      "name": "Cantonese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "jv",
+      "name": "Javanese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "su",
+      "name": "Sundanese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ceb",
+      "name": "Cebuano",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ilo",
+      "name": "Ilocano",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "war",
+      "name": "Waray",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "mi",
+      "name": "Māori",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sm",
+      "name": "Samoan",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "to",
+      "name": "Tongan",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "fj",
+      "name": "Fijian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "haw",
+      "name": "Hawaiian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "qu",
+      "name": "Quechua",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "gn",
+      "name": "Guarani",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ay",
+      "name": "Aymara",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "nah",
+      "name": "Nahuatl",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "la",
+      "name": "Latin",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "eo",
+      "name": "Esperanto",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ia",
+      "name": "Interlingua",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "kl",
+      "name": "Kalaallisut",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "br",
+      "name": "Breton",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "oc",
+      "name": "Occitan",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "sc",
+      "name": "Sardinian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "co",
+      "name": "Corsican",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "ast",
+      "name": "Asturian",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "an",
+      "name": "Aragonese",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "pap",
+      "name": "Papiamento",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    },
+    {
+      "tag": "chr",
+      "name": "Cherokee",
+      "tier": "tier3",
+      "implementationStatus": "catalog_only",
+      "modelStatus": "not_shipped",
+      "qualityGate": "pending"
+    }
+  ]
+}
