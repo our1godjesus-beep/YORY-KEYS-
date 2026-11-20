@@ -35,7 +35,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Supabase migration source defines profiles, themes, ratings, encrypted dictionary-backup ciphertext storage, language-pack manifests, preferences, favorites, download events and sticker-pack metadata.
 - RLS policies, explicit least-privilege client grants and pgTAP contract tests are committed.
 - A JWT-authenticated theme publishing Edge Function is present in source.
-- No hosted Supabase project has been modified. A connected project was visible with ACTIVE_HEALTHY status, but its generic project name did not prove it was the intended YORY project. Deployment is blocked until its identity is confirmed.
+- The owner confirmed the active Supabase development project (`qyiipvwjwojrikokwjgz`). Repository migrations 0001–0006 have been applied successfully. Nine public tables are present with RLS enabled; theme-preview and private sticker Storage buckets/policies are configured. Production use still requires separate release review.
 
 ### Validation
 - GitHub Actions repository-contract validation has passed on recent commits, checking JSON contracts, 120 unique language tags, feature status values and basic secret-pattern scanning.
@@ -57,7 +57,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Android clipboard filtering is heuristic and cannot guarantee detection of all OTP, payment or otherwise sensitive text. It is local-only and user-controlled.
 - Custom imported sound packs, per-key sound mapping, advanced haptic tuning, emoji search/categories/skin-tone picker and alternate emoji artwork packs are not complete.
 - Sticker creation, creator profiles, marketplace moderation, theme reporting and public theme discovery UI are not implemented.
-- Supabase migrations and Edge Function are source-only. They have not been applied to a verified YORY project. Storage policy deployment, service configuration, secret provisioning and live RLS verification remain pending.
+- The six Supabase schema migrations are deployed to the confirmed YORY development project. The 24 database/RLS contract conditions pass and the Security Advisor currently reports zero findings. Performance Advisor currently reports only unused-index INFO notices on this new, low-traffic project. The JWT-authenticated theme-publishing Edge Function remains source-only and has not been deployed or tested end-to-end.
 - Personal dictionary cloud backup/sync is not implemented. Any future backup must be explicitly opt-in, encrypted on-device before upload, and stored as ciphertext only.
 - Store listing metadata, privacy disclosures, terms, support contact, crash reporting and release signing remain to be completed.
 
@@ -73,13 +73,13 @@ This is the source of truth for repository state. UI presence is not proof that 
 
 ## Next engineering order
 
-1. Finish current Android and iOS CI runs after the newest source changes.
+1. Test Create Account, email confirmation, Sign In, session refresh and Sign Out on physical Android and iPhone devices.
 2. Test the native keyboards on physical Android and iPhone devices.
 3. Complete keyboard input behavior, accessibility and layout geometry.
 4. Build the full theme editor and ensure preview/live rendering parity.
 5. Expand personal dictionary QA and add quality-evaluated offline prediction.
 6. Add emoji search, sticker creation, clipboard controls and writing tools within platform rules.
-7. Confirm the correct Supabase project, test migrations locally, run RLS/Storage tests, then deploy deliberately.
+7. Continue Supabase Auth/device testing, then implement and deploy the theme-publishing Edge Function only after endpoint-specific tests.
 8. Add signed language packs one language at a time after quality and licensing checks.
 
 
@@ -121,8 +121,8 @@ This is the source of truth for repository state. UI presence is not proof that 
 - The **keyboard extension/IME is not gated by this flow**. It remains separately enabled through operating-system keyboard settings and is designed to keep working offline without an app session.
 
 ### Setup dependency
-- Mobile clients read only the Supabase Project URL and publishable key. Android reads them from ignored `android/local.properties`; iOS reads `SupabaseConfig.plist` in the main app bundle. Example files are provided.
-- A generic Supabase project is visible in the connected account but has not been confirmed by the owner as the YORY production project. No YORY production DB migration or client project key was deployed/embedded in this pass. Auth shows a configuration error until the correct project configuration is supplied.
+- Mobile clients read only the Supabase Project URL and publishable key. Android reads `android/supabase.local.properties` (ignored by Git), leaving Android Studio's `android/local.properties` for SDK settings. iOS reads `ios/YORYKeys/SupabaseConfig.plist` from the host-app bundle. Development example files are provided and the real config files are ignored by Git.
+- The owner confirmed `qyiipvwjwojrikokwjgz` as the YORY development project. Six schema migrations have been applied; the mobile config templates contain only its development Project URL and publishable key. This connects the app's existing Supabase Auth REST implementation to the selected development backend. A real account signup/sign-in on a physical device has not yet been performed, so end-to-end auth still needs device verification.
 - The requested `LOGO7.jpeg` asset was not present in the attached/current file sources. The intro code loads it from Android assets / the iOS app bundle and uses a temporary brand mark fallback until the real image is supplied.
 
 ### Reference keyboard controls
@@ -136,3 +136,16 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Android compilation passed at the earlier verified commits including the app launch and keyboard settings; the latest sound-profile change is undergoing a fresh Android CI run.
 - iOS simulator build and repository validation passed for the latest iOS code at commit `6afea2fd`. The build is an unsigned simulator build, not a signed installable iPhone release.
 - No physical Android/iPhone interaction test has been performed in this pass.
+
+
+## Supabase development binding (2026-11-20)
+
+- Confirmed project: `qyiipvwjwojrikokwjgz` (`https://qyiipvwjwojrikokwjgz.supabase.co`), region eu-west-1, status ACTIVE_HEALTHY.
+- Android Gradle reads Supabase values from `android/supabase.local.properties`; `android/local.properties` is left for SDK configuration. iOS host app reads `ios/YORYKeys/SupabaseConfig.plist`. Both real local files are ignored by Git.
+- Development templates for both platforms contain only the publishable API key. Never put the secret/service-role key into either mobile client.
+- Migrations 0001–0006 were applied successfully on 2026-11-20. Nine public tables now exist, all with RLS enabled; storage buckets and scoped policies were created for public theme previews and private sticker assets.
+- 24 of 24 database/RLS access-contract checks passed. Supabase Security Advisor returned zero findings after hardening the pre-existing `rls_auto_enable()` event-trigger helper. The event trigger remains active, but client roles no longer have direct EXECUTE permission.
+- Performance Advisor no longer reports auth-policy initialization or missing foreign-key indexes; it reports only unused-index INFO notices expected on a new project before normal traffic exists.
+- Android CI passed on the Gradle config change (run 44748310187); iOS CI passed on the iOS config-template change (run 44748319738); repository contract validation passed on the 0006 migration commit (run 44748691380).
+- Supabase Auth signup/sign-in code is configured to use this project, but no live test account was created and no physical-device end-to-end registration was performed. Do not call auth production-verified until that test passes.
+- The keyboard remains independent from account login and must remain usable offline. Raw typing, passwords, surrounding editor context, clipboard content and plaintext dictionaries are not sent to Supabase.
