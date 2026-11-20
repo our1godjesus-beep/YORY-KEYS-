@@ -133,9 +133,17 @@ final class KeyboardViewController: UIInputViewController {
             case "switch":
                 toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
             case "tools":
-                toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
+                toolbar.addArrangedSubview(toolButton(
+                    toolsMode ? "×" : "•••",
+                    accessibilityLabel: toolsMode ? "Close tools" : "More tools",
+                    action: #selector(toggleTools)
+                ))
             case "privacy":
-                toolbar.addArrangedSubview(toolButton(incognitoMode ? "◉" : "◎", action: #selector(toggleIncognito)))
+                toolbar.addArrangedSubview(toolButton(
+                    incognitoMode ? "◉" : "◎",
+                    accessibilityLabel: incognitoMode ? "Turn off Incognito" : "Turn on Incognito",
+                    action: #selector(toggleIncognito)
+                ))
             default:
                 break
             }
@@ -232,7 +240,11 @@ final class KeyboardViewController: UIInputViewController {
             case "switch":
                 toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
             case "tools":
-                toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
+                toolbar.addArrangedSubview(toolButton(
+                    toolsMode ? "×" : "•••",
+                    accessibilityLabel: toolsMode ? "Close tools" : "More tools",
+                    action: #selector(toggleTools)
+                ))
             default:
                 break
             }
@@ -615,11 +627,31 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private func toolButton(_ title: String, action: Selector) -> UIButton {
+    private func toolButton(
+        _ title: String,
+        accessibilityLabel: String? = nil,
+        action: Selector
+    ) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        let iconNames: [String: String] = [
+            "☺": "face.smiling",
+            "⇄": "globe",
+            "Aa": "character",
+            "⌨": "keyboard",
+            "•••": "ellipsis",
+            "×": "xmark",
+            "◉": "eye.slash",
+            "◎": "eye"
+        ]
+        if let iconName = iconNames[title], let image = UIImage(systemName: iconName) {
+            button.setImage(image, for: .normal)
+            button.tintColor = YoryThemeReader.accentColor
+        } else {
+            button.setTitle(title, for: .normal)
+            button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        }
+        button.accessibilityLabel = accessibilityLabel ?? title
         button.backgroundColor = UIColor.white.withAlphaComponent(0.045)
         button.layer.cornerRadius = 10
         button.layer.borderWidth = 0.5
