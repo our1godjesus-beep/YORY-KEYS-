@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -144,10 +145,13 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
                 KeyboardPreview(theme)
 
                 Text("START WITH A LOOK", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
                     YoryTheme.presets.forEach { preset ->
                         Box(
-                            modifier = Modifier.weight(1f).height(42.dp)
+                            modifier = Modifier.width(82.dp).height(44.dp)
                                 .clip(RoundedCornerShape(13.dp))
                                 .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color(preset.keyArgb).copy(alpha = 0.30f))))
                                 .border(
@@ -192,7 +196,7 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
                     parseHexArgb(pressedHex)?.let { color -> applyTheme(theme.copy(keyPressedArgb = color, name = "Custom")) }
                 }
 
-                SliderSetting("Glass opacity", theme.opacity, 0.35f..1f, (theme.opacity * 100).toInt().toString() + "%") {
+                SliderSetting("Surface opacity", theme.opacity, 0.35f..1f, (theme.opacity * 100).toInt().toString() + "%") {
                     applyTheme(theme.copy(opacity = it))
                 }
                 SliderSetting("Key corner radius", theme.cornerRadiusDp, 4f..28f, theme.cornerRadiusDp.toInt().toString() + " dp") {
@@ -315,15 +319,16 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
 
 @Composable
 private fun KeyboardPreview(theme: YoryTheme) {
+    val keyShape = themeShape(theme)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFB9D8FF).copy(alpha = 0.075f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
+        shape = RoundedCornerShape(23.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(theme.backgroundArgb)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(theme.accentArgb).copy(alpha = 0.20f))
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                listOf("☻", "✦", "文", "⚙", "•••").forEach {
+                listOf("☺", "✦", "文", "⚙", "•••").forEach {
                     Text(it, color = Color(theme.accentArgb), fontSize = 17.sp)
                 }
             }
@@ -331,10 +336,14 @@ private fun KeyboardPreview(theme: YoryTheme) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
                     row.forEach { char ->
                         Box(
-                            modifier = Modifier.weight(1f).height((theme.keyHeightDp * 0.68f).dp)
-                                 .clip(themeShape(theme))
-                                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color(theme.keyArgb).copy(alpha = 0.28f))))
-                                .border(0.7.dp, Color.White.copy(alpha = 0.2f), themeShape(theme)),
+                            modifier = Modifier.weight(1f)
+                                .height((theme.keyHeightDp * 0.76f).dp)
+                                .clip(keyShape)
+                                .background(Brush.verticalGradient(listOf(
+                                    Color(theme.keyArgb).copy(alpha = 0.98f),
+                                    Color(theme.keyArgb).copy(alpha = 0.90f)
+                                )))
+                                .border(0.8.dp, Color.White.copy(alpha = 0.09f), keyShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(char.toString(), color = Color(theme.textArgb), fontSize = theme.fontSizeSp.sp)
@@ -345,10 +354,18 @@ private fun KeyboardPreview(theme: YoryTheme) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
                 listOf("!#1", "◎", "English", "↵").forEach { label ->
                     Box(
-                        modifier = Modifier.weight(if (label == "English") 3f else 1f).height(32.dp)
-                            .clip(themeShape(theme)).background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color(theme.keyArgb).copy(alpha = 0.26f)))).border(0.7.dp, Color.White.copy(alpha = 0.28f), themeShape(theme)),
+                        modifier = Modifier.weight(if (label == "English") 3f else 1f)
+                            .height(34.dp)
+                            .clip(keyShape)
+                            .background(Brush.verticalGradient(listOf(
+                                Color(theme.keyArgb).copy(alpha = 0.98f),
+                                Color(theme.keyArgb).copy(alpha = 0.90f)
+                            )))
+                            .border(0.8.dp, Color(theme.accentArgb).copy(alpha = if (label == "↵") 0.38f else 0.12f), keyShape),
                         contentAlignment = Alignment.Center
-                    ) { Text(label, color = Color(theme.textArgb), fontSize = 10.sp) }
+                    ) {
+                        Text(label, color = Color(theme.textArgb), fontSize = 10.sp)
+                    }
                 }
             }
         }

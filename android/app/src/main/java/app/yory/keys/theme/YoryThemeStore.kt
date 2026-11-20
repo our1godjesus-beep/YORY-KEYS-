@@ -9,6 +9,16 @@ object YoryThemeStore {
     fun load(context: Context): YoryTheme {
         val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
         val fallback = YoryTheme.default
+        val isLegacyUntouchedDefault =
+            prefs.getString("name", null) == "Tinted Glass" &&
+            prefs.getInt("background", 0xD91A1D2B.toInt()) == 0xD91A1D2B.toInt() &&
+            prefs.getInt("key", 0xE8F1F3FA.toInt()) == 0xE8F1F3FA.toInt() &&
+            prefs.getInt("text", 0xFF171923.toInt()) == 0xFF171923.toInt() &&
+            prefs.getInt("accent", 0xFF78B8F8.toInt()) == 0xFF78B8F8.toInt()
+        if (isLegacyUntouchedDefault) {
+            save(context, fallback)
+            return fallback
+        }
         return YoryTheme(
             name = prefs.getString("name", fallback.name) ?: fallback.name,
             backgroundArgb = prefs.getInt("background", fallback.backgroundArgb),

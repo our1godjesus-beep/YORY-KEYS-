@@ -790,6 +790,7 @@ class YoryInputMethodService : InputMethodService() {
                 else -> Typeface.DEFAULT
             }
             background = keyBackground(label)
+            elevation = dp(1.5f).toFloat()
             isClickable = true
             isFocusable = true
             setOnTouchListener { touched, event ->
@@ -1227,35 +1228,27 @@ class YoryInputMethodService : InputMethodService() {
      */
     private fun panelBackground(): GradientDrawable {
         val raw = theme.backgroundArgb
-        val alpha = (Color.alpha(raw) * theme.opacity * 0.78f).toInt().coerceIn(90, 220)
-        return GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(
-                Color.argb((alpha * 1.08f).toInt().coerceAtMost(235), Color.red(raw), Color.green(raw), Color.blue(raw)),
-                Color.argb((alpha * 0.82f).toInt().coerceAtLeast(75), Color.red(raw), Color.green(raw), Color.blue(raw))
-            )
-        ).apply {
-            cornerRadius = dp(22).toFloat()
-            setStroke(dp(1), Color.argb(105, 255, 255, 255))
+        val base = Color.rgb(Color.red(raw), Color.green(raw), Color.blue(raw))
+        val top = blendColors(base, Color.WHITE, 0.035f)
+        val bottom = blendColors(base, Color.BLACK, 0.045f)
+        return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
+            cornerRadius = dp(23).toFloat()
+            setStroke(dp(1), Color.rgb(39, 42, 48))
         }
     }
 
     private fun keyBackground(label: String, pressed: Boolean = false): GradientDrawable {
         val special = label in setOf("⇧", "⌫", "↵", "!#1", "ABC", "🌐", "123", "⚙", "⋯")
-        val raw = when {
-            pressed -> theme.keyPressedArgb
-            special -> theme.accentArgb
+        val base = when {
+            pressed -> blendColors(theme.keyArgb, theme.keyPressedArgb, 0.30f)
+            special -> blendColors(theme.keyArgb, theme.accentArgb, 0.12f)
             else -> theme.keyArgb
         }
-        val baseAlpha = when {
-            pressed -> 176
-            special -> 82
-            else -> 92
-        }
-        val fill = Color.argb(
-            (Color.alpha(raw) * (baseAlpha / 255f) * theme.opacity).toInt().coerceIn(42, 190),
-            Color.red(raw), Color.green(raw), Color.blue(raw)
-        )
+        val alpha = (Color.alpha(base) * theme.opacity).toInt().coerceIn(80, 255)
+        val topBase = blendColors(Color.rgb(Color.red(base), Color.green(base), Color.blue(base)), Color.WHITE, 0.055f)
+        val bottomBase = blendColors(Color.rgb(Color.red(base), Color.green(base), Color.blue(base)), Color.BLACK, 0.07f)
+        val top = Color.argb(alpha, Color.red(topBase), Color.green(topBase), Color.blue(topBase))
+        val bottom = Color.argb(alpha, Color.red(bottomBase), Color.green(bottomBase), Color.blue(bottomBase))
         val keyHeight = dp(theme.keyHeightDp).toFloat()
         val radius = when (theme.keyShape) {
             "pill", "circle" -> keyHeight / 2f
@@ -1263,16 +1256,25 @@ class YoryInputMethodService : InputMethodService() {
             "rect" -> dp(3).toFloat()
             else -> dp(theme.cornerRadiusDp).toFloat()
         }
-        return GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(
-                Color.argb((Color.alpha(fill) * 1.18f).toInt().coerceAtMost(205), Color.red(fill), Color.green(fill), Color.blue(fill)),
-                fill
-            )
-        ).apply {
+        return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
             cornerRadius = radius
-            setStroke(dp(1), if (pressed) Color.argb(190, 255, 255, 255) else Color.argb(88, 255, 255, 255))
+            val outline = when {
+                pressed -> Color.argb(150, Color.red(theme.accentArgb), Color.green(theme.accentArgb), Color.blue(theme.accentArgb))
+                special -> Color.argb(95, Color.red(theme.accentArgb), Color.green(theme.accentArgb), Color.blue(theme.accentArgb))
+                else -> Color.argb(34, 255, 255, 255)
+            }
+            setStroke(dp(1), outline)
         }
+    }
+
+    private fun blendColors(first: Int, second: Int, amount: Float): Int {
+        val ratio = amount.coerceIn(0f, 1f)
+        val inverse = 1f - ratio
+        return Color.rgb(
+            (Color.red(first) * inverse + Color.red(second) * ratio).toInt().coerceIn(0, 255),
+            (Color.green(first) * inverse + Color.green(second) * ratio).toInt().coerceIn(0, 255),
+            (Color.blue(first) * inverse + Color.blue(second) * ratio).toInt().coerceIn(0, 255)
+        )
     }
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()

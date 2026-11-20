@@ -105,7 +105,7 @@ internal fun YoryThemeGalleryScreen(
     val visibleThemes = when (category) {
         "Yours" -> savedThemes
         "Favorites" -> themes.filter { favorites.contains(it.name.lowercase()) }
-        "Dark" -> themes.filter { it.name in setOf("Tinted Glass", "Midnight", "Neon", "Custom") }
+        "Dark" -> themes.filter { it.name in setOf("Obsidian Luxe", "Tinted Glass", "Midnight", "Neon", "Custom") }
         "Light" -> themes.filter { it.name in setOf("Arctic", "Rose") }
         "Colorful" -> themes.filter { it.name in setOf("Neon", "Rose", "Arctic") }
         else -> themes

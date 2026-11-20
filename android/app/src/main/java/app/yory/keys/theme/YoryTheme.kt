@@ -20,6 +20,7 @@ data class YoryTheme(
 ) {
     companion object {
         val presets = listOf(
+            YoryTheme("Obsidian Luxe", 0xFF090A0C.toInt(), 0xFF202328.toInt(), 0xFFF2EEE7.toInt(), 0xFFC9AE80.toInt(), 1.0f, 12f, 46f, true, true, false, 0xFFB8945D.toInt(), 4f, "squircle", 18f, "system"),
             YoryTheme("Tinted Glass", 0xD91A1D2B.toInt(), 0xE8F1F3FA.toInt(), 0xFF171923.toInt(), 0xFF78B8F8.toInt(), 0.92f, 14f, 46f),
             YoryTheme("Midnight", 0xEF10121B.toInt(), 0xFF292D3B.toInt(), 0xFFF6F7FC.toInt(), 0xFF9B8CFF.toInt(), 0.98f, 12f, 46f),
             YoryTheme("Arctic", 0xD9DDE7F5.toInt(), 0xF7FFFFFF.toInt(), 0xFF202432.toInt(), 0xFF5598DB.toInt(), 0.88f, 16f, 47f),
