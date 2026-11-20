@@ -115,6 +115,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
     var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
     var showResizeEditor by remember { mutableStateOf(false) }
+    var showClipboardHistory by remember { mutableStateOf(false) }
     var longPressDuration by remember { mutableFloatStateOf(prefs.getFloat("long_press_duration", 450f)) }
     var keypressVolume by remember { mutableFloatStateOf(prefs.getFloat("keypress_volume", 0.35f)) }
     var vibrationDuration by remember { mutableFloatStateOf(prefs.getFloat("vibration_duration", 12f)) }
@@ -136,6 +137,10 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
 
     if (page == "Layout & keys" && showResizeEditor) {
         YoryKeyboardResizeScreen(onBack = { showResizeEditor = false })
+        return
+    }
+    if (page == "Rich input" && showClipboardHistory) {
+        YoryClipboardHistoryScreen(onBack = { showClipboardHistory = false })
         return
     }
 
@@ -245,6 +250,15 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
                     ToggleCard("Clipboard history", "Keep recent copied text on this device", theme.value.clipboardEnabled) {
                         theme.value = theme.value.copy(clipboardEnabled = it); YoryThemeStore.save(context, theme.value)
+                    }
+                    GlassPanel(Modifier.fillMaxWidth().clickable { showClipboardHistory = true }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text("Manage clipboard", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("Pinned items, recent clips, delete and undo", color = GlassMuted, fontSize = 12.sp)
+                            }
+                            Text("›", color = GlassAccent, fontSize = 26.sp)
+                        }
                     }
                     ToggleCard("Compact mode", "Show fewer suggestions in a shorter bar", readBool("compact_mode", false)) {
                         writeBool("compact_mode", it)
