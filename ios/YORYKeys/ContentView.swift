@@ -491,7 +491,17 @@ struct YoryThemeGalleryView: View {
     @State private var appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
     @State private var statusMessage = ""
     @State private var showEditor = false
-    private let categories = ["All", "Yours", "Dark", "Light", "Colorful"]
+    @State private var showDetail = false
+    @State private var detailPreset: YoryGalleryPreset?
+    @State private var favoritesRevision = 0
+    private let categories = ["All", "Yours", "Favorites", "Dark", "Light", "Colorful"]
+
+    private var favoriteNames: Set<String> {
+        _ = favoritesRevision
+        let defaults = UserDefaults(suiteName: "group.app.yory.keys")
+        let names = defaults?.stringArray(forKey: "yory.favorite.themes") ?? []
+        return Set(names.map { $0.lowercased() })
+    }
 
     private var savedPresets: [YoryGalleryPreset] {
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
@@ -571,6 +581,7 @@ struct YoryThemeGalleryView: View {
         switch category {
         case "Yours": return savedPresets
         case "All": return galleryPresets
+        case "Favorites": return galleryPresets.filter { favoriteNames.contains($0.name.lowercased()) }
         default: return galleryPresets.filter { $0.category == category }
         }
     }
@@ -633,7 +644,12 @@ struct YoryThemeGalleryView: View {
                                     onCustomize: {
                                         apply(preset)
                                         showEditor = true
-                                    }
+                                    },
+                                    onDetails: {
+                                        detailPreset = preset
+                                        showDetail = true
+                                    },
+                                    isFavorite: favoriteNames.contains(preset.name.lowercased())
                                 )
                             }
                         }
@@ -682,6 +698,111 @@ struct YoryThemeGalleryView: View {
         .navigationDestination(isPresented: $showEditor) {
             YoryThemeStudioView()
         }
+        .navigationDestination(isPresented: $showDetail) {
+            if let preset = detailPreset {
+                YoryThemeDetailView(
+                    preset: preset,
+                    isApplied: appliedTheme == preset.name,
+                    isFavorite: favoriteNames.contains(preset.name.lowercased()),
+                    onApply: { apply(preset) },
+                    onFavorite: { setFavorite(preset.name, $0) },
+                    onRename: { renameSavedTheme(preset, newName: $0) },
+                    onDuplicate: { duplicateTheme(preset, newName: $0) },
+                    onDelete: { deleteSavedTheme(preset) },
+                    onCustomize: {
+                        apply(preset)
+                        showEditor = true
+                    }
+                )
+            }
+        }
+    }
+
+    private func setFavorite(_ name: String, _ enabled: Bool) {
+        guard let defaults = UserDefaults(suiteName: "group.app.yory.keys") else { return }
+        var names = Set(defaults.stringArray(forKey: "yory.favorite.themes") ?? [])
+        if enabled { names.insert(name) } else { names = Set(names.filter { $0.caseInsensitiveCompare(name) != .orderedSame }) }
+        defaults.set(Array(names).sorted(), forKey: "yory.favorite.themes")
+        favoritesRevision += 1
+    }
+
+    private func documentData(for preset: YoryGalleryPreset, name: String) -> Data? {
+        let document: [String: Any] = [
+            "schemaVersion": 1,
+            "id": UUID().uuidString,
+            "name": name,
+            "author": "YORY KEYS",
+            "appearance": [
+                "background": preset.background,
+                "key": preset.key,
+                "keyPressed": preset.pressed,
+                "text": preset.text,
+                "accent": preset.accent
+            ],
+            "glass": ["enabled": true, "opacity": preset.opacity],
+            "geometry": [
+                "keyShape": preset.keyShape,
+                "cornerRadius": preset.radius,
+                "keySpacing": preset.keySpacing,
+                "keyHeight": preset.keyHeight
+            ],
+            "typography": ["fontSize": preset.fontSize, "fontFamily": preset.fontFamily],
+            "sound": ["enabled": preset.soundEnabled],
+            "haptics": ["enabled": preset.hapticsEnabled],
+            "emoji": ["displayScale": 1.0, "recentFirst": true]
+        ]
+        return try? JSONSerialization.data(withJSONObject: document, options: [.prettyPrinted, .sortedKeys])
+    }
+
+    private func duplicateTheme(_ preset: YoryGalleryPreset, newName: String) -> Bool {
+        let name = String(newName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(48))
+        guard !name.isEmpty,
+              !savedPresets.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }),
+              let defaults = UserDefaults(suiteName: "group.app.yory.keys"),
+              let data = documentData(for: preset, name: name) else { return false }
+        var entries = defaults.array(forKey: "yory.saved.themes") as? [[String: String]] ?? []
+        entries.append(["name": name, "document": data.base64EncodedString()])
+        defaults.set(entries, forKey: "yory.saved.themes")
+        statusMessage = "\(name) was added to My Themes."
+        return true
+    }
+
+    private func renameSavedTheme(_ preset: YoryGalleryPreset, newName: String) -> Bool {
+        let name = String(newName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(48))
+        guard !name.isEmpty,
+              preset.isCustom,
+              !savedPresets.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame && $0.name.caseInsensitiveCompare(preset.name) != .orderedSame }),
+              let defaults = UserDefaults(suiteName: "group.app.yory.keys") else { return false }
+
+        var entries = defaults.array(forKey: "yory.saved.themes") as? [[String: String]] ?? []
+        guard let index = entries.firstIndex(where: { $0["name"]?.caseInsensitiveCompare(preset.name) == .orderedSame }),
+              let encoded = entries[index]["document"],
+              let data = Data(base64Encoded: encoded),
+              var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+        object["name"] = name
+        guard let updatedData = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]) else { return false }
+        entries.remove(at: index)
+        entries.append(["name": name, "document": updatedData.base64EncodedString()])
+        defaults.set(entries, forKey: "yory.saved.themes")
+        if appliedTheme.caseInsensitiveCompare(preset.name) == .orderedSame {
+            defaults.set(name, forKey: "themeName")
+            appliedTheme = name
+        }
+        setFavorite(preset.name, false)
+        return true
+    }
+
+    private func deleteSavedTheme(_ preset: YoryGalleryPreset) {
+        guard preset.isCustom,
+              let defaults = UserDefaults(suiteName: "group.app.yory.keys") else { return }
+        let entries = (defaults.array(forKey: "yory.saved.themes") as? [[String: String]] ?? [])
+            .filter { $0["name"]?.caseInsensitiveCompare(preset.name) != .orderedSame }
+        defaults.set(entries, forKey: "yory.saved.themes")
+        setFavorite(preset.name, false)
+        if appliedTheme.caseInsensitiveCompare(preset.name) == .orderedSame {
+            apply(YoryGalleryPreset.all[0])
+        }
+        statusMessage = "\(preset.name) was deleted."
     }
 
     @ViewBuilder
@@ -735,8 +856,10 @@ struct YoryThemeGalleryView: View {
 private struct YoryGalleryThemeCard: View {
     let preset: YoryGalleryPreset
     let isApplied: Bool
+    let isFavorite: Bool
     let onApply: () -> Void
     let onCustomize: () -> Void
+    let onDetails: () -> Void
     private let rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
 
     var body: some View {
@@ -789,11 +912,21 @@ private struct YoryGalleryThemeCard: View {
             }
             .buttonStyle(.plain)
 
-            Button(action: onCustomize) {
-                Text("Customize").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
-                    .foregroundStyle(Color(hex: "#A7C7FF"))
+            HStack(spacing: 4) {
+                Button(action: onDetails) {
+                    Text("Details").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
+                        .foregroundStyle(Color(hex: "#A7C7FF"))
+                }
+                .buttonStyle(.plain)
+                Button(action: onCustomize) {
+                    Text("Customize").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
+                        .foregroundStyle(Color(hex: "#A7C7FF"))
+                }
+                .buttonStyle(.plain)
+                if isFavorite {
+                    Image(systemName: "star.fill").font(.caption2).foregroundStyle(Color(hex: "#A7C7FF"))
+                }
             }
-            .buttonStyle(.plain)
         }
         .padding(10)
         .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 18))
@@ -804,6 +937,186 @@ private struct YoryGalleryThemeCard: View {
         Text(title).font(.system(size: 7, weight: .medium)).foregroundStyle(Color(hex: preset.text))
             .frame(maxWidth: wide ? .infinity : 34).frame(height: 22)
             .background(Color(hex: preset.key).opacity(0.92), in: RoundedRectangle(cornerRadius: CGFloat(min(preset.radius, 7))))
+    }
+}
+
+private struct YoryThemeDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let preset: YoryGalleryPreset
+    let isApplied: Bool
+    let isFavorite: Bool
+    let onApply: () -> Void
+    let onFavorite: (Bool) -> Void
+    let onRename: (String) -> Bool
+    let onDuplicate: (String) -> Bool
+    let onDelete: () -> Void
+    let onCustomize: () -> Void
+
+    @State private var showRename = false
+    @State private var showDuplicate = false
+    @State private var confirmDelete = false
+    @State private var nameInput = ""
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.12, green: 0.16, blue: 0.25),
+                    Color(red: 0.025, green: 0.035, blue: 0.065),
+                    Color(red: 0.10, green: 0.09, blue: 0.17)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ).ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(preset.name)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    detailPreview
+
+                    Text(isApplied ? "Currently applied" : "Ready to apply")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(isApplied ? Color(red: 0.65, green: 0.78, blue: 1.0) : .white.opacity(0.66))
+
+                    Button(action: onApply) {
+                        Text(isApplied ? "Applied" : "Apply theme")
+                            .font(.headline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background(Color(red: 0.65, green: 0.78, blue: 1.0), in: RoundedRectangle(cornerRadius: 14))
+                            .foregroundStyle(Color(red: 0.06, green: 0.09, blue: 0.14))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: onCustomize) {
+                        Label("Customize this theme", systemImage: "slider.horizontal.3")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.22), lineWidth: 0.8))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(red: 0.65, green: 0.78, blue: 1.0))
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("THEME DETAILS")
+                            .font(.caption.weight(.bold)).tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.65))
+                        detailRow("Key height", value: "\(Int(preset.keyHeight)) dp")
+                        detailRow("Key spacing", value: "\(Int(preset.keySpacing)) dp")
+                        detailRow("Corner radius", value: "\(Int(preset.radius)) dp")
+                        detailRow("Letter size", value: "\(Int(preset.fontSize)) pt")
+                        detailRow("Glass opacity", value: "\(Int(preset.opacity * 100))%")
+                    }
+                    .padding(15)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.16), lineWidth: 0.8))
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("MANAGE THEME")
+                            .font(.caption.weight(.bold)).tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.65))
+                        Button {
+                            onFavorite(!isFavorite)
+                        } label: {
+                            Label(isFavorite ? "Remove from Favorites" : "Add to Favorites", systemImage: isFavorite ? "star.slash" : "star")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .foregroundStyle(Color(red: 0.65, green: 0.78, blue: 1.0))
+                        if preset.isCustom {
+                            Button {
+                                nameInput = preset.name
+                                showRename = true
+                            } label: {
+                                Label("Rename", systemImage: "pencil").frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .foregroundStyle(.white)
+                        }
+                        Button {
+                            nameInput = "Copy of \(preset.name)".prefix(48).description
+                            showDuplicate = true
+                        } label: {
+                            Label("Duplicate", systemImage: "plus.square.on.square").frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .foregroundStyle(.white)
+                        if preset.isCustom {
+                            Button(role: .destructive) {
+                                confirmDelete = true
+                            } label: {
+                                Label("Delete saved theme", systemImage: "trash").frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        } else {
+                            Text("Built-in presets cannot be renamed or deleted. Duplicate one to create your own version.")
+                                .font(.footnote).foregroundStyle(.white.opacity(0.62))
+                        }
+                    }
+                    .padding(15)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.16), lineWidth: 0.8))
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 28)
+            }
+        }
+        .navigationTitle("Theme details")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Rename theme", isPresented: $showRename) {
+            TextField("Theme name", text: $nameInput)
+            Button("Save") { _ = onRename(nameInput) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Use a name up to 48 characters.")
+        }
+        .alert("Duplicate theme", isPresented: $showDuplicate) {
+            TextField("New theme name", text: $nameInput)
+            Button("Duplicate") { _ = onDuplicate(nameInput) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("A separate local copy will be saved on this device.")
+        }
+        .confirmationDialog("Delete this saved theme?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete Theme", role: .destructive) {
+                onDelete()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The selected theme will be removed from this device. Built-in themes are not affected.")
+        }
+    }
+
+    private var detailPreview: some View {
+        VStack(spacing: 5) {
+            ForEach(["qwertyuiop", "asdfghjkl", "zxcvbnm"], id: \.self) { row in
+                HStack(spacing: 3) {
+                    ForEach(Array(row), id: \.self) { character in
+                        Text(String(character))
+                            .font(.system(size: CGFloat(preset.fontSize * 0.55), weight: .medium))
+                            .foregroundStyle(Color(hex: preset.text))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: CGFloat(preset.keyHeight * 0.8))
+                            .background(Color(hex: preset.key), in: RoundedRectangle(cornerRadius: CGFloat(preset.radius)))
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(Color(hex: preset.background), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.18), lineWidth: 0.8))
+    }
+
+    private func detailRow(_ title: String, value: String) -> some View {
+        HStack {
+            Text(title).foregroundStyle(.white.opacity(0.72))
+            Spacer()
+            Text(value).foregroundStyle(.white.weight(.medium))
+        }
+        .font(.footnote)
     }
 }
 
