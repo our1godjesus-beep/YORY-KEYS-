@@ -3,20 +3,37 @@ name: iOS CI
 on:
   push:
     branches: [main]
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios-ci.yml"
+    paths: ["ios/**", ".github/workflows/ios-ci.yml"]
   pull_request:
-    paths:
-      - "ios/**"
-      - ".github/workflows/ios-ci.yml"
+    paths: ["ios/**", ".github/workflows/ios-ci.yml"]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create local Supabase client configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import plistlib
+          from pathlib import Path
+          target = Path("ios/YORYKeys/SupabaseConfig.plist")
+          target.parent.mkdir(parents=True, exist_ok=True)
+          payload = {
+              "SUPABASE_URL": os.environ.get("SUPABASE_URL", ""),
+              "SUPABASE_PUBLISHABLE_KEY": os.environ.get("SUPABASE_PUBLISHABLE_KEY", ""),
+          }
+          with target.open("wb") as stream:
+              plistlib.dump(payload, stream, fmt=plistlib.FMT_XML, sort_keys=True)
+          PY
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project
