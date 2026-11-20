@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Development project values. Replace before preparing a production build. -->
     <key>SUPABASE_URL</key>
-    <string>https://YOUR_PROJECT_REF.supabase.co</string>
+    <string>https://qyiipvwjwojrikokwjgz.supabase.co</string>
     <key>SUPABASE_PUBLISHABLE_KEY</key>
-    <string>sb_publishable_YOUR_KEY</string>
+    <string>sb_publishable_xkNc4eIFMmbRuOvlOEkIAA_AF2dFp5T</string>
 </dict>
 </plist>
