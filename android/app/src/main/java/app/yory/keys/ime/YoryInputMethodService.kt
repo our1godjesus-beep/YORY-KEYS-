@@ -570,7 +570,7 @@ class YoryInputMethodService : InputMethodService() {
         tools.add(Triple("Symbols", "123") {
             toolsMode = false
             symbolMode = true
-            symbolPage = (symbolPage + 1) % 2
+            symbolPage = 0
             refreshToolbar()
             refreshKeyboard()
         })
