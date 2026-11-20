@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.ClipboardManager
 import android.media.AudioManager
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
@@ -315,6 +316,12 @@ class YoryInputMethodService : InputMethodService() {
                 (theme.fontSizeSp - 6f).coerceAtLeast(10f)
             } else theme.fontSizeSp
             setTextColor(theme.textArgb)
+            typeface = when (theme.fontFamily) {
+                "rounded" -> Typeface.create("sans-serif-rounded", Typeface.NORMAL)
+                "serif" -> Typeface.SERIF
+                "mono" -> Typeface.MONOSPACE
+                else -> Typeface.DEFAULT
+            }
             background = keyBackground(label)
             isClickable = true
             isFocusable = true
