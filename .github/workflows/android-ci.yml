@@ -3,22 +3,21 @@ name: Android CI
 on:
   push:
     branches: [main]
-    paths:
-      - "android/**"
-      - "shared/**"
-      - ".github/workflows/android-ci.yml"
+    paths: ["android/**", "shared/**", "tools/**", ".github/workflows/android-ci.yml"]
   pull_request:
-    paths:
-      - "android/**"
-      - "shared/**"
-      - ".github/workflows/android-ci.yml"
+    paths: ["android/**", "shared/**", "tools/**", ".github/workflows/android-ci.yml"]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate repository contracts
+        run: python3 tools/validate_repository.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,6 +30,15 @@ jobs:
           gradle-version: "8.9"
       - name: Install Android SDK platform
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Configure Supabase client from Actions secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set +x
+          umask 077
+          printf 'SUPABASE_URL=%s\nSUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY" > android/supabase.local.properties
       - name: Assemble and test
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
