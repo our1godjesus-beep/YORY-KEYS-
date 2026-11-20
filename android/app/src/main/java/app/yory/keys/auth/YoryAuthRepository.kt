@@ -47,7 +47,7 @@ object YoryAuthRepository {
         val publishableKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY.trim()
         if (!baseUrl.startsWith("https://") || publishableKey.isBlank()) {
             throw YoryAuthException(
-                "YORY account service is not connected yet. Add the YORY Supabase project URL and publishable key to android/local.properties."
+                "YORY account service is not connected yet. Add SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY to android/supabase.local.properties, or configure them as GitHub Actions repository secrets."
             )
         }
         return baseUrl to publishableKey
