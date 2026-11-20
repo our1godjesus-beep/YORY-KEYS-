@@ -154,6 +154,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func rebuildKeys() {
+        updateKeyboardHeight()
         let direction: UISemanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         root.semanticContentAttribute = direction
         toolbarRow?.semanticContentAttribute = direction
@@ -392,10 +393,18 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func keyTouchDown(_ sender: UIButton) {
         sender.backgroundColor = YoryThemeReader.keyPressedColor.withAlphaComponent(0.58)
+        if YoryThemeReader.keyPopupsEnabled {
+            UIView.animate(withDuration: 0.08) {
+                sender.transform = CGAffineTransform(scaleX: 0.96, y: 0.94)
+            }
+        }
     }
 
     @objc private func keyTouchUp(_ sender: UIButton) {
         sender.backgroundColor = UIColor.white.withAlphaComponent(0.055)
+        UIView.animate(withDuration: 0.10) {
+            sender.transform = .identity
+        }
     }
 
     private func keyboardFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
@@ -448,7 +457,7 @@ final class KeyboardViewController: UIInputViewController {
         if YoryThemeReader.hapticsEnabled {
             let feedback = UIImpactFeedbackGenerator(style: .light)
             feedback.prepare()
-            feedback.impactOccurred()
+            feedback.impactOccurred(intensity: YoryThemeReader.hapticIntensity)
         }
     }
 
