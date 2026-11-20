@@ -170,8 +170,14 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func playKeyClick() {
-        guard YoryThemeReader.soundEnabled else { return }
-        UIDevice.current.playInputClick()
+        if YoryThemeReader.soundEnabled {
+            UIDevice.current.playInputClick()
+        }
+        if YoryThemeReader.hapticsEnabled {
+            let feedback = UIImpactFeedbackGenerator(style: .light)
+            feedback.prepare()
+            feedback.impactOccurred()
+        }
     }
 
     @objc private func deleteBackward() {
