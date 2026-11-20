@@ -194,3 +194,9 @@ The following code work supersedes older "not implemented" bullets above where n
 - The People category includes user-selectable skin-tone modifiers for its starter hand/person set.
 - Searchable emoji, favorites, full Unicode/ZWJ variant coverage and localization remain unfinished; these are not marked as complete.
 - The emoji panel resets to the normal keyboard view when a new input session begins.
+
+
+### Emoji favorites addendum — 2026-11-20
+- Both keyboard extensions now have a Favorites category.
+- Long-press an emoji to add/remove it. Up to 80 favorite entries are stored locally on-device.
+- Favorite actions use a native long-press menu on iOS and an Android long-press handler. Physical-device touch and accessibility verification remains open.

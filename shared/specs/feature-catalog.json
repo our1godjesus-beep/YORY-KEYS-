@@ -106,7 +106,7 @@
         "android",
         "ios"
       ],
-      "notes": "Native Android and iOS keyboard emoji panels include curated categories, up to 24 recent choices stored locally, direct insertion and selectable skin-tone modifiers for supported people/hand emoji. Text search, full Unicode catalogue, favorites and comprehensive localized labels remain open."
+      "notes": "Native Android and iOS keyboard emoji panels include curated categories, up to 24 recent choices stored locally, favorites via long-press, direct insertion and selectable skin-tone modifiers for a starter people/hand set. Text search, full Unicode catalogue and comprehensive localization remain open."
     },
     {
       "id": "emoji-art-packs",
@@ -340,7 +340,7 @@
       "platforms": [
         "android"
       ],
-      "notes": "A searchable, localized emoji catalogue is not implemented. The keyboard currently provides category browsing and local recents without text search."
+      "notes": "A searchable, localized emoji catalogue is not implemented. Category browsing, local recents and a favorites category are available."
     },
     {
       "id": "emoji-skin-tones",
@@ -506,6 +506,16 @@
         "ios"
       ],
       "notes": "Session toggle suppresses predictions and local learning on both platforms; Android also pauses clipboard capture. It resets when a new keyboard input session appears. Physical-device privacy tests remain pending."
+    },
+    {
+      "id": "emoji-favorites",
+      "name": "Local emoji favorites",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Long-press an emoji to add/remove it from local favorites; the Favorites category displays saved items. Favorites remain device-local and physical-device accessibility/touch QA is pending."
     }
   ]
 }

@@ -258,7 +258,7 @@ class YoryInputMethodService : InputMethodService() {
         picker.removeAllViews()
 
         val categories = listOf(
-            "Recent" to "◷", "Smile" to "☺", "People" to "👥",
+            "Recent" to "◷", "Favorites" to "★", "Smile" to "☺", "People" to "👥",
             "Nature" to "🌿", "Food" to "🍕", "Travel" to "✈", "Symbols" to "♡"
         )
         val categoryBar = LinearLayout(this).apply {
@@ -266,7 +266,7 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
         }
         categories.forEach { (name, icon) ->
-            addToolbarButton(categoryBar, icon, 1f) {
+            addEmojiCategoryButton(categoryBar, icon, name) {
                 emojiCategory = name
                 refreshEmojiPicker()
             }
@@ -299,6 +299,8 @@ class YoryInputMethodService : InputMethodService() {
             .filter { it.isNotBlank() }
         val choices = when (emojiCategory) {
             "Recent" -> recent.ifEmpty { listOf("😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥") }
+            "Favorites" -> getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+                .getString("emoji_favorites_v1", "").orEmpty().split("\n").filter { it.isNotBlank() }
             "Smile" -> listOf("😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰")
             "People" -> listOf("👋", "👌", "✌", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝", "👍", "👎")
             "Nature" -> listOf("🐶", "🐱", "🐻", "🦊", "🐼", "🐸", "🦋", "🌸", "🌹", "🌻", "🌈", "🌙", "⭐", "🌍")
@@ -307,23 +309,86 @@ class YoryInputMethodService : InputMethodService() {
             else -> listOf("❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "💕", "💞", "💯", "✅", "✨")
         }.take(14)
 
-        choices.chunked(7).forEach { group ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
+        if (choices.isEmpty()) {
+            val emptyState = TextView(this).apply {
+                text = if (emojiCategory == "Favorites") "No favorites yet. Long-press an emoji to save it."
+                    else "No recent emoji yet."
                 gravity = Gravity.CENTER
+                textSize = 11f
+                setTextColor(theme.textArgb)
+                contentDescription = text
             }
-            group.forEach { rawEmoji ->
-                val outputEmoji = if (emojiCategory == "People" && emojiSkinTone.isNotEmpty()) {
-                    applyEmojiSkinTone(rawEmoji, emojiSkinTone)
-                } else rawEmoji
-                addToolbarButton(row, outputEmoji, 1f) { insertEmoji(outputEmoji) }
+            emojiGrid.addView(emptyState, LinearLayout.LayoutParams(-1, dp(68)))
+        } else {
+            choices.chunked(7).forEach { group ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
+                }
+                group.forEach { rawEmoji ->
+                    val outputEmoji = if (emojiCategory == "People" && emojiSkinTone.isNotEmpty()) {
+                        applyEmojiSkinTone(rawEmoji, emojiSkinTone)
+                    } else rawEmoji
+                    addEmojiPickerButton(row, outputEmoji) { insertEmoji(outputEmoji) }
+                }
+                repeat(7 - group.size) { addToolbarButton(row, "", 1f) {} }
+                emojiGrid.addView(row, LinearLayout.LayoutParams(-1, dp(34)))
             }
-            repeat(7 - group.size) { addToolbarButton(row, "", 1f) {} }
-            emojiGrid.addView(row, LinearLayout.LayoutParams(-1, dp(34)))
         }
         picker.addView(emojiGrid, LinearLayout.LayoutParams(-1, dp(68)))
         picker.layoutParams?.height = dp(31 + 68 + if (emojiCategory == "People") 28 else 0)
         picker.requestLayout()
+    }
+
+    private fun addEmojiCategoryButton(parent: LinearLayout, icon: String, category: String, action: () -> Unit) {
+        val button = TextView(this).apply {
+            text = icon
+            gravity = Gravity.CENTER
+            textSize = 18f
+            setTextColor(theme.accentArgb)
+            background = keyBackground(icon)
+            contentDescription = "Show $category emoji"
+            setOnClickListener { performKeyFeedback(this); action() }
+        }
+        parent.addView(button, LinearLayout.LayoutParams(0, dp(30), 1f).apply {
+            setMargins(dp(2), dp(1), dp(2), dp(1))
+        })
+    }
+
+    private fun addEmojiPickerButton(parent: LinearLayout, emoji: String, action: () -> Unit) {
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val favorites = prefs.getString("emoji_favorites_v1", "").orEmpty()
+            .split("\n").filter { it.isNotBlank() }.toSet()
+        val button = TextView(this).apply {
+            text = emoji
+            gravity = Gravity.CENTER
+            textSize = 19f
+            setTextColor(theme.textArgb)
+            background = keyBackground(emoji)
+            contentDescription = if (emoji in favorites) "$emoji, favorite. Long press to remove from favorites."
+                else "$emoji. Long press to add to favorites."
+            setOnClickListener { performKeyFeedback(this); action() }
+            setOnLongClickListener {
+                toggleFavoriteEmoji(emoji)
+                performKeyFeedback(this)
+                true
+            }
+        }
+        parent.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
+            setMargins(dp(2), dp(1), dp(2), dp(1))
+        })
+    }
+
+    private fun toggleFavoriteEmoji(emoji: String) {
+        if (emoji.isBlank()) return
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val wasFavorite = prefs.getString("emoji_favorites_v1", "").orEmpty()
+            .split("\n").any { it == emoji }
+        val favorites = prefs.getString("emoji_favorites_v1", "").orEmpty()
+            .split("\n").filter { it.isNotBlank() && it != emoji }.toMutableList()
+        if (!wasFavorite) favorites.add(0, emoji)
+        prefs.edit().putString("emoji_favorites_v1", favorites.take(80).joinToString("\n")).apply()
+        refreshEmojiPicker()
     }
 
     private fun applyEmojiSkinTone(emoji: String, tone: String): String {

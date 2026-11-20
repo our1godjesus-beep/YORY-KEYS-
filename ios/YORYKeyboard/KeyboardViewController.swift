@@ -212,7 +212,7 @@ final class KeyboardViewController: UIInputViewController {
         emojiCategoryRow.distribution = .fillEqually
         emojiCategoryRow.spacing = 3
         for (category, title) in [
-            ("Recent", "◷"), ("Smile", "☺"), ("People", "👥"),
+            ("Recent", "◷"), ("Favorites", "★"), ("Smile", "☺"), ("People", "👥"),
             ("Nature", "🌿"), ("Food", "🍕"), ("Travel", "✈"), ("Symbols", "♡")
         ] {
             let button = UIButton(type: .system)
@@ -709,6 +709,8 @@ final class KeyboardViewController: UIInputViewController {
         switch emojiCategory {
         case "Recent":
             choices = recent.isEmpty ? ["😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥"] : recent
+        case "Favorites":
+            choices = UserDefaults.standard.stringArray(forKey: "yory.emoji.favorites.v1") ?? []
         case "Smile":
             choices = ["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰"]
         case "People":
@@ -724,22 +726,35 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let visible = Array(choices.prefix(14))
-        for start in stride(from: 0, to: visible.count, by: 7) {
-            let end = min(start + 7, visible.count)
-            let row = UIStackView()
-            row.axis = .horizontal
-            row.distribution = .fillEqually
-            row.spacing = 3
-            for rawEmoji in visible[start..<end] {
-                let emoji = emojiCategory == "People" ? emojiWithSkinTone(rawEmoji) : rawEmoji
-                row.addArrangedSubview(makeEmojiButton(emoji) { [weak self] in
-                    self?.insertEmoji(emoji)
-                })
+        if visible.isEmpty {
+            let emptyState = UILabel()
+            emptyState.text = emojiCategory == "Favorites"
+                ? "No favorites yet. Long-press an emoji to save it."
+                : "No recent emoji yet."
+            emptyState.textColor = YoryThemeReader.textColor
+            emptyState.textAlignment = .center
+            emptyState.font = .systemFont(ofSize: 11, weight: .medium)
+            emptyState.numberOfLines = 2
+            emptyState.accessibilityLabel = emptyState.text
+            emojiGrid.addArrangedSubview(emptyState)
+        } else {
+            for start in stride(from: 0, to: visible.count, by: 7) {
+                let end = min(start + 7, visible.count)
+                let row = UIStackView()
+                row.axis = .horizontal
+                row.distribution = .fillEqually
+                row.spacing = 3
+                for rawEmoji in visible[start..<end] {
+                    let emoji = emojiCategory == "People" ? emojiWithSkinTone(rawEmoji) : rawEmoji
+                    row.addArrangedSubview(makeEmojiButton(emoji) { [weak self] in
+                        self?.insertEmoji(emoji)
+                    })
+                }
+                while row.arrangedSubviews.count < 7 {
+                    row.addArrangedSubview(UIView())
+                }
+                emojiGrid.addArrangedSubview(row)
             }
-            while row.arrangedSubviews.count < 7 {
-                row.addArrangedSubview(UIView())
-            }
-            emojiGrid.addArrangedSubview(row)
         }
         updateKeyboardHeight()
     }
@@ -756,7 +771,34 @@ final class KeyboardViewController: UIInputViewController {
         button.heightAnchor.constraint(equalToConstant: small ? 25 : 31).isActive = true
         button.accessibilityLabel = title
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        if !small {
+            let favorites = UserDefaults.standard.stringArray(forKey: "yory.emoji.favorites.v1") ?? []
+            let isFavorite = favorites.contains(title)
+            button.menu = UIMenu(children: [
+                UIAction(
+                    title: isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                    image: UIImage(systemName: isFavorite ? "star.slash" : "star")
+                ) { [weak self] _ in
+                    self?.toggleFavoriteEmoji(title)
+                }
+            ])
+            button.showsMenuAsPrimaryAction = false
+            button.accessibilityHint = "Long press for favorite options"
+        }
         return button
+    }
+
+    private func toggleFavoriteEmoji(_ emoji: String) {
+        guard !emoji.isEmpty else { return }
+        let key = "yory.emoji.favorites.v1"
+        var favorites = UserDefaults.standard.stringArray(forKey: key) ?? []
+        if let index = favorites.firstIndex(of: emoji) {
+            favorites.remove(at: index)
+        } else {
+            favorites.insert(emoji, at: 0)
+        }
+        UserDefaults.standard.set(Array(favorites.prefix(80)), forKey: key)
+        refreshEmojiPicker()
     }
 
     private func emojiWithSkinTone(_ emoji: String) -> String {

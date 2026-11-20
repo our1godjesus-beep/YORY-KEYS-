@@ -64,3 +64,6 @@ Environment: Android emulator/device and iOS simulator/device. No test in this d
 | E01-E1 | Recent emoji persistence | edge | Insert several emoji; close and reopen keyboard; open Recent | Up to 24 most-recent emoji appear in most-recent-first order; data stays local | Manual persistence test on both platforms | Not run |
 | E01-H2 | Emoji skin tones | happy | Open People category; choose each tone; insert supported hand/person emoji | The selected tone is applied to supported basic emoji; Default restores unmodified variants | Manual Unicode insertion test | Not run |
 | E01-N1 | Emoji picker on restricted editor | negative | Open numeric, email and secure fields; inspect emoji action availability | No keyboard crash or accidental change to numeric layout; platform restrictions are respected | Manual platform test | Not run |
+
+| E01-H3 | Favorite emoji | happy | Long-press an emoji; open Favorites; remove it from Favorites | Favorite state persists locally; removal updates Favorites immediately | UI + persistence test on both platforms | Not run |
+| E01-E2 | Empty Favorites category | edge | Open Favorites without any saved emoji | Helpful empty state explains how to add an emoji; no blank or broken panel | UI test on both platforms | Not run |
