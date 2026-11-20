@@ -56,9 +56,10 @@
       "name": "Offline word completion",
       "status": "prototype",
       "platforms": [
-        "android"
+        "android",
+        "ios"
       ],
-      "notes": "Small local word lists and prefix matching only; not neural prediction."
+      "notes": "Starter local word lists and prefix matching on both platforms; not neural prediction or autocorrect."
     },
     {
       "id": "neural-prediction",
@@ -119,11 +120,11 @@
     {
       "id": "clipboard-manager",
       "name": "Clipboard history manager",
-      "status": "not_implemented",
+      "status": "partial_implementation",
       "platforms": [
-        "android",
-        "ios"
-      ]
+        "android"
+      ],
+      "notes": "Optional, local-only Android text clipboard history with a 50-item cap and basic sensitive-code filtering. iOS automatic clipboard history is not implemented because the platform model differs."
     },
     {
       "id": "screenshot-import",
@@ -156,20 +157,22 @@
     {
       "id": "sound-packs",
       "name": "Custom sound packs",
-      "status": "ui_scaffold_only",
+      "status": "partial_implementation",
       "platforms": [
         "android",
         "ios"
-      ]
+      ],
+      "notes": "Standard Android click effect and iOS system keyboard click are wired. User-imported/custom sound packs and per-key sound overrides are not implemented."
     },
     {
       "id": "haptics",
       "name": "Keyboard haptics",
-      "status": "ui_scaffold_only",
+      "status": "partial_implementation",
       "platforms": [
         "android",
         "ios"
-      ]
+      ],
+      "notes": "Android keyboard tap haptics and iOS light impact feedback are wired to settings; real-device behavior and user/system setting interactions remain unverified."
     },
     {
       "id": "120-language-target",
@@ -226,6 +229,16 @@
         "android",
         "ios"
       ]
+    },
+    {
+      "id": "standard-key-feedback",
+      "name": "Standard key sound and light haptics",
+      "status": "implemented_unverified",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Uses platform-standard click/haptic APIs and local user preferences; physical-device QA is pending."
     }
   ]
 }
