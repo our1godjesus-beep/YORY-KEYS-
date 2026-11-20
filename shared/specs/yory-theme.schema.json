@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yorykeys.app/schemas/yory-theme-v1.schema.json",
+  "title": "YORY KEYS Theme",
+  "description": "Portable, versioned theme contract shared by Android and iOS.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "appearance"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "format": "uuid" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 48 },
+    "author": { "type": "string", "maxLength": 64 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "appearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["background", "key", "keyPressed", "text", "accent"],
+      "properties": {
+        "background": { "$ref": "#/$defs/paint" },
+        "key": { "$ref": "#/$defs/paint" },
+        "keyPressed": { "$ref": "#/$defs/paint" },
+        "text": { "$ref": "#/$defs/paint" },
+        "secondaryText": { "$ref": "#/$defs/paint" },
+        "symbol": { "$ref": "#/$defs/paint" },
+        "accent": { "$ref": "#/$defs/paint" },
+        "border": { "$ref": "#/$defs/paint" },
+        "suggestionSurface": { "$ref": "#/$defs/paint" }
+      }
+    },
+    "glass": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "blur": { "type": "number", "minimum": 0, "maximum": 30 },
+        "saturation": { "type": "number", "minimum": 0, "maximum": 2 },
+        "edgeHighlight": { "type": "number", "minimum": 0, "maximum": 1 },
+        "glow": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "keyShape": { "enum": ["rounded", "squircle", "pill", "circle", "rect"] },
+        "cornerRadius": { "type": "number", "minimum": 0, "maximum": 32 },
+        "keySpacing": { "type": "number", "minimum": 0, "maximum": 16 },
+        "keyHeight": { "type": "number", "minimum": 28, "maximum": 76 },
+        "horizontalInset": { "type": "number", "minimum": 0, "maximum": 24 }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fontFamily": { "type": "string", "maxLength": 80 },
+        "fontSize": { "type": "number", "minimum": 10, "maximum": 32 },
+        "fontWeight": { "enum": ["regular", "medium", "semibold", "bold"] }
+      }
+    },
+    "sound": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "packId": { "type": "string", "maxLength": 80 },
+        "volume": { "type": "number", "minimum": 0, "maximum": 1 },
+        "overrides": {
+          "type": "object",
+          "properties": {
+            "letter": { "type": "string" },
+            "space": { "type": "string" },
+            "delete": { "type": "string" },
+            "enter": { "type": "string" },
+            "modifier": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "haptics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "emoji": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pickerPackId": { "type": "string", "maxLength": 80 },
+        "displayScale": { "type": "number", "minimum": 0.75, "maximum": 1.5 },
+        "recentFirst": { "type": "boolean" }
+      }
+    },
+    "motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pressAnimation": { "enum": ["none", "scale", "glow", "ripple"] },
+        "reducedMotion": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "string",
+      "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$"
+    },
+    "paint": {
+      "oneOf": [
+        { "$ref": "#/$defs/color" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "angle", "stops"],
+          "properties": {
+            "type": { "const": "linear-gradient" },
+            "angle": { "type": "number", "minimum": 0, "maximum": 360 },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "required": ["color", "position"],
+                "properties": {
+                  "color": { "$ref": "#/$defs/color" },
+                  "position": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
