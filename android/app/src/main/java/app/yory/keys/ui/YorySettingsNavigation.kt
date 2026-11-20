@@ -68,7 +68,7 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
     GlassScaffold {
         if (page == null) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 14.dp),
+                Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +144,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
         return
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
                 .clip(RoundedCornerShape(17.dp)).background(GlassSurface)

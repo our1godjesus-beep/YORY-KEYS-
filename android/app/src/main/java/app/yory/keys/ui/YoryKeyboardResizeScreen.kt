@@ -50,7 +50,7 @@ internal fun YoryKeyboardResizeScreen(onBack: () -> Unit) {
         )
     ) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

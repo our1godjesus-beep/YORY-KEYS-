@@ -116,7 +116,7 @@ internal fun YoryThemeGalleryScreen(
     )) {
         val compact = maxWidth < 360.dp
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())
                 .padding(horizontal = if (compact) 14.dp else 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {

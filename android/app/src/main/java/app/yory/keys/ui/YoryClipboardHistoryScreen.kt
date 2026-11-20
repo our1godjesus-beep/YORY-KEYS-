@@ -42,7 +42,7 @@ internal fun YoryClipboardHistoryScreen(onBack: () -> Unit) {
         Brush.verticalGradient(listOf(Color(0xFF182236), Color(0xFF0A0D16), Color(0xFF121526)))
     )) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
