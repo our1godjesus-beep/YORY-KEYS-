@@ -38,7 +38,11 @@ class YoryThemeTest {
             cornerRadiusDp = 17f,
             keyHeightDp = 52f,
             soundEnabled = false,
-            hapticsEnabled = true
+            hapticsEnabled = true,
+            keyPressedArgb = 0xFF223344.toInt(),
+            keySpacingDp = 6f,
+            keyShape = "pill",
+            fontSizeSp = 20f
         )
         assertEquals(original, YoryThemeFile.decode(YoryThemeFile.encode(original)))
     }
