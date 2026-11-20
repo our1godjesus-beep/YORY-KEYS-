@@ -613,7 +613,8 @@ struct YoryThemeGalleryView: View {
                     if visiblePresets.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(category == "Yours" ? "No saved themes yet" : "No themes in this category")
-                                .foregroundStyle(.white.weight(.semibold))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
                             Text("Customize a preset, name it and save it here for offline use.")
                                 .font(.footnote).foregroundStyle(.white.opacity(0.62))
                             Button("Create your theme") { showEditor = true }
