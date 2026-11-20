@@ -13,6 +13,7 @@ struct YoryThemeStudioView: View {
     @State private var opacity = 0.92
     @State private var cornerRadius = 13.0
     @State private var keySpacing = 4.0
+    @State private var keyHeight = 44.0
     @State private var fontSize = 18.0
     @State private var fontFamily = "system"
     @State private var keyShape = "rounded"
@@ -76,6 +77,7 @@ struct YoryThemeStudioView: View {
                     valueSlider("Glass opacity", value: $opacity, range: 0.35...1.0, suffix: "%", multiplier: 100)
                     valueSlider("Key corner radius", value: $cornerRadius, range: 4...28, suffix: " pt")
                     valueSlider("Key spacing", value: $keySpacing, range: 0...12, suffix: " pt")
+                    valueSlider("Keyboard height", value: $keyHeight, range: 32...60, suffix: " pt")
                     valueSlider("Letter size", value: $fontSize, range: 12...26, suffix: " pt")
                     Picker("Letter font", selection: $fontFamily) {
                         Text("System").tag("system")
@@ -149,6 +151,7 @@ struct YoryThemeStudioView: View {
         .onChange(of: opacity) { _ in persistTheme() }
         .onChange(of: cornerRadius) { _ in persistTheme() }
         .onChange(of: keySpacing) { _ in persistTheme() }
+        .onChange(of: keyHeight) { _ in persistTheme() }
         .onChange(of: fontSize) { _ in persistTheme() }
         .onChange(of: fontFamily) { _ in persistTheme() }
         .onChange(of: keyShape) { _ in persistTheme() }
@@ -304,6 +307,7 @@ struct YoryThemeStudioView: View {
         opacity = defaults.object(forKey: "opacity") == nil ? 0.92 : defaults.double(forKey: "opacity")
         cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
         keySpacing = defaults.object(forKey: "keySpacing") == nil ? 4 : defaults.double(forKey: "keySpacing")
+        keyHeight = defaults.object(forKey: "keyHeight") == nil ? 44 : defaults.double(forKey: "keyHeight")
         fontSize = defaults.object(forKey: "fontSize") == nil ? 18 : defaults.double(forKey: "fontSize")
         let savedFont = defaults.string(forKey: "fontFamily") ?? "system"
         fontFamily = ["system", "rounded", "serif", "mono"].contains(savedFont) ? savedFont : "system"
@@ -335,7 +339,7 @@ struct YoryThemeStudioView: View {
                 "keyShape": keyShape,
                 "cornerRadius": cornerRadius,
                 "keySpacing": keySpacing,
-                "keyHeight": 46
+                "keyHeight": keyHeight
             ],
             "typography": ["fontSize": fontSize, "fontFamily": fontFamily],
             "sound": ["enabled": soundEnabled],
@@ -382,6 +386,7 @@ struct YoryThemeStudioView: View {
         opacity = min(1.0, max(0.35, (importedGlass["opacity"] as? NSNumber)?.doubleValue ?? opacity))
         cornerRadius = min(28.0, max(4.0, (importedGeometry["cornerRadius"] as? NSNumber)?.doubleValue ?? cornerRadius))
         keySpacing = min(12.0, max(0.0, (importedGeometry["keySpacing"] as? NSNumber)?.doubleValue ?? keySpacing))
+        keyHeight = min(60.0, max(32.0, (importedGeometry["keyHeight"] as? NSNumber)?.doubleValue ?? keyHeight))
         fontSize = min(26.0, max(12.0, (importedTypography["fontSize"] as? NSNumber)?.doubleValue ?? fontSize))
         let importedFont = importedTypography["fontFamily"] as? String ?? fontFamily
         fontFamily = ["system", "rounded", "serif", "mono"].contains(importedFont) ? importedFont : "system"
@@ -402,6 +407,7 @@ struct YoryThemeStudioView: View {
         defaults.set(opacity, forKey: "opacity")
         defaults.set(cornerRadius, forKey: "cornerRadius")
         defaults.set(keySpacing, forKey: "keySpacing")
+        defaults.set(keyHeight, forKey: "keyHeight")
         defaults.set(fontSize, forKey: "fontSize")
         defaults.set(fontFamily, forKey: "fontFamily")
         defaults.set(keyShape, forKey: "keyShape")
