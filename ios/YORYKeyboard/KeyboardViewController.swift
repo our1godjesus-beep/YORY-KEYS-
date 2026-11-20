@@ -370,7 +370,7 @@ final class KeyboardViewController: UIInputViewController {
         bottom.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
         let fieldSymbol = currentKeyboardType == .emailAddress ? "@" : (currentKeyboardType == .URL ? "/" : ",")
         bottom.addArrangedSubview(keyButton(fieldSymbol))
-        let space = keyButton(activeLayout.spaceLabel, action: #selector(insertSpace))
+        let space = keyButton("‹  ${activeLayout.spaceLabel}  ›", action: #selector(insertSpace))
         space.accessibilityLabel = "Space, " + activeLayout.spaceLabel
         space.accessibilityHint = "Swipe left for the next added language or right for the previous added language"
         let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSpacebarSwipe(_:)))
