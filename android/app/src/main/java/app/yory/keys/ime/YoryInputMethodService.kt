@@ -71,9 +71,11 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        addToolbarButton(toolbar, "☺", 1f) {
-            emojiMode = !emojiMode
-            refreshKeyboard()
+        if (getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("emoji_key", true)) {
+            addToolbarButton(toolbar, "☺", 1f) {
+                emojiMode = !emojiMode
+                refreshKeyboard()
+            }
         }
         addToolbarButton(toolbar, "⇄", 1f) {
             cycleLanguage()
@@ -177,6 +179,10 @@ class YoryInputMethodService : InputMethodService() {
         if (numericField) {
             addNumericLayout(container)
             return
+        }
+
+        if (!symbolMode && getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("number_row", false)) {
+            addKeyRow(container, "1234567890")
         }
 
         if (symbolMode) {
@@ -391,6 +397,10 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun refreshAutomaticShift() {
+        if (!getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_caps", true)) {
+            shifted = false
+            return
+        }
         val requestedModes = TextUtils.CAP_MODE_CHARACTERS or
             TextUtils.CAP_MODE_WORDS or TextUtils.CAP_MODE_SENTENCES
         shifted = (currentInputConnection?.getCursorCapsMode(requestedModes) ?: 0) != 0
@@ -478,7 +488,8 @@ class YoryInputMethodService : InputMethodService() {
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
         row.removeAllViews()
-        if (sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode) {
+        if (sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
+            !getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("word_suggestions", true)) {
             row.visibility = View.GONE
             return
         }
