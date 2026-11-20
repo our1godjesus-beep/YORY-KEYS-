@@ -89,9 +89,9 @@ private struct YorySettingsDetailView: View {
     @AppStorage("yory.layout.largeText", store: yorySettingsStore) private var largeKeyText = true
     @AppStorage("yory.typing.suggestions", store: yorySettingsStore) private var wordSuggestions = true
     @AppStorage("yory.typing.autoCaps", store: yorySettingsStore) private var autoCaps = true
-    @AppStorage("yory.rich.clipboard", store: yorySettingsStore) private var clipboardEnabled = false
-    @AppStorage("yory.sound.enabled", store: yorySettingsStore) private var soundEnabled = true
-    @AppStorage("yory.haptics.enabled", store: yorySettingsStore) private var hapticsEnabled = true
+    @AppStorage("soundEnabled", store: yorySettingsStore) private var soundEnabled = true
+    @AppStorage("hapticsEnabled", store: yorySettingsStore) private var hapticsEnabled = true
+    @AppStorage("personalLearningEnabled", store: yorySettingsStore) private var personalLearningEnabled = false
 
     var body: some View {
         ZStack {
@@ -136,7 +136,7 @@ private struct YorySettingsDetailView: View {
                     }
                 case "Rich input":
                     Section {
-                        glassToggle("Clipboard history", detail: "Keep recent copied text on this device", isOn: $clipboardEnabled)
+                        settingsInfo("Clipboard", "Clipboard history is not available in the iOS keyboard preview yet.")
                         settingsInfo("Voice typing", "Voice input is not connected in this preview.")
                         settingsInfo("Online search", "No external search service is enabled in this preview.")
                     }
@@ -144,6 +144,7 @@ private struct YorySettingsDetailView: View {
                     Section {
                         glassToggle("Word suggestions", detail: "Show local word suggestions while typing", isOn: $wordSuggestions)
                         glassToggle("Auto-capitalization", detail: "Capitalize the first letter of sentences", isOn: $autoCaps)
+                        glassToggle("Personal dictionary", detail: "Learn accepted words locally on this device", isOn: $personalLearningEnabled)
                     }
                     Section("PERSONAL DICTIONARY") {
                         settingsInfo("On-device learning", "Accepted words can be learned locally. Sensitive password, numeric, email and URL fields are excluded.")
