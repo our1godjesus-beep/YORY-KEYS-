@@ -30,7 +30,10 @@ object YoryThemeFile {
         val sound = JsonObject().apply { addProperty("enabled", theme.soundEnabled) }
         val haptics = JsonObject().apply { addProperty("enabled", theme.hapticsEnabled) }
         val glass = JsonObject().apply { addProperty("opacity", theme.opacity) }
-        val typography = JsonObject().apply { addProperty("fontSize", theme.fontSizeSp) }
+        val typography = JsonObject().apply {
+            addProperty("fontSize", theme.fontSizeSp)
+            addProperty("fontFamily", theme.fontFamily)
+        }
 
         val root = JsonObject().apply {
             addProperty("schemaVersion", 1)
@@ -88,6 +91,9 @@ object YoryThemeFile {
                     it in setOf("rounded", "squircle", "pill", "circle", "rect")
                 } ?: "rounded",
                 fontSizeSp = typography.floatValue("fontSize", 18f).coerceIn(12f, 26f),
+                fontFamily = typography.stringValue("fontFamily", "system").takeIf {
+                    it in setOf("system", "rounded", "serif", "mono")
+                } ?: "system",
                 soundEnabled = sound.booleanValue("enabled", true),
                 hapticsEnabled = haptics.booleanValue("enabled", true)
             )
