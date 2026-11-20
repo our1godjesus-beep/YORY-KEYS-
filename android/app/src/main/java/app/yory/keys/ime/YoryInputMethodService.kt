@@ -50,6 +50,7 @@ class YoryInputMethodService : InputMethodService() {
     private var emailField = false
     private var urlField = false
     private var keyboardRoot: LinearLayout? = null
+    private var toolbarRoot: LinearLayout? = null
     private var suggestionRow: LinearLayout? = null
     private var clipboardRow: LinearLayout? = null
     private var emojiRow: LinearLayout? = null
@@ -78,29 +79,9 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        if (getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("emoji_key", true)) {
-            addToolbarButton(toolbar, "☺", 1f) {
-                emojiMode = !emojiMode
-                refreshKeyboard()
-            }
-        }
-        addToolbarButton(toolbar, "⇄", 1f) {
-            cycleLanguage()
-            shifted = false
-            refreshKeyboard()
-            updateSuggestions()
-        }
-        addToolbarButton(toolbar, "123", 1f) {
-            symbolMode = !symbolMode
-            refreshKeyboard()
-        }
-        addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
-        addToolbarButton(toolbar, "▣", 1f) {
-            clipboardMode = !clipboardMode
-            refreshKeyboard()
-            refreshClipboardRow()
-        }
+        toolbarRoot = toolbar
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(38)))
+        refreshToolbar()
 
         suggestionRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -153,9 +134,58 @@ class YoryInputMethodService : InputMethodService() {
             variation == InputType.TYPE_TEXT_VARIATION_URI
         clipboardMode = false
         refreshAutomaticShift()
+        refreshToolbar()
         refreshKeyboard()
         updateSuggestions()
         refreshClipboardListener()
+    }
+
+    private fun refreshToolbar() {
+        val toolbar = toolbarRoot ?: return
+        toolbar.removeAllViews()
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val defaultOrder = listOf("emoji", "language", "symbols", "settings", "clipboard")
+        val savedOrder = prefs.getString("toolbar_order", null)
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it in defaultOrder }
+            ?.distinct()
+        val order = savedOrder?.plus(defaultOrder.filterNot(savedOrder::contains)) ?: defaultOrder
+        val defaultVisible = defaultOrder.toSet()
+        val visible = prefs.getStringSet("toolbar_visible", defaultVisible) ?: defaultVisible
+
+        order.filter { it in visible }.forEach { tool ->
+            when (tool) {
+                "emoji" -> if (prefs.getBoolean("emoji_key", true)) {
+                    addToolbarButton(toolbar, "☺", 1f) {
+                        emojiMode = !emojiMode
+                        refreshKeyboard()
+                    }
+                }
+                "language" -> addToolbarButton(toolbar, "⇄", 1f) {
+                    cycleLanguage()
+                    shifted = false
+                    refreshKeyboard()
+                    updateSuggestions()
+                }
+                "symbols" -> addToolbarButton(toolbar, "123", 1f) {
+                    symbolMode = !symbolMode
+                    refreshKeyboard()
+                }
+                "settings" -> addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
+                "clipboard" -> if (theme.clipboardEnabled) {
+                    addToolbarButton(toolbar, "▣", 1f) {
+                        clipboardMode = !clipboardMode
+                        refreshKeyboard()
+                        refreshClipboardRow()
+                    }
+                }
+            }
+        }
+        if (toolbar.childCount == 0) {
+            addToolbarButton(toolbar, "⇄", 1f) { cycleLanguage(); refreshKeyboard(); updateSuggestions() }
+            addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
+        }
     }
 
     private fun isSensitive(info: EditorInfo?): Boolean {

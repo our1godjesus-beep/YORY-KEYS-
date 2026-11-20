@@ -40,6 +40,7 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
         SettingsItem("T", "Typing", "Suggestions and personal dictionary"),
         SettingsItem("☻", "Emoji", "Emoji predictions and keyboard key"),
         SettingsItem("♬", "Rich input", "Clipboard and input tools"),
+        SettingsItem("☷", "Keyboard toolbar", "Choose and arrange keyboard shortcuts"),
         SettingsItem("▦", "Layout & keys", "Size, rows, symbols and key behavior"),
         SettingsItem("◖", "Sound & vibration", "Key click and haptic feedback"),
         SettingsItem("⬡", "Privacy", "Your data and on-device controls"),
@@ -47,6 +48,10 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
         SettingsItem("?", "Help & Feedback", "Support and feedback"),
         SettingsItem("ⓘ", "About YORY KEYS", "Version and product information")
     )
+    if (page == "Keyboard toolbar") {
+        YoryToolbarCustomizationScreen(onBack = { page = null })
+        return
+    }
     if (page == "Themes") {
         if (editingThemes) {
             YoryThemesEditorScreen(onBack = { editingThemes = false })
