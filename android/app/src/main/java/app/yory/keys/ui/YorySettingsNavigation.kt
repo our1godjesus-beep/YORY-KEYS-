@@ -1,0 +1,284 @@
+package app.yory.keys.ui
+
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
+import android.content.Context.INPUT_METHOD_SERVICE
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.yory.keys.theme.YoryThemeStore
+
+private data class SettingsItem(val icon: String, val title: String, val subtitle: String = "")
+
+@Composable
+fun YoryStudioScreen() {
+    val context = LocalContext.current
+    var page by remember { mutableStateOf<String?>(null) }
+    val items = listOf(
+        SettingsItem("◉", "Account", "Sign in to manage your YORY profile"),
+        SettingsItem("✧", "YORY Rewards", "Discover keyboard milestones"),
+        SettingsItem("◎", "Languages", "English (US), العربية"),
+        SettingsItem("◈", "Themes", "Glass themes and customization"),
+        SettingsItem("T", "Typing", "Suggestions and personal dictionary"),
+        SettingsItem("☻", "Emoji", "Emoji predictions and keyboard key"),
+        SettingsItem("♬", "Rich input", "Clipboard and input tools"),
+        SettingsItem("▦", "Layout & keys", "Size, rows, symbols and key behavior"),
+        SettingsItem("◖", "Sound & vibration", "Key click and haptic feedback"),
+        SettingsItem("⬡", "Privacy", "Your data and on-device controls"),
+        SettingsItem("☆", "Achievements", "Your YORY milestones"),
+        SettingsItem("?", "Help & Feedback", "Support and feedback"),
+        SettingsItem("ⓘ", "About YORY KEYS", "Version and product information")
+    )
+    if (page == "Themes") {
+        YoryThemesEditorScreen(onBack = { page = null })
+        return
+    }
+
+    GlassScaffold {
+        if (page == null) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("YORY KEYS", color = GlassAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.2.sp)
+                        Text("Keyboard settings", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Text("✦", color = GlassAccent, fontSize = 30.sp)
+                }
+                Spacer(Modifier.height(5.dp))
+                items.forEach { item -> GlassSettingsRow(item) { page = item.title } }
+                Spacer(Modifier.height(8.dp))
+                GlassPanel(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Try YORY KEYS", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Open the keyboard picker", color = GlassMuted, fontSize = 12.sp)
+                        }
+                        GlassAction("⌨") {
+                            val manager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                            manager.showInputMethodPicker()
+                        }
+                    }
+                }
+            }
+        } else {
+            SettingsDetailPage(page = page!!, onBack = { page = null })
+        }
+    }
+}
+
+@Composable
+private fun SettingsDetailPage(page: String, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("yory_user_settings", Context.MODE_PRIVATE) }
+    var refresh by remember { mutableIntStateOf(0) }
+    var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
+
+    fun readBool(key: String, default: Boolean = false): Boolean {
+        refresh
+        return prefs.getBoolean(key, default)
+    }
+    fun writeBool(key: String, value: Boolean) {
+        prefs.edit().putBoolean(key, value).apply()
+        refresh++
+    }
+    fun chooseLanguage(tag: String) {
+        activeLanguage = tag
+        prefs.edit().putString("active_language", tag).apply()
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)
+                .clip(RoundedCornerShape(17.dp)).background(GlassSurface)
+                .border(0.8.dp, GlassBorder, RoundedCornerShape(17.dp))
+                .clickable { onBack() }.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("‹", color = Color.White, fontSize = 30.sp)
+            Spacer(Modifier.width(12.dp))
+            Text(page, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Medium)
+        }
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            when (page) {
+                "Languages" -> {
+                    Text("YOUR LANGUAGES", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                    LanguageChoice("English (US)", "Layout: QWERTY", "en-US", activeLanguage == "en-US") { chooseLanguage("en-US") }
+                    LanguageChoice("العربية (مصر)", "Layout: Arabic 123 (PC)", "ar", activeLanguage == "ar") { chooseLanguage("ar") }
+                    LanguageChoice("Deutsch (DE)", "Layout: QWERTZ · Preview layout", "de", activeLanguage == "de") { chooseLanguage("de") }
+                    GlassPanel(Modifier.fillMaxWidth()) {
+                        Text("Changing layouts", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Switch between installed layouts from the language key on the keyboard. The selected language is saved on this device.", color = GlassMuted, fontSize = 13.sp)
+                    }
+                }
+                "Emoji" -> {
+                    ToggleCard("Emoji predictions", "Show emoji suggestions in the suggestion bar", readBool("emoji_predictions", true)) { writeBool("emoji_predictions", it) }
+                    ToggleCard("Dedicated emoji key", "Show an emoji shortcut on the keyboard", readBool("emoji_key", true)) { writeBool("emoji_key", it) }
+                    ToggleCard("Recent emoji first", "Keep recently used emoji at the beginning", readBool("emoji_recent", true)) { writeBool("emoji_recent", it) }
+                }
+                "Layout & keys" -> {
+                    ToggleCard("Number row", "Always show a number row above letters", readBool("number_row", false)) { writeBool("number_row", it) }
+                    ToggleCard("Long-press symbols", "Show secondary symbols on letter keys", readBool("long_press_symbols", true)) { writeBool("long_press_symbols", it) }
+                    ToggleCard("Accented characters", "Enable accented character shortcuts", readBool("accented_chars", true)) { writeBool("accented_chars", it) }
+                    ToggleCard("Arrow keys", "Show cursor movement keys", readBool("arrow_keys", false)) { writeBool("arrow_keys", it) }
+                    ToggleCard("Key pop-ups", "Show a visual pop-up when tapping a key", readBool("key_popups", true)) { writeBool("key_popups", it) }
+                    ToggleCard("Large key text", "Use larger labels on keyboard keys", readBool("large_key_text", true)) { writeBool("large_key_text", it) }
+                    InfoCard("Keyboard size", "Resize, key spacing, corner radius and lettering are available in Themes.")
+                }
+                "Sound & vibration" -> {
+                    val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
+                    ToggleCard("Keypress sound", "Play a soft sound when a key is pressed", theme.value.soundEnabled) {
+                        theme.value = theme.value.copy(soundEnabled = it); YoryThemeStore.save(context, theme.value)
+                    }
+                    ToggleCard("Keypress vibration", "Use haptic feedback for key presses", theme.value.hapticsEnabled) {
+                        theme.value = theme.value.copy(hapticsEnabled = it); YoryThemeStore.save(context, theme.value)
+                    }
+                    ToggleCard("Use Android default vibration", "Follow the device vibration preference", readBool("system_haptics", false)) { writeBool("system_haptics", it) }
+                }
+                "Rich input" -> {
+                    val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
+                    ToggleCard("Clipboard history", "Keep recent copied text on this device", theme.value.clipboardEnabled) {
+                        theme.value = theme.value.copy(clipboardEnabled = it); YoryThemeStore.save(context, theme.value)
+                    }
+                    InfoCard("Voice typing", "Voice input is not connected in this build yet.")
+                    InfoCard("Search and online suggestions", "No external search service is enabled. YORY keyboard typing remains local.")
+                }
+                "Typing" -> {
+                    ToggleCard("Word suggestions", "Show local word suggestions while typing", readBool("word_suggestions", true)) { writeBool("word_suggestions", it) }
+                    ToggleCard("Auto-capitalization", "Capitalize the first letter of sentences", readBool("auto_caps", true)) { writeBool("auto_caps", it) }
+                    ToggleCard("Personal dictionary", "Learn accepted words on this device", readBool("personal_learning", false)) { writeBool("personal_learning", it) }
+                    InfoCard("Personal learning", "Learned words are stored locally. Password, numeric, email and URL fields are excluded.")
+                }
+                "Privacy" -> {
+                    InfoCard("Private by design", "YORY does not send keystrokes, passwords or typed text to a server.")
+                    InfoCard("On-device storage", "Personal dictionary and optional clipboard history remain on this device and can be cleared.")
+                    InfoCard("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields.")
+                    InfoCard("Permissions", "The keyboard does not request camera, contacts or location access.")
+                }
+                "Account" -> InfoCard("YORY account", "Account sign-in and cloud sync are not connected in this preview. Local keyboard features work without an account.")
+                "YORY Rewards", "Achievements" -> InfoCard("Coming to YORY", "This section is part of the settings structure. Rewards and achievement tracking are not connected in this preview.")
+                "Help & Feedback" -> {
+                    InfoCard("Help", "Enable YORY KEYS in Android keyboard settings, then choose it as the active keyboard.")
+                    InfoCard("Feedback", "Feedback submission is not connected in this preview.")
+                }
+                "About YORY KEYS" -> {
+                    InfoCard("YORY KEYS", "A privacy-first multilingual keyboard with customizable themes.")
+                    InfoCard("Preview build", "Version 0.1.0 · Android preview")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageChoice(title: String, subtitle: String, tag: String, selected: Boolean, onClick: () -> Unit) {
+    GlassPanel(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = Color.White, fontSize = 17.sp)
+                Spacer(Modifier.height(3.dp))
+                Text(subtitle, color = GlassMuted, fontSize = 13.sp)
+            }
+            Text(if (selected) "●" else "○", color = if (selected) GlassAccent else GlassMuted, fontSize = 21.sp)
+        }
+    }
+}
+
+@Composable
+private fun ToggleCard(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    GlassPanel(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(3.dp))
+                Text(subtitle, color = GlassMuted, fontSize = 12.sp)
+            }
+            Switch(checked = checked, onCheckedChange = onChange, colors = SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF0A0D16), checkedTrackColor = GlassAccent,
+                uncheckedThumbColor = Color(0xFFB5BBC8), uncheckedTrackColor = Color.White.copy(alpha = 0.12f)
+            ))
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(title: String, description: String) {
+    GlassPanel(Modifier.fillMaxWidth()) {
+        Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(4.dp))
+        Text(description, color = GlassMuted, fontSize = 13.sp, lineHeight = 19.sp)
+    }
+}
+
+@Composable
+private fun GlassSettingsRow(item: SettingsItem, onClick: () -> Unit) {
+    GlassPanel(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(42.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f))
+                    .border(0.7.dp, GlassBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Text(item.icon, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Medium) }
+            Spacer(Modifier.width(15.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                if (item.subtitle.isNotEmpty()) Text(item.subtitle, color = GlassMuted, fontSize = 12.sp)
+            }
+            Text("›", color = GlassMuted, fontSize = 25.sp)
+        }
+    }
+}
+
+@Composable
+private fun GlassAction(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.size(48.dp).clip(RoundedCornerShape(15.dp))
+            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.20f), GlassAccent.copy(alpha = 0.28f))))
+            .border(0.8.dp, GlassBorder, RoundedCornerShape(15.dp)).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { Text(label, color = Color.White, fontSize = 22.sp) }
+}
+
+@Composable
+private fun GlassPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier.clip(RoundedCornerShape(19.dp))
+            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.105f), Color.White.copy(alpha = 0.035f))))
+            .border(0.8.dp, GlassBorder, RoundedCornerShape(19.dp))
+            .padding(horizontal = 15.dp, vertical = 13.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp), content = content
+    )
+}
+
+@Composable
+private fun GlassScaffold(content: @Composable BoxScope.() -> Unit) {
+    Box(Modifier.fillMaxSize().background(
+        Brush.verticalGradient(listOf(Color(0xFF252C3D), Color(0xFF0B0E16), Color(0xFF141A29)))
+    ), content = content)
+}
+
+private val GlassAccent = Color(0xFFA7C7FF)
+private val GlassMuted = Color(0xFFB0B6C4)
+private val GlassSurface = Color.White.copy(alpha = 0.065f)
+private val GlassBorder = Color.White.copy(alpha = 0.19f)
