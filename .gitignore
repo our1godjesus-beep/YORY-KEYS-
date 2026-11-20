@@ -14,6 +14,7 @@ xcuserdata/
 *.xcscmblueprint
 ios/YORYKeys.xcodeproj/
 ios/*.xcworkspace/
+ios/YORYKeys/SupabaseConfig.plist
 
 # Local configuration and credentials
 .env
