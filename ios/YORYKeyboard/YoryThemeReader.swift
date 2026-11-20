@@ -16,6 +16,19 @@ enum YoryThemeReader {
     static var accentColor: UIColor {
         color(for: "accentHex", fallback: "#78B8F8")
     }
+    static var keyPressedColor: UIColor {
+        color(for: "keyPressedHex", fallback: "#78B8F8")
+    }
+    static var keySpacing: CGFloat {
+        CGFloat(settings?.double(forKey: "keySpacing") ?? 4).clamped(to: 0...12)
+    }
+    static var fontSize: CGFloat {
+        CGFloat(settings?.double(forKey: "fontSize") ?? 18).clamped(to: 12...26)
+    }
+    static var keyShape: String {
+        let value = settings?.string(forKey: "keyShape") ?? "rounded"
+        return ["rounded", "squircle", "pill", "circle", "rect"].contains(value) ? value : "rounded"
+    }
     static var cornerRadius: CGFloat {
         CGFloat(settings?.double(forKey: "cornerRadius") ?? 13).clamped(to: 4...28)
     }
