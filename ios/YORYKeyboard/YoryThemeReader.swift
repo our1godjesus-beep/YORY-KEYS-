@@ -53,11 +53,12 @@ enum YoryThemeReader {
         let hex = value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         guard let number = UInt64(hex, radix: 16) else { return .darkGray }
         if hex.count == 8 {
+            // Eight-digit theme colors are encoded consistently as #RRGGBBAA.
             return UIColor(
-                red: CGFloat((number >> 16) & 0xFF) / 255,
-                green: CGFloat((number >> 8) & 0xFF) / 255,
-                blue: CGFloat(number & 0xFF) / 255,
-                alpha: CGFloat((number >> 24) & 0xFF) / 255
+                red: CGFloat((number >> 24) & 0xFF) / 255,
+                green: CGFloat((number >> 16) & 0xFF) / 255,
+                blue: CGFloat((number >> 8) & 0xFF) / 255,
+                alpha: CGFloat(number & 0xFF) / 255
             )
         }
         return UIColor(
