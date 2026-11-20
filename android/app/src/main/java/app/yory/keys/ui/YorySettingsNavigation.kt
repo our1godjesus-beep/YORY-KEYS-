@@ -116,6 +116,9 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
     var showResizeEditor by remember { mutableStateOf(false) }
     var showClipboardHistory by remember { mutableStateOf(false) }
+    var showClearDictionaryDialog by remember { mutableStateOf(false) }
+    var showClearClipboardDialog by remember { mutableStateOf(false) }
+    var privacyMessage by remember { mutableStateOf("") }
     var longPressDuration by remember { mutableFloatStateOf(prefs.getFloat("long_press_duration", 450f)) }
     var keypressVolume by remember { mutableFloatStateOf(prefs.getFloat("keypress_volume", 0.35f)) }
     var vibrationDuration by remember { mutableFloatStateOf(prefs.getFloat("vibration_duration", 12f)) }
@@ -277,9 +280,24 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                 }
                 "Privacy" -> {
                     InfoCard("Private by design", "YORY does not send keystrokes, passwords or typed text to a server.")
-                    InfoCard("On-device storage", "Personal dictionary and optional clipboard history remain on this device and can be cleared.")
-                    InfoCard("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields.")
+                    InfoCard("On-device storage", "Personal dictionary and optional clipboard history remain on this device. Clipboard data is encrypted at rest.")
+                    InfoCard("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields and Incognito sessions.")
                     InfoCard("Permissions", "The keyboard does not request camera, contacts or location access.")
+                    GlassPanel(Modifier.fillMaxWidth()) {
+                        Text("Manage local data", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("These actions remove saved data from this device. They do not change your typing settings.", color = GlassMuted, fontSize = 12.sp)
+                        OutlinedButton(
+                            onClick = { showClearDictionaryDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Clear personal dictionary", color = Color(0xFFFFA0A0)) }
+                        OutlinedButton(
+                            onClick = { showClearClipboardDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Clear clipboard history", color = Color(0xFFFFA0A0)) }
+                        if (privacyMessage.isNotBlank()) {
+                            Text(privacyMessage, color = GlassAccent, fontSize = 12.sp)
+                        }
+                    }
                 }
                 "Account" -> {
                     InfoCard("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
@@ -296,6 +314,39 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                 }
             }
         }
+    }
+
+    if (showClearDictionaryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDictionaryDialog = false },
+            title = { Text("Clear personal dictionary?") },
+            text = { Text("All locally learned words will be deleted. Personal learning can remain enabled afterward.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    PersonalDictionaryStore.clear(context)
+                    showClearDictionaryDialog = false
+                    privacyMessage = "Personal dictionary cleared from this device."
+                    refresh++
+                }) { Text("Clear", color = Color(0xFFFFA0A0)) }
+            },
+            dismissButton = { TextButton(onClick = { showClearDictionaryDialog = false }) { Text("Cancel") } }
+        )
+    }
+    if (showClearClipboardDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearClipboardDialog = false },
+            title = { Text("Clear clipboard history?") },
+            text = { Text("All saved clipboard clips will be deleted from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    ClipboardHistoryStore.clear(context)
+                    showClearClipboardDialog = false
+                    privacyMessage = "Clipboard history cleared from this device."
+                    refresh++
+                }) { Text("Clear", color = Color(0xFFFFA0A0)) }
+            },
+            dismissButton = { TextButton(onClick = { showClearClipboardDialog = false }) { Text("Cancel") } }
+        )
     }
 }
 

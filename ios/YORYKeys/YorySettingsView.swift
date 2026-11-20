@@ -121,6 +121,8 @@ private struct YorySettingsDetailView: View {
     @AppStorage("hapticsEnabled", store: yorySettingsStore) private var hapticsEnabled = true
     @AppStorage("personalLearningEnabled", store: yorySettingsStore) private var personalLearningEnabled = false
     @AppStorage("yory.input.compactMode", store: yorySettingsStore) private var compactMode = false
+    @State private var showClearLearningConfirmation = false
+    @State private var privacyMessage = ""
 
     var body: some View {
         ZStack {
@@ -225,6 +227,21 @@ private struct YorySettingsDetailView: View {
                         settingsInfo("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields.")
                         settingsInfo("Permissions", "The keyboard does not request camera, contacts or location access.")
                     }
+                    Section("LOCAL DATA") {
+                        Button(role: .destructive) {
+                            showClearLearningConfirmation = true
+                        } label: {
+                            Label("Clear personal dictionary", systemImage: "trash")
+                        }
+                        Text("The dictionary is stored locally for the keyboard extension and can be cleared here.")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.62))
+                        if !privacyMessage.isEmpty {
+                            Text(privacyMessage)
+                                .font(.footnote)
+                                .foregroundStyle(Color(red: 0.65, green: 0.78, blue: 1.0))
+                        }
+                    }
                 case "Account":
                     settingsInfo("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
                     Button("Connect account / sign out", action: onSignOut)
@@ -244,6 +261,19 @@ private struct YorySettingsDetailView: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            "Clear your personal dictionary?",
+            isPresented: $showClearLearningConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Clear dictionary", role: .destructive) {
+                yorySettingsStore?.removeObject(forKey: "yory.personal.words.v1")
+                privacyMessage = "Personal dictionary cleared from this device."
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This deletes the locally learned words. The Personal Learning setting will remain unchanged.")
+        }
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
     }

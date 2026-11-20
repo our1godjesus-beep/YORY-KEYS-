@@ -37,9 +37,12 @@ enum YoryLocalWordSuggestions {
 
 
     private static let personalWordsKey = "yory.personal.words.v1"
+    private static var localDefaults: UserDefaults {
+        UserDefaults(suiteName: "group.app.yory.keys") ?? .standard
+    }
 
-    /// Personal words are stored only inside the keyboard extension's own sandbox.
-    /// The host app controls the opt-in switch through the read-only App Group setting.
+    /// Personal words remain local in the shared App Group container so the host app
+    /// can honor a user's explicit clear-data request. No network sync is performed.
     static func learnAcceptedWord(_ rawWord: String, languageTag: String) {
         guard YoryThemeReader.personalLearningEnabled else { return }
         let word = rawWord.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -48,7 +51,7 @@ enum YoryLocalWordSuggestions {
             return
         }
         let language = languageTag.lowercased().hasPrefix("ar") ? "ar" : "en"
-        let defaults = UserDefaults.standard
+        let defaults = localDefaults
         var all = defaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         var languageWords = all[language] ?? [:]
         languageWords[word] = min((languageWords[word] ?? 0) + 1, 100)
@@ -63,12 +66,12 @@ enum YoryLocalWordSuggestions {
     }
 
     static func clearPersonalWords() {
-        UserDefaults.standard.removeObject(forKey: personalWordsKey)
+        localDefaults.removeObject(forKey: personalWordsKey)
     }
 
     private static func personalSuggestions(prefix: String, language: String, limit: Int) -> [String] {
         guard YoryThemeReader.personalLearningEnabled else { return [] }
-        let all = UserDefaults.standard.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        let all = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         return (all[language] ?? [:])
             .filter { $0.key.hasPrefix(prefix) && $0.key != prefix }
             .sorted { $0.value > $1.value }

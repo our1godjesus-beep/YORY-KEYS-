@@ -87,7 +87,7 @@
         "android",
         "ios"
       ],
-      "notes": "Opt-in local word learning is implemented in the Android IME with AES-GCM encryption through Android Keystore and in the iOS keyboard extension's private sandbox. Incognito mode pauses learning; secure-field and editor-trait exclusions apply. Neither platform has production-quality language modelling or device-level privacy QA yet."
+      "notes": "Opt-in local word learning is implemented on Android with AES-GCM/Android Keystore and on iOS in a local App Group shared only by the host app and keyboard extension. Incognito pauses learning; secure-field exclusions apply. Settings include an explicit clear action; starter prediction quality and physical-device privacy QA remain."
     },
     {
       "id": "swipe-typing",

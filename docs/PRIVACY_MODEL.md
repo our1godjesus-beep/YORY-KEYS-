@@ -42,3 +42,8 @@ Never upload:
 ## User controls
 
 Provide controls to pause local learning, clear learned words, clear clipboard history, remove local files, export personal data, unlink cloud sync, and delete the cloud account. These controls must be implemented before claiming the related feature is complete.
+
+
+## Local personal-dictionary deletion
+- Android exposes a confirmation action to clear the encrypted local dictionary. Clearing removes the encrypted file and its Android Keystore key; the opt-in preference remains unchanged.
+- iOS stores personal words in the app's local App Group container so the host app can execute an explicit user-requested clear action. This remains local device storage and is not a network sync.
