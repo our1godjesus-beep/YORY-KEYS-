@@ -28,7 +28,7 @@ import app.yory.keys.ime.PersonalDictionaryStore
 private data class SettingsItem(val icon: String, val title: String, val subtitle: String = "")
 
 @Composable
-fun YoryStudioScreen() {
+fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
     val context = LocalContext.current
     var page by remember { mutableStateOf<String?>(null) }
     val items = listOf(
@@ -81,13 +81,13 @@ fun YoryStudioScreen() {
                 }
             }
         } else {
-            SettingsDetailPage(page = page!!, onBack = { page = null })
+            SettingsDetailPage(page = page!!, onBack = { page = null }, onSignOut = onSignOut)
         }
     }
 }
 
 @Composable
-private fun SettingsDetailPage(page: String, onBack: () -> Unit) {
+private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("yory_user_settings", Context.MODE_PRIVATE) }
     var refresh by remember { mutableIntStateOf(0) }
