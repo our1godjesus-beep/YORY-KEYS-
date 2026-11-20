@@ -17,6 +17,11 @@ internal object ClipboardHistoryPolicy {
         return true
     }
 
+    fun matchesSearch(entry: YoryClipboardEntry, query: String): Boolean {
+        val clean = query.trim()
+        return clean.isEmpty() || entry.text.contains(clean, ignoreCase = true)
+    }
+
     fun retainActive(entries: List<YoryClipboardEntry>, now: Long): List<YoryClipboardEntry> =
         entries.filter { it.isPinned || it.expiresAt > now }
             .sortedWith(compareByDescending<YoryClipboardEntry> { it.isPinned }.thenByDescending { it.copiedAt })

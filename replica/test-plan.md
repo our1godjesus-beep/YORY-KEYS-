@@ -72,3 +72,6 @@ Environment: Android emulator/device and iOS simulator/device. No test in this d
 
 | U01-H1 | Emoji data helpers | unit | Run YoryEmojiCatalogTest | Categories are unique; recent/favorites ordering and bounds are correct; storage parsing deduplicates; skin-tone modifier placement is stable | JVM unit test | Pending CI |
 | U02-H1 | Clipboard privacy policy | unit | Run ClipboardHistoryPolicyTest | Common OTP/PIN/payment card patterns are filtered; unpinned expiry, pinning window and 50-entry cap are deterministic | JVM unit test | Pending CI |
+
+| C02-H2 | Search clipboard history | happy | Type a word or phrase in the clipboard manager search field | Matching clips are filtered case-insensitively; clear search restores all entries; an informative empty result appears | JVM policy test + Android UI QA | Pending CI |
+| C02-E2 | Legacy clipboard migration write failure | edge | Simulate encrypted write failure during legacy migration | The old preference copy is retained until an encrypted replacement is saved successfully | Unit/instrumentation test with injected storage failure | Not run |

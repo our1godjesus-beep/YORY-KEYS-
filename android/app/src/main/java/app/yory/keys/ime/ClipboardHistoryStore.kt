@@ -149,10 +149,19 @@ object ClipboardHistoryStore {
                     )
                 }
             }
-        }.getOrDefault(emptyList()).take(ClipboardHistoryPolicy.MAX_ITEMS)
-        if (migrated.isNotEmpty()) runCatching { writeAll(context, migrated) }
+        }.getOrNull() ?: return emptyList()
+
+        val bounded = migrated.take(ClipboardHistoryPolicy.MAX_ITEMS)
+        if (bounded.isNotEmpty()) {
+            val saved = runCatching {
+                writeAll(context, bounded)
+                true
+            }.getOrDefault(false)
+            if (!saved) return emptyList()
+        }
+        // Do not discard the legacy copy until the encrypted replacement has been written.
         prefs.edit().remove(LEGACY_KEY).apply()
-        return migrated
+        return bounded
     }
 
     private fun writeAll(context: Context, entries: List<YoryClipboardEntry>) {

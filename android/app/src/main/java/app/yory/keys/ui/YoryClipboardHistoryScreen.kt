@@ -32,7 +32,10 @@ internal fun YoryClipboardHistoryScreen(onBack: () -> Unit) {
     var items by remember { mutableStateOf(ClipboardHistoryStore.entries(context)) }
     var lastDeleted by remember { mutableStateOf<YoryClipboardEntry?>(null) }
     var showClearDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("Clipboard history is encrypted and stays on this device.") }
+
+    val visibleItems = items.filter { ClipboardHistoryPolicy.matchesSearch(it, searchQuery) }
 
     fun reload() {
         items = ClipboardHistoryStore.entries(context)
@@ -55,6 +58,22 @@ internal fun YoryClipboardHistoryScreen(onBack: () -> Unit) {
             }
             Text("Clipboard", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             Text("Pinned clips stay until you remove them. Other clips expire after 24 hours.", color = Color(0xFFB0B6C4), fontSize = 13.sp, lineHeight = 19.sp)
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Search saved clips") },
+                placeholder = { Text("Search text in clipboard history") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFFA7C7FF),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.28f),
+                    focusedLabelColor = Color(0xFFA7C7FF),
+                    unfocusedLabelColor = Color(0xFFB0B6C4)
+                )
+            )
 
             if (lastDeleted != null) {
                 Row(
@@ -79,8 +98,14 @@ internal fun YoryClipboardHistoryScreen(onBack: () -> Unit) {
                     Text("No saved clips yet", color = Color.White, fontWeight = FontWeight.SemiBold)
                     Text("Copy text while the YORY keyboard is active and clipboard history is enabled. Sensitive patterns and one-time codes are filtered.", color = Color(0xFFB0B6C4), fontSize = 12.sp, lineHeight = 18.sp)
                 }
+            } else if (visibleItems.isEmpty()) {
+                ClipboardPanel {
+                    Text("No matching clips", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text("Try a different search term or clear the search.", color = Color(0xFFB0B6C4), fontSize = 12.sp)
+                    TextButton(onClick = { searchQuery = "" }) { Text("Clear search", color = Color(0xFFA7C7FF)) }
+                }
             } else {
-                items.forEach { entry ->
+                visibleItems.forEach { entry ->
                     ClipboardPanel {
                         Row(verticalAlignment = Alignment.Top) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

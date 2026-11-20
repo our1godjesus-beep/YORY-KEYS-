@@ -42,6 +42,15 @@ class ClipboardHistoryPolicyTest {
     }
 
     @Test
+    fun searchIsCaseInsensitiveAndTrimsWhitespace() {
+        val entry = YoryClipboardEntry("a", "YORY Keyboard Settings", 10L, false, 1000L)
+        assertTrue(ClipboardHistoryPolicy.matchesSearch(entry, " yory "))
+        assertTrue(ClipboardHistoryPolicy.matchesSearch(entry, "SETTINGS"))
+        assertFalse(ClipboardHistoryPolicy.matchesSearch(entry, "clipboard"))
+        assertTrue(ClipboardHistoryPolicy.matchesSearch(entry, "  "))
+    }
+
+    @Test
     fun retentionIsCappedAtFiftyEntries() {
         val entries = (1..60).map { YoryClipboardEntry(it.toString(), "item-$it", it.toLong(), false, 1000L) }
         assertEquals(ClipboardHistoryPolicy.MAX_ITEMS, ClipboardHistoryPolicy.retainActive(entries, 1L).size)
