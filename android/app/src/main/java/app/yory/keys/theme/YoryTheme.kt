@@ -15,7 +15,8 @@ data class YoryTheme(
     val keyPressedArgb: Int = accentArgb,
     val keySpacingDp: Float = 4f,
     val keyShape: String = "rounded",
-    val fontSizeSp: Float = 18f
+    val fontSizeSp: Float = 18f,
+    val fontFamily: String = "system"
 ) {
     companion object {
         val presets = listOf(
