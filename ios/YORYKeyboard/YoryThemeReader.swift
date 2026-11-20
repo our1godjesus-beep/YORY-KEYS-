@@ -47,6 +47,9 @@ enum YoryThemeReader {
     static var keyPopupsEnabled: Bool {
         settings?.bool(forKey: "yory.layout.keyPopups") ?? true
     }
+    static var largeKeyTextEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.largeText") ?? true
+    }
     static var numberPosition: String {
         settings?.string(forKey: "yory.layout.numberPosition") == "bottom" ? "bottom" : "top"
     }
