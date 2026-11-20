@@ -22,8 +22,12 @@ class YoryThemeTest {
     }
 
     @Test
-    fun defaultThemeIsTintedGlass() {
-        assertEquals("Tinted Glass", YoryTheme.default.name)
+    fun defaultThemeIsObsidianLuxe() {
+        assertEquals("Obsidian Luxe", YoryTheme.default.name)
+        assertEquals(0xFF090A0C.toInt(), YoryTheme.default.backgroundArgb)
+        assertEquals(0xFF202328.toInt(), YoryTheme.default.keyArgb)
+        assertEquals(0xFFF2EEE7.toInt(), YoryTheme.default.textArgb)
+        assertEquals(0xFFC9AE80.toInt(), YoryTheme.default.accentArgb)
     }
 
     @Test

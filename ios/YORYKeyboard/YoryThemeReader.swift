@@ -19,10 +19,6 @@ enum YoryThemeReader {
     static var keyPressedColor: UIColor {
         color(for: "keyPressedHex", fallback: "#B8945D")
     }
-    static var opacity: CGFloat {
-        CGFloat(settings?.double(forKey: "opacity") ?? 1.0).clamped(to: 0.35...1.0)
-    }
-
     static func migrateLegacyDefaultIfNeeded() {
         guard let defaults = settings,
               defaults.string(forKey: "themeName") == "Tinted Glass",
