@@ -655,6 +655,10 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
+        val compactMode = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+            .getBoolean("compact_mode", false)
+        row.layoutParams = row.layoutParams.apply { height = dp(if (compactMode) 22 else 34) }
+        row.requestLayout()
         row.removeAllViews()
         if (sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
             !getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("word_suggestions", true)) {
@@ -664,9 +668,10 @@ class YoryInputMethodService : InputMethodService() {
         row.visibility = View.VISIBLE
         val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
         val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
+        val suggestionLimit = if (compactMode) 2 else 3
         val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
         val bundled = if (languageTag.startsWith("de")) emptyList() else wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
-        val suggestions = (personal + bundled).distinct().take(3)
+        val suggestions = (personal + bundled).distinct().take(suggestionLimit)
         if (suggestions.isEmpty()) {
             addToolbarButton(row, when {
                 languageTag.startsWith("ar") -> "العربية"

@@ -97,6 +97,7 @@ private struct YorySettingsDetailView: View {
     @AppStorage("soundEnabled", store: yorySettingsStore) private var soundEnabled = true
     @AppStorage("hapticsEnabled", store: yorySettingsStore) private var hapticsEnabled = true
     @AppStorage("personalLearningEnabled", store: yorySettingsStore) private var personalLearningEnabled = false
+    @AppStorage("yory.input.compactMode", store: yorySettingsStore) private var compactMode = false
 
     var body: some View {
         ZStack {
@@ -170,6 +171,7 @@ private struct YorySettingsDetailView: View {
                     }
                 case "Rich input":
                     Section {
+                        glassToggle("Compact mode", detail: "Show fewer suggestions in a shorter bar", isOn: $compactMode)
                         settingsInfo("Clipboard", "Clipboard history is not available in the iOS keyboard preview yet.")
                         settingsInfo("Voice typing", "Voice input is not connected in this preview.")
                         settingsInfo("Online search", "No external search service is enabled in this preview.")

@@ -239,6 +239,9 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     ToggleCard("Clipboard history", "Keep recent copied text on this device", theme.value.clipboardEnabled) {
                         theme.value = theme.value.copy(clipboardEnabled = it); YoryThemeStore.save(context, theme.value)
                     }
+                    ToggleCard("Compact mode", "Show fewer suggestions in a shorter bar", readBool("compact_mode", false)) {
+                        writeBool("compact_mode", it)
+                    }
                     InfoCard("Voice typing", "Voice input is not connected in this build yet.")
                     InfoCard("Search and online suggestions", "No external search service is enabled. YORY keyboard typing remains local.")
                 }

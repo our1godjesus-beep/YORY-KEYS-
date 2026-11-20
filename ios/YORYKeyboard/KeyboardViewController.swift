@@ -19,6 +19,7 @@ final class KeyboardViewController: UIInputViewController {
     private var toolsMode = false
     private let keysStack = UIStackView()
     private var keyboardHeightConstraint: NSLayoutConstraint?
+    private var suggestionRowHeightConstraint: NSLayoutConstraint?
 
     override func loadView() {
         view = YoryKeyboardRootView()
@@ -135,7 +136,9 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.distribution = .fillEqually
         suggestionRow.spacing = 8
         root.addArrangedSubview(suggestionRow)
-        suggestionRow.heightAnchor.constraint(equalToConstant: 28).isActive = true
+        let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 28)
+        suggestionRowHeightConstraint = suggestionHeight
+        suggestionHeight.isActive = true
 
         emojiRow.axis = .horizontal
         emojiRow.distribution = .fillEqually
@@ -551,6 +554,10 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateSuggestions() {
+        let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
+        suggestionRowHeightConstraint?.constant = compactMode ? 20 : 28
+        let suggestionLimit = compactMode ? 2 : 3
+        view.setNeedsLayout()
         suggestionRow.arrangedSubviews.forEach { item in
             suggestionRow.removeArrangedSubview(item)
             item.removeFromSuperview()
@@ -572,7 +579,7 @@ final class KeyboardViewController: UIInputViewController {
         let language = isArabic ? "ar" : "en"
         let suggestions = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: language)
 
-        for suggestion in suggestions {
+        for suggestion in suggestions.prefix(suggestionLimit) {
             let button = UIButton(type: .system)
             button.setTitle(suggestion, for: .normal)
             button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
