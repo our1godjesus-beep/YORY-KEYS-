@@ -43,7 +43,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateInputTraits() {
-        let nextType = textDocumentProxy.keyboardType
+        let nextType = textDocumentProxy.keyboardType ?? .default
         guard nextType != currentKeyboardType else { return }
         currentKeyboardType = nextType
         numericInput = nextType == .numberPad || nextType == .decimalPad || nextType == .phonePad
@@ -52,7 +52,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private var returnKeyTitle: String {
-        switch textDocumentProxy.returnKeyType {
+        switch textDocumentProxy.returnKeyType ?? .default {
         case .go: return "Go"
         case .search: return "Search"
         case .send: return "Send"
