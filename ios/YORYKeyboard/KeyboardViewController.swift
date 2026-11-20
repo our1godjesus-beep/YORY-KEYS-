@@ -741,6 +741,10 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func toggleSymbols() {
         playKeyClick()
+        toolsMode = false
+        keysStack.isHidden = false
+        emojiMode = false
+        emojiRow.isHidden = true
         if symbolMode {
             symbolPage = (symbolPage + 1) % 2
         } else {
@@ -748,6 +752,7 @@ final class KeyboardViewController: UIInputViewController {
             symbolPage = 0
         }
         rebuildKeys()
+        updateSuggestions()
         refreshToolbarItems()
     }
 
