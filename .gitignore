@@ -1,0 +1,27 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.hprof
+
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+ios/YORYKeys.xcodeproj/
+ios/*.xcworkspace/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+service-role*.json
+supabase/.temp/
