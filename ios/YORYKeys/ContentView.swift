@@ -5,12 +5,12 @@ import UniformTypeIdentifiers
 private let yoryGroup = UserDefaults(suiteName: "group.app.yory.keys")
 
 struct YoryThemeStudioView: View {
-    @State private var background = Color(red: 0.10, green: 0.11, blue: 0.16)
-    @State private var key = Color(red: 0.92, green: 0.94, blue: 0.98)
-    @State private var text = Color(red: 0.09, green: 0.10, blue: 0.14)
-    @State private var accent = Color(red: 0.47, green: 0.72, blue: 0.97)
-    @State private var pressedKey = Color(red: 0.47, green: 0.72, blue: 0.97)
-    @State private var opacity = 0.92
+    @State private var background = Color(hex: "#090A0C")
+    @State private var key = Color(hex: "#202328")
+    @State private var text = Color(hex: "#F2EEE7")
+    @State private var accent = Color(hex: "#C9AE80")
+    @State private var pressedKey = Color(hex: "#B8945D")
+    @State private var opacity = 1.0
     @State private var cornerRadius = 13.0
     @State private var keySpacing = 4.0
     @State private var keyHeight = 44.0
@@ -21,7 +21,7 @@ struct YoryThemeStudioView: View {
     @State private var hapticsEnabled = true
     @State private var personalLearningEnabled = false
     @State private var selectedLanguage = "English"
-    @State private var themeName = "Tinted Glass"
+    @State private var themeName = "Obsidian Luxe"
     @State private var fileMessage = "Themes stay on this device unless you export them."
     @State private var showExporter = false
     @State private var showImporter = false
@@ -29,7 +29,7 @@ struct YoryThemeStudioView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.10, green: 0.14, blue: 0.22), Color(red: 0.025, green: 0.035, blue: 0.065), Color(red: 0.10, green: 0.09, blue: 0.17)], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+            LinearGradient(colors: [Color(hex: "#070809"), Color(hex: "#121418"), Color(hex: "#090A0C")], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -41,11 +41,13 @@ struct YoryThemeStudioView: View {
                     keyboardPreview
 
                     sectionTitle("MAKE IT YOURS")
-                    HStack(spacing: 9) {
-                        preset("Tinted", bg: "#1A1D2B", key: "#E8F1F3", accent: "#78B8F8")
-                        preset("Midnight", bg: "#10121B", key: "#292D3B", accent: "#9B8CFF")
-                        preset("Arctic", bg: "#DDE7F5", key: "#FFFFFF", accent: "#5598DB")
-                        preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 9) {
+                            preset("Obsidian", bg: "#090A0C", key: "#202328", accent: "#C9AE80")
+                            preset("Midnight", bg: "#10121B", key: "#292D3B", accent: "#9B8CFF")
+                            preset("Arctic", bg: "#DDE7F5", key: "#FFFFFF", accent: "#5598DB")
+                            preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
+                        }
                     }
 
                     sectionTitle("MY THEMES")
@@ -90,8 +92,8 @@ struct YoryThemeStudioView: View {
                     colorPickerRow("Accent", selection: $accent)
                     colorPickerRow("Pressed key", selection: $pressedKey)
 
-                    sectionTitle("GLASS & GEOMETRY")
-                    valueSlider("Glass opacity", value: $opacity, range: 0.35...1.0, suffix: "%", multiplier: 100)
+                    sectionTitle("MATERIAL & GEOMETRY")
+                    valueSlider("Surface opacity", value: $opacity, range: 0.35...1.0, suffix: "%", multiplier: 100)
                     valueSlider("Key corner radius", value: $cornerRadius, range: 4...28, suffix: " pt")
                     valueSlider("Key spacing", value: $keySpacing, range: 0...12, suffix: " pt")
                     valueSlider("Keyboard height", value: $keyHeight, range: 32...60, suffix: " pt")
@@ -221,12 +223,13 @@ struct YoryThemeStudioView: View {
                     ForEach(Array(row), id: \.self) { character in
                         Text(String(character))
                             .font(keyboardFont(size: fontSize, family: fontFamily))
+                            .fontWeight(.semibold)
                             .foregroundStyle(text)
                             .frame(maxWidth: .infinity)
                             .frame(height: 35)
-                            .background(.ultraThinMaterial, in: keyShapeView)
-                            .background(key.opacity(0.28), in: keyShapeView)
-                            .overlay(keyShapeView.stroke(.white.opacity(0.25), lineWidth: 0.7))
+                            .background(key.opacity(opacity), in: keyShapeView)
+                            .overlay(keyShapeView.stroke(Color.white.opacity(0.10), lineWidth: 0.7))
+                            .shadow(color: .black.opacity(0.35), radius: 2, y: 2)
                     }
                 }
             }
@@ -239,21 +242,20 @@ struct YoryThemeStudioView: View {
             }
         }
         .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 23))
-        .background(background.opacity(opacity * 0.30), in: RoundedRectangle(cornerRadius: 23))
-        .overlay(RoundedRectangle(cornerRadius: 23).stroke(.white.opacity(0.30), lineWidth: 1))
-        .shadow(color: accent.opacity(0.12), radius: 18, y: 8)
+        .background(background, in: RoundedRectangle(cornerRadius: 23))
+        .overlay(RoundedRectangle(cornerRadius: 23).stroke(accent.opacity(0.22), lineWidth: 1))
+        .shadow(color: .black.opacity(0.45), radius: 16, y: 8)
     }
 
     private func previewKey(_ label: String) -> some View {
         Text(label)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(text)
             .frame(maxWidth: label == "English" ? .infinity : 42)
             .frame(height: 34)
-            .background(.ultraThinMaterial, in: keyShapeView)
-            .background((label == "↵" ? pressedKey : key).opacity(0.32), in: keyShapeView)
-            .overlay(keyShapeView.stroke(.white.opacity(0.25), lineWidth: 0.7))
+            .background((label == "↵" ? pressedKey : key).opacity(opacity), in: keyShapeView)
+            .overlay(keyShapeView.stroke(accent.opacity(label == "↵" ? 0.40 : 0.12), lineWidth: 0.7))
+            .shadow(color: .black.opacity(0.30), radius: 2, y: 2)
     }
 
     private func keyboardFont(size: Double, family: String) -> Font {
@@ -288,10 +290,9 @@ struct YoryThemeStudioView: View {
             persistTheme()
         } label: {
             Text(name).font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                .background(Color(hex: key).opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.25), lineWidth: 0.7))
-                .foregroundStyle(Color(hex: "#202432"))
+                .background(Color(hex: bg).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: accent).opacity(0.30), lineWidth: 0.7))
+                .foregroundStyle((name == "Arctic" || name == "Rose") ? Color(hex: "#202432") : Color(hex: "#F2EEE7"))
         }
         .buttonStyle(.plain)
     }
@@ -317,13 +318,38 @@ struct YoryThemeStudioView: View {
 
     private func loadTheme() {
         guard let defaults = yoryGroup else { return }
-        themeName = defaults.string(forKey: "themeName") ?? "Tinted Glass"
-        background = Color(hex: defaults.string(forKey: "backgroundHex") ?? "#1A1D2B")
-        key = Color(hex: defaults.string(forKey: "keyHex") ?? "#F1F3FA")
-        text = Color(hex: defaults.string(forKey: "textHex") ?? "#171923")
-        accent = Color(hex: defaults.string(forKey: "accentHex") ?? "#78B8F8")
-        pressedKey = Color(hex: defaults.string(forKey: "keyPressedHex") ?? "#78B8F8")
-        opacity = defaults.object(forKey: "opacity") == nil ? 0.92 : defaults.double(forKey: "opacity")
+        let storedName = defaults.string(forKey: "themeName")
+        let storedBackground = defaults.string(forKey: "backgroundHex")?.uppercased()
+        let storedKey = defaults.string(forKey: "keyHex")?.uppercased()
+        let storedText = defaults.string(forKey: "textHex")?.uppercased()
+        let storedAccent = defaults.string(forKey: "accentHex")?.uppercased()
+        let isLegacyDefault = (storedName == nil || storedName == "Tinted Glass") &&
+            (storedBackground == nil || storedBackground == "#1A1D2B") &&
+            (storedKey == nil || storedKey == "#F1F3FA" || storedKey == "#E8F1F3") &&
+            (storedText == nil || storedText == "#171923") &&
+            (storedAccent == nil || storedAccent == "#78B8F8")
+        if isLegacyDefault {
+            themeName = "Obsidian Luxe"
+            background = Color(hex: "#090A0C")
+            key = Color(hex: "#202328")
+            text = Color(hex: "#F2EEE7")
+            accent = Color(hex: "#C9AE80")
+            pressedKey = Color(hex: "#B8945D")
+            opacity = 1.0
+            cornerRadius = 12
+            keySpacing = 4
+            keyHeight = 46
+            keyShape = "squircle"
+            persistTheme()
+            return
+        }
+        themeName = storedName ?? "Obsidian Luxe"
+        background = Color(hex: defaults.string(forKey: "backgroundHex") ?? "#090A0C")
+        key = Color(hex: defaults.string(forKey: "keyHex") ?? "#202328")
+        text = Color(hex: defaults.string(forKey: "textHex") ?? "#F2EEE7")
+        accent = Color(hex: defaults.string(forKey: "accentHex") ?? "#C9AE80")
+        pressedKey = Color(hex: defaults.string(forKey: "keyPressedHex") ?? "#B8945D")
+        opacity = defaults.object(forKey: "opacity") == nil ? 1.0 : defaults.double(forKey: "opacity")
         cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
         keySpacing = defaults.object(forKey: "keySpacing") == nil ? 4 : defaults.double(forKey: "keySpacing")
         keyHeight = defaults.object(forKey: "keyHeight") == nil ? 44 : defaults.double(forKey: "keyHeight")
@@ -478,6 +504,7 @@ private struct YoryGalleryPreset: Identifiable {
     var id: String { name }
 
     static let all: [YoryGalleryPreset] = [
+        .init(name: "Obsidian Luxe", category: "Dark", background: "#090A0C", key: "#202328", text: "#F2EEE7", accent: "#C9AE80", pressed: "#B8945D", opacity: 1.0, radius: 12, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "squircle", soundEnabled: true, hapticsEnabled: true, isCustom: false),
         .init(name: "Tinted Glass", category: "Dark", background: "#1A1D2B", key: "#E8F1F3", text: "#171923", accent: "#78B8F8", pressed: "#78B8F8", opacity: 0.92, radius: 14, keyHeight: 44, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
         .init(name: "Midnight", category: "Dark", background: "#10121B", key: "#292D3B", text: "#F6F7FC", accent: "#9B8CFF", pressed: "#9B8CFF", opacity: 0.98, radius: 12, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
         .init(name: "Arctic", category: "Light", background: "#DDE7F5", key: "#FFFFFF", text: "#202432", accent: "#5598DB", pressed: "#5598DB", opacity: 0.88, radius: 16, keyHeight: 46, keySpacing: 4, fontSize: 18, fontFamily: "system", keyShape: "rounded", soundEnabled: true, hapticsEnabled: true, isCustom: false),
@@ -488,7 +515,7 @@ private struct YoryGalleryPreset: Identifiable {
 
 struct YoryThemeGalleryView: View {
     @State private var category = "All"
-    @State private var appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
+    @State private var appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Obsidian Luxe"
     @State private var statusMessage = ""
     @State private var showEditor = false
     @State private var showDetail = false
@@ -535,12 +562,12 @@ struct YoryThemeGalleryView: View {
         let sound = root["sound"] as? [String: Any] ?? [:]
         let haptics = root["haptics"] as? [String: Any] ?? [:]
 
-        let background = appearance["background"] as? String ?? "#1A1D2B"
-        let key = appearance["key"] as? String ?? "#E8F1F3"
-        let text = appearance["text"] as? String ?? "#171923"
-        let accent = appearance["accent"] as? String ?? "#78B8F8"
+        let background = appearance["background"] as? String ?? "#090A0C"
+        let key = appearance["key"] as? String ?? "#202328"
+        let text = appearance["text"] as? String ?? "#F2EEE7"
+        let accent = appearance["accent"] as? String ?? "#C9AE80"
         let pressed = appearance["keyPressed"] as? String ?? accent
-        let opacity = (glass["opacity"] as? NSNumber)?.doubleValue ?? 0.92
+        let opacity = (glass["opacity"] as? NSNumber)?.doubleValue ?? 1.0
         let radius = (geometry["cornerRadius"] as? NSNumber)?.doubleValue ?? 14
         let keyHeight = (geometry["keyHeight"] as? NSNumber)?.doubleValue ?? 44
         let keySpacing = (geometry["keySpacing"] as? NSNumber)?.doubleValue ?? 4

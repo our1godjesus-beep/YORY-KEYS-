@@ -5,19 +5,42 @@ enum YoryThemeReader {
     private static var settings: UserDefaults? { UserDefaults(suiteName: groupID) }
 
     static var backgroundColor: UIColor {
-        color(for: "backgroundHex", fallback: "#1A1D2B")
+        color(for: "backgroundHex", fallback: "#090A0C")
     }
     static var keyColor: UIColor {
-        color(for: "keyHex", fallback: "#F1F3FA")
+        color(for: "keyHex", fallback: "#202328")
     }
     static var textColor: UIColor {
-        color(for: "textHex", fallback: "#171923")
+        color(for: "textHex", fallback: "#F2EEE7")
     }
     static var accentColor: UIColor {
-        color(for: "accentHex", fallback: "#78B8F8")
+        color(for: "accentHex", fallback: "#C9AE80")
     }
     static var keyPressedColor: UIColor {
-        color(for: "keyPressedHex", fallback: "#78B8F8")
+        color(for: "keyPressedHex", fallback: "#B8945D")
+    }
+    static var opacity: CGFloat {
+        CGFloat(settings?.double(forKey: "opacity") ?? 1.0).clamped(to: 0.35...1.0)
+    }
+
+    static func migrateLegacyDefaultIfNeeded() {
+        guard let defaults = settings,
+              defaults.string(forKey: "themeName") == "Tinted Glass",
+              defaults.string(forKey: "backgroundHex")?.uppercased() == "#1A1D2B",
+              ["#F1F3FA", "#E8F1F3"].contains(defaults.string(forKey: "keyHex")?.uppercased() ?? ""),
+              defaults.string(forKey: "textHex")?.uppercased() == "#171923",
+              defaults.string(forKey: "accentHex")?.uppercased() == "#78B8F8" else { return }
+        defaults.set("Obsidian Luxe", forKey: "themeName")
+        defaults.set("#090A0C", forKey: "backgroundHex")
+        defaults.set("#202328", forKey: "keyHex")
+        defaults.set("#F2EEE7", forKey: "textHex")
+        defaults.set("#C9AE80", forKey: "accentHex")
+        defaults.set("#B8945D", forKey: "keyPressedHex")
+        defaults.set(1.0, forKey: "opacity")
+        defaults.set(12.0, forKey: "cornerRadius")
+        defaults.set(4.0, forKey: "keySpacing")
+        defaults.set(46.0, forKey: "keyHeight")
+        defaults.set("squircle", forKey: "keyShape")
     }
     static var keySpacing: CGFloat {
         CGFloat(settings?.double(forKey: "keySpacing") ?? 4).clamped(to: 0...12)
