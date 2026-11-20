@@ -38,6 +38,8 @@ fun YoryStudioScreen() {
     var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
     var pressedHex by remember { mutableStateOf(theme.keyPressedArgb.toHexArgb()) }
     var fileMessage by remember { mutableStateOf("Themes stay on this device unless you export them.") }
+    var personalLearningEnabled by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
+    var showClearLearningDialog by remember { mutableStateOf(false) }
 
     fun applyTheme(next: YoryTheme) {
         theme = next
@@ -87,6 +89,23 @@ fun YoryStudioScreen() {
             else -> return null
         }
         return normalized.toLongOrNull(16)?.toInt()
+    }
+
+    if (showClearLearningDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLearningDialog = false },
+            title = { Text("Clear personal dictionary?") },
+            text = { Text("All locally learned words will be permanently removed from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    PersonalDictionaryStore.clear(context)
+                    showClearLearningDialog = false
+                }) { Text("Clear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLearningDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     MaterialTheme {
@@ -193,6 +212,19 @@ fun YoryStudioScreen() {
                     ) { Text("Import theme") }
                 }
                 Text(fileMessage, color = Color(0xFF8994AA), fontSize = 11.sp)
+
+                Text("PERSONAL DICTIONARY", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                SwitchSetting("Learn words on this device", personalLearningEnabled) {
+                    personalLearningEnabled = it
+                    PersonalDictionaryStore.setEnabled(context, it)
+                }
+                Text(
+                    "Optional and encrypted with Android Keystore. Words are learned only after you finish typing them in ordinary text fields. Learning is disabled in password, numeric, email and URL fields. Nothing is uploaded.",
+                    color = Color(0xFF8994AA), fontSize = 11.sp
+                )
+                OutlinedButton(onClick = { showClearLearningDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Clear learned words", color = Color.White)
+                }
 
                 Text("SOUND & TOUCH", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 SwitchSetting("Key click sound", theme.soundEnabled) {
