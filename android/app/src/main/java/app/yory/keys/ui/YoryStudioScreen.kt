@@ -205,6 +205,16 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
                 SliderSetting("Letter size", theme.fontSizeSp, 12f..26f, theme.fontSizeSp.toInt().toString() + " sp") {
                     applyTheme(theme.copy(fontSizeSp = it))
                 }
+                Text("LETTER FONT", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf("system", "rounded", "serif", "mono").forEach { family ->
+                        FilterChip(
+                            selected = theme.fontFamily == family,
+                            onClick = { applyTheme(theme.copy(fontFamily = family)) },
+                            label = { Text(family.replaceFirstChar { it.uppercase() }, fontSize = 10.sp) }
+                        )
+                    }
+                }
                 Text("KEY SHAPE", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     listOf("rounded", "squircle", "pill", "circle", "rect").forEach { shape ->
