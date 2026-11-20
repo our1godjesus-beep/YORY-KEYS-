@@ -8,7 +8,9 @@ data class YoryTheme(
     val accentArgb: Int,
     val opacity: Float = 0.92f,
     val cornerRadiusDp: Float = 13f,
-    val keyHeightDp: Float = 46f
+    val keyHeightDp: Float = 46f,
+    val soundEnabled: Boolean = true,
+    val hapticsEnabled: Boolean = true
 ) {
     companion object {
         val presets = listOf(
