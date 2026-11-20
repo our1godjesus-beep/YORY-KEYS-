@@ -154,7 +154,7 @@ class YoryInputMethodService : InputMethodService() {
         val container = keysContainer ?: return
         theme = YoryThemeStore.load(applicationContext)
         keyboardRoot?.background = panelBackground()
-        val direction = if (languageTag.startsWith("ar") && !numericField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        val direction = if (languageTag.startsWith("ar") && !numericField && !emailField && !urlField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         keyboardRoot?.layoutDirection = direction
         container.layoutDirection = direction
         container.removeAllViews()
@@ -252,7 +252,7 @@ class YoryInputMethodService : InputMethodService() {
             refreshKeyboard()
             updateSuggestions()
         }
-        addKey(row, if (emailField) "@" else if (urlField) "/", 0.8f) {
+        addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.8f) {
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
             updateSuggestions()
         }
@@ -400,7 +400,7 @@ class YoryInputMethodService : InputMethodService() {
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
         row.removeAllViews()
-        if (sensitiveField || numericField || emojiMode || clipboardMode) {
+        if (sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode) {
             row.visibility = View.GONE
             return
         }
