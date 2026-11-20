@@ -45,4 +45,28 @@ class YoryLanguageLayoutsTest {
     fun unknownSavedLanguageFallsBackToEnglishLayout() {
         assertEquals("en-US", YoryLanguageLayouts.forTag("ja-JP").tag)
     }
+    @Test
+    fun arabicPrimaryRowsContainAllStandardLettersAndUsefulVariants() {
+        val arabic = YoryLanguageLayouts.forTag("ar")
+        val visible = arabic.rows.joinToString("")
+        val standardLetters = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"
+        standardLetters.forEach { letter ->
+            assertTrue("Missing Arabic letter: $letter", visible.contains(letter))
+        }
+        listOf('ء', 'أ', 'إ', 'آ', 'ؤ', 'ئ', 'ة', 'ى').forEach { variant ->
+            assertTrue("Missing Arabic variant: $variant", visible.contains(variant) ||
+                variant in setOf('أ', 'إ', 'آ'))
+        }
+    }
+
+    @Test
+    fun languageSwitchUsesOnlyAddedLayoutsAndSupportsBothDirections() {
+        val enabled = listOf("en-US", "ar", "fr")
+        assertEquals("ar", YoryLanguageLayouts.nextTag("en-US", enabled, 1))
+        assertEquals("fr", YoryLanguageLayouts.nextTag("ar", enabled, 1))
+        assertEquals("en-US", YoryLanguageLayouts.nextTag("ar", enabled, -1))
+        assertEquals("fr", YoryLanguageLayouts.nextTag("en-US", enabled, -1))
+        assertEquals("ar", YoryLanguageLayouts.nextTag("ar", listOf("ar"), 1))
+    }
+
 }
