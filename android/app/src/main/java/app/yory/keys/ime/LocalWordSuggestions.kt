@@ -4,7 +4,7 @@ import android.content.Context
 import java.util.Locale
 
 /** Offline prefix-completion baseline. This is not a neural prediction model. */
-class LocalWordSuggestions(context: Context) {
+class LocalWordSuggestions(private val context: Context) {
     private val dictionaries = mapOf(
         "en" to loadWords(context, "dictionaries/en-US.txt"),
         "ar" to loadWords(context, "dictionaries/ar.txt")
