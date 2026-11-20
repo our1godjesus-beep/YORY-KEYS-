@@ -24,4 +24,13 @@ jobs:
         run: xcodegen generate
       - name: Build app and keyboard extension
         working-directory: ios
-        run: xcodebuild -project YORYKeys.xcodeproj -scheme YORYKeys -sdk iphonesimulator -destination "generic/platform=iOS Simulator" CODE_SIGNING_ALLOWED=NO build
+        run: |
+          xcodebuild -project YORYKeys.xcodeproj -scheme YORYKeys -sdk iphonesimulator -destination "generic/platform=iOS Simulator" -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO build
+          ditto -c -k --sequesterRsrc --keepParent "build/DerivedData/Build/Products/Debug-iphonesimulator/YORY KEYS.app" "build/YORY-Keys-iOS-Simulator.zip"
+      - name: Upload iOS Simulator app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: yory-keys-ios-simulator-app
+          path: ios/build/YORY-Keys-iOS-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14
