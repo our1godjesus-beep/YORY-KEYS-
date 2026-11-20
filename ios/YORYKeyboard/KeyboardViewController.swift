@@ -6,6 +6,7 @@ private final class YoryKeyboardRootView: UIView, UIInputViewAudioFeedback {
 
 final class KeyboardViewController: UIInputViewController {
     private var isArabic = false
+    private var languageTag = "en-US"
     private var isShifted = false
     private var emojiMode = false
     private var symbolMode = false
@@ -25,8 +26,9 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.black.withAlphaComponent(0.94)
-        isArabic = UserDefaults.standard.object(forKey: "yory.keyboard.arabic") as? Bool ?? YoryThemeReader.isArabic
-        primaryLanguage = isArabic ? "ar" : "en-US"
+        languageTag = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "yory.active.language") ?? (YoryThemeReader.isArabic ? "ar" : "en-US")
+        isArabic = languageTag == "ar"
+        primaryLanguage = languageTag
         applyCurrentTheme()
         buildInterface()
     }
@@ -180,6 +182,8 @@ final class KeyboardViewController: UIInputViewController {
             rows = ["@#$%&*()-", "_+=[]{}?!", "<>/\\|;:"]
         } else if isArabic {
             rows = ["ضصثقفغعهخح", "شسيبلاتنم", "ئءؤرىةوز"]
+        } else if languageTag == "de" {
+            rows = ["qwertzuiop", "asdfghjkl", "yxcvbnm"]
         } else {
             rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
         }
@@ -203,7 +207,7 @@ final class KeyboardViewController: UIInputViewController {
         bottom.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
         let fieldSymbol = currentKeyboardType == .emailAddress ? "@" : (currentKeyboardType == .URL ? "/" : ",")
         bottom.addArrangedSubview(keyButton(fieldSymbol))
-        let space = keyButton(isArabic ? "العربية" : "English", action: #selector(insertSpace))
+        let space = keyButton(isArabic ? "العربية" : (languageTag == "de" ? "Deutsch" : "English"), action: #selector(insertSpace))
         bottom.addArrangedSubview(space)
         bottom.addArrangedSubview(keyButton("."))
         bottom.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
@@ -345,9 +349,10 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func toggleLanguage() {
         playKeyClick()
-        isArabic.toggle()
-        UserDefaults.standard.set(isArabic, forKey: "yory.keyboard.arabic")
-        primaryLanguage = isArabic ? "ar" : "en-US"
+        languageTag = languageTag == "en-US" ? "de" : (languageTag == "de" ? "ar" : "en-US")
+        isArabic = languageTag == "ar"
+        UserDefaults(suiteName: "group.app.yory.keys")?.set(languageTag, forKey: "yory.active.language")
+        primaryLanguage = languageTag
         symbolMode = false
         rebuildKeys()
         updateSuggestions()
@@ -369,7 +374,7 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         let word = String(context[range])
-        YoryLocalWordSuggestions.learnAcceptedWord(word, languageTag: isArabic ? "ar" : "en")
+        YoryLocalWordSuggestions.learnAcceptedWord(word, languageTag: languageTag == "de" ? "de" : (isArabic ? "ar" : "en"))
     }
 
     @objc private func toggleTools() {
@@ -417,6 +422,7 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         let prefix = String(context[range])
+        guard languageTag != "de" else { return }
         let language = isArabic ? "ar" : "en"
         let suggestions = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: language)
 
