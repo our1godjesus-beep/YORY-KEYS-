@@ -640,6 +640,7 @@ struct YoryThemeGalleryView: View {
                                 YoryGalleryThemeCard(
                                     preset: preset,
                                     isApplied: appliedTheme == preset.name,
+                                    isFavorite: favoriteNames.contains(preset.name.lowercased()),
                                     onApply: { apply(preset) },
                                     onCustomize: {
                                         apply(preset)

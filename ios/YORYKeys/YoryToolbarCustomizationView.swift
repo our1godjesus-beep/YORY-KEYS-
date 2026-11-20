@@ -52,8 +52,9 @@ struct YoryToolbarCustomizationView: View {
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.66))
 
-                    ForEach(Array(order.enumerated()), id: \.element) { index, id in
+                    ForEach(order, id: \.self) { id in
                         if let option = options.first(where: { $0.id == id }) {
+                            let index = order.firstIndex(of: id) ?? 0
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack(spacing: 12) {
                                     Image(systemName: option.symbol)
