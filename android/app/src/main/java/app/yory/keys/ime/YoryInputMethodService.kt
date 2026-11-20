@@ -721,6 +721,18 @@ class YoryInputMethodService : InputMethodService() {
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
     }
 
+    private fun addKey(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
+        addKey(
+            parent = parent,
+            label = label,
+            weight = weight,
+            action = action,
+            compact = false,
+            secondaryLegend = null,
+            onSwipeDirection = null
+        )
+    }
+
     private fun addKey(
         parent: LinearLayout,
         label: String,
