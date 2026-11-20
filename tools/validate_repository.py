@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Validate YORY KEYS repository contracts without needing mobile SDKs."""
+"""Validate YORY KEYS repository contracts without mobile SDKs."""
 from __future__ import annotations
-
 import json
 import re
 import sys
@@ -16,8 +15,7 @@ ALLOWED_STATUSES = {
 }
 
 def load_json(relative: str):
-    path = ROOT / relative
-    with path.open("r", encoding="utf-8") as handle:
+    with (ROOT / relative).open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 def main() -> int:
@@ -40,13 +38,11 @@ def main() -> int:
     if len(ids) != len(set(ids)):
         errors.append("Feature catalogue contains duplicate IDs.")
     for row in rows:
-        status = row.get("status")
-        if status not in ALLOWED_STATUSES:
-            errors.append(f"Unknown status for feature {row.get('id')}: {status}")
+        if row.get("status") not in ALLOWED_STATUSES:
+            errors.append(f"Unknown status for feature {row.get('id')}: {row.get('status')}")
 
     secret_patterns = [
-        re.compile(r"(?i)service_role\\s*[:=]\\s*['\\"][^'\\"]{16,}"),
-        re.compile(r"(?i)(api[_-]?secret|private[_-]?key)\\s*[:=]\\s*['\\"][^'\\"]{16,}"),
+        re.compile(r"""(?i)(service_role|secret_key|private_key)\s*[:=]\s*['"][^\s'"]{20,}"""),
         re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     ]
     for path in ROOT.rglob("*"):
@@ -55,15 +51,15 @@ def main() -> int:
         }:
             continue
         try:
-            text = path.read_text(encoding="utf-8")
+            content = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
         for pattern in secret_patterns:
-            if pattern.search(text):
+            if pattern.search(content):
                 errors.append(f"Possible secret detected in {path.relative_to(ROOT)}")
 
     if errors:
-        print("\\n".join(f"ERROR: {item}" for item in errors))
+        print("\n".join(f"ERROR: {item}" for item in errors))
         return 1
     print(f"YORY contracts OK: {len(rows)} features, {len(language_rows)} target languages.")
     return 0
