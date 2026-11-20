@@ -31,7 +31,7 @@ import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
 
 @Composable
-fun YoryStudioScreen() {
+internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var theme by remember { mutableStateOf(YoryThemeStore.load(context)) }
     var backgroundHex by remember { mutableStateOf(theme.backgroundArgb.toHexArgb()) }
@@ -118,6 +118,18 @@ fun YoryStudioScreen() {
                     .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .border(0.8.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
+                        .clickable { onBack() }.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("‹", color = Color.White, fontSize = 30.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Themes", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                }
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("YORY KEYS", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
