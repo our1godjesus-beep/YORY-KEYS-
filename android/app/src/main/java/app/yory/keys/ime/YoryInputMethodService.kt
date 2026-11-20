@@ -16,6 +16,8 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import app.yory.keys.MainActivity
 import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
@@ -46,6 +48,9 @@ class YoryInputMethodService : InputMethodService() {
     private var emojiRow: LinearLayout? = null
     private var keysContainer: LinearLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
+    private val learningExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "YORY-PersonalLearning").apply { isDaemon = true }
+    }
     private var clipboardListenerRegistered = false
     private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener { captureClipboard() }
 
@@ -419,6 +424,7 @@ class YoryInputMethodService : InputMethodService() {
 
     override fun onDestroy() {
         refreshClipboardListenerOff()
+        learningExecutor.shutdown()
         super.onDestroy()
     }
 
@@ -435,7 +441,10 @@ class YoryInputMethodService : InputMethodService() {
             !PersonalDictionaryStore.isEnabled(applicationContext)) return
         val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
         val word = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value ?: return
-        PersonalDictionaryStore.learn(applicationContext, word, languageTag)
+        val acceptedLanguage = languageTag
+        learningExecutor.execute {
+            runCatching { PersonalDictionaryStore.learn(applicationContext, word, acceptedLanguage) }
+        }
     }
 
     private fun updateSuggestions() {
