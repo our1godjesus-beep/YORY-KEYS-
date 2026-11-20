@@ -51,7 +51,7 @@ Open YORY Studio → find a setting or theme → make a change → save it local
 | S09 | Rich Input | S01 → Rich input | Access secondary input tools | Clipboard, voice typing, optional online tool explanations, compact mode | Android/iOS capability variants, permission denied, offline, unavailable |
 | S10 | Clipboard manager (Android v1) | S09 or keyboard toolbar | Paste/manage recent copied text | Clip rows, pin, insert, delete, undo, clear | Empty, filled, pinned, expired, cleared, sensitive item suppressed |
 | S11 | Layout & keys | S01 → Layout & keys | Tune keyboard structure | Resize entry, number row, number position, long-press symbols, accents, arrow keys, key pop-ups, large key text, long-press duration | Toggle states, slider values, compact screen |
-| S12 | Resize editor (Android) | S11 → Resize or keyboard toolbar → Resize | Change keyboard size and position | Live keyboard preview, drag handles, reset, save/cancel | Default, resized, repositioned, reset |
+| S12 | Resize editor (Android) | S11 → Resize | Adjust keyboard key height | Keyboard preview, 36–60dp height slider, Compact/Standard/Tall presets, Reset, local persistence | Default, resized, preset selected, reset, keyboard reopened |
 | S13 | Sound & vibration | S01 → Sound & vibration | Tune key feedback | Sound toggle/volume/profile, haptic toggle/system setting/duration | On/off, muted, slider minimum/maximum |
 | S14 | Privacy | S01 → Privacy | Explain data handling and controls | Privacy-policy links, data-sharing explanation, local data controls, third-party service disclosures | Default, offline, link open, clear-data confirmation |
 | S15 | Keyboard runtime | Any text field → YORY KEYS | Main typing surface | Toolbar, suggestions, language/layout control, letter rows, number/symbol mode, spacebar, enter, delete, emoji | English, Arabic RTL, numeric, symbols, secure field, email/URL/search/phone field |
@@ -90,9 +90,10 @@ F05 Configure keyboard structure
     Edge: long-press minimum/maximum, compact screen, conflicting number-row and numeric-field states.
 
 F06 Resize keyboard (Android)
-    S16 -> Resize -> drag handles -> apply/reset -> S15
-    Alternative: S01 -> S11 -> Resize.
-    iOS: do not show a fake resize tool; show system display/accessibility guidance if relevant.
+    S01 -> S11 -> Resize -> adjust 36–60dp slider or choose Compact/Standard/Tall -> reset/save -> S15
+    Current implementation changes key height and writes the same value read by InputMethodService.
+    Remaining: free drag handles, width adjustment and repositioning are not yet implemented.
+    iOS: key height can be changed in Theme Studio; do not show a false free-reposition feature.
 
 F07 Manage clipboard (Android)
     S15 -> S16 -> Clipboard -> insert/pin/delete/undo/clear -> return to text field

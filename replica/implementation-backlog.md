@@ -26,14 +26,15 @@
 - [ ] Distinguish keyboard layout availability from language-model availability.
 - [ ] Maintain English (US) and Arabic (Egypt) as supported v1.
 - [ ] Mark German QWERTZ as basic layout only until its language resources pass QA.
-- [ ] Complete keyboard geometry editor.
-- [ ] Android: implement size and position modes with reset.
-- [ ] iOS: do not expose a false resize feature.
+- [x] Add a dedicated Android keyboard-height Resize screen with live preview, size slider, Compact/Standard/Tall presets and Reset.
+- [ ] Implement free drag handles, width changes and keyboard positioning on Android; the new screen currently adjusts key height only.
+- [ ] Keep iOS sizing truthful: key height is available in Theme Studio, but do not expose SwiftKey-style floating/reposition controls that do not exist.
 
 ## Phase 4 — Tools and per-platform behavior
 - [ ] Define toolbar registry per platform.
 - [ ] Android: clipboard history UI, pin/delete/undo/clear, sensitivity filters.
 - [ ] iOS: show only supported host-pasteboard/keyboard actions.
+- [x] Add compact suggestion mode across Android and iOS; it reduces the suggestion bar to two entries and a shorter row.
 - [ ] Add voice input only after a real permission and system/API flow exists.
 - [ ] Keep online tools optional and outside the live typing path.
 

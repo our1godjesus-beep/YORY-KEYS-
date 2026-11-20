@@ -44,3 +44,33 @@ Status: **partial implementation; automated Android build passed; iOS verificati
 4. Add custom theme delete/duplicate/favorite UI.
 5. Unify preview and runtime keyboard rendering.
 6. Continue with S01 navigation polish and S11/S12 keyboard geometry/Android resize behavior.
+
+## Milestone S12 — Android keyboard height resize
+
+Status: **partial implementation; CI run pending at time of this update**.
+
+### Delivered source
+- New `YoryKeyboardResizeScreen.kt` with a keyboard-key preview based on current theme colors and geometry.
+- The 36–60dp slider updates the preview as the value changes and persists `keyHeightDp` after the slider interaction completes.
+- Compact (40dp), Standard (46dp), Tall (54dp) and Reset (46dp) shortcuts.
+- Layout & keys now opens a dedicated Resize screen with its own back action.
+- The InputMethodService already reads `keyHeightDp` for its actual key-row heights; the new screen writes to that same ThemeStore field.
+
+### Known limitations
+- This is key-height resizing, not free drag handles, keyboard width resizing or floating-position adjustment.
+- The preview is illustrative and still needs comparison against the actual IME renderer on physical devices.
+- iOS has a key-height value in Theme Studio; no SwiftKey-style free-reposition tool is advertised.
+
+### Validation
+- Repository contract validation passed on the preceding commit `0008ffdbb849338112fc4e190296bef455728866`.
+- Android CI on commit `a04deacf1183775090666ba5bf178aac9fb51f71` was in progress at the time the S12/compact-mode work was recorded. The newer CI run for the current source must be used to close this gate.
+- No physical-device resize QA has been performed.
+
+## Milestone RI-C1 — Compact suggestion mode
+
+Status: **source implemented on Android and iOS; automated builds pending**.
+
+- Android Rich input setting writes `compact_mode` to local settings; IME reduces suggestion row height and shows at most two suggestions rather than three.
+- iOS Rich input setting persists `yory.input.compactMode` in the App Group; keyboard extension shortens the suggestion row and limits suggestions to two.
+- This changes suggestion display only. It does not change inserted text, editor selection or the keyboard input connection.
+- UI/physical-device checks remain pending.
