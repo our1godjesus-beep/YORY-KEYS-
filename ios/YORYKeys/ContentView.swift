@@ -270,7 +270,7 @@ struct ContentView: View {
         }
         func color(_ key: String, fallback: Color) throws -> Color {
             guard let hex = appearance[key] as? String,
-                  hex.range(of: "^#[A-Fa-f0-9]{6}$", options: .regularExpression) != nil else {
+                  hex.range(of: "^#[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$", options: .regularExpression) != nil else {
                 if appearance[key] == nil { return fallback }
                 throw CocoaError(.fileReadCorruptFile)
             }
@@ -314,12 +314,17 @@ private extension Color {
     init(hex: String) {
         let raw = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         let value = UInt64(raw, radix: 16) ?? 0x1A1D2B
+        let hasAlpha = raw.count == 8
+        let red = hasAlpha ? ((value >> 24) & 0xFF) : ((value >> 16) & 0xFF)
+        let green = hasAlpha ? ((value >> 16) & 0xFF) : ((value >> 8) & 0xFF)
+        let blue = hasAlpha ? ((value >> 8) & 0xFF) : (value & 0xFF)
+        let alpha = hasAlpha ? (value & 0xFF) : 0xFF
         self.init(
             .sRGB,
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255,
-            opacity: 1
+            red: Double(red) / 255,
+            green: Double(green) / 255,
+            blue: Double(blue) / 255,
+            opacity: Double(alpha) / 255
         )
     }
 
