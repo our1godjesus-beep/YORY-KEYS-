@@ -49,7 +49,7 @@ enum YoryThemeReader {
         return ["system", "rounded", "serif", "mono"].contains(value) ? value : "system"
     }
     static var keyHeight: CGFloat {
-        CGFloat(settings?.double(forKey: "keyHeight") ?? 44).clamped(to: 32...60)
+        CGFloat(settings?.double(forKey: "keyHeight") ?? 46).clamped(to: 32...60)
     }
     static var longPressDuration: TimeInterval {
         (settings?.double(forKey: "yory.layout.longPressDuration") ?? 0.45).clamped(to: 0.2...0.9)
@@ -76,14 +76,14 @@ enum YoryThemeReader {
         CGFloat(settings?.double(forKey: "yory.haptics.intensity") ?? 0.45).clamped(to: 0...1)
     }
     static var keyShape: String {
-        let value = settings?.string(forKey: "keyShape") ?? "rounded"
+        let value = settings?.string(forKey: "keyShape") ?? "squircle"
         return ["rounded", "squircle", "pill", "circle", "rect"].contains(value) ? value : "rounded"
     }
     static var cornerRadius: CGFloat {
-        CGFloat(settings?.double(forKey: "cornerRadius") ?? 13).clamped(to: 4...28)
+        CGFloat(settings?.double(forKey: "cornerRadius") ?? 12).clamped(to: 4...28)
     }
     static var opacity: CGFloat {
-        CGFloat(settings?.double(forKey: "opacity") ?? 0.92).clamped(to: 0.35...1)
+        CGFloat(settings?.double(forKey: "opacity") ?? 1.0).clamped(to: 0.35...1)
     }
 
     static var languageTag: String {

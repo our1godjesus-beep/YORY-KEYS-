@@ -930,18 +930,18 @@ private struct YoryGalleryThemeCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(preset.name).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
                     Text(isApplied ? "Currently applied" : (preset.isCustom ? "Saved by you" : "Built-in preset"))
-                        .font(.caption2).foregroundStyle(isApplied ? Color(hex: "#A7C7FF") : .white.opacity(0.58))
+                        .font(.caption2).foregroundStyle(isApplied ? Color(hex: "#C9AE80") : .white.opacity(0.58))
                 }
                 Spacer(minLength: 0)
                 if isApplied {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(hex: "#A7C7FF"))
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(hex: "#C9AE80"))
                 }
             }
 
             Button(action: onApply) {
                 Text(isApplied ? "Applied" : "Apply theme")
                     .font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
-                    .background(isApplied ? Color(hex: "#A7C7FF").opacity(0.18) : Color(hex: "#A7C7FF"), in: RoundedRectangle(cornerRadius: 11))
+                    .background(isApplied ? Color(hex: "#C9AE80").opacity(0.18) : Color(hex: "#C9AE80"), in: RoundedRectangle(cornerRadius: 11))
                     .foregroundStyle(isApplied ? .white : Color(hex: "#101725"))
             }
             .buttonStyle(.plain)
@@ -949,22 +949,22 @@ private struct YoryGalleryThemeCard: View {
             HStack(spacing: 4) {
                 Button(action: onDetails) {
                     Text("Details").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
-                        .foregroundStyle(Color(hex: "#A7C7FF"))
+                        .foregroundStyle(Color(hex: "#C9AE80"))
                 }
                 .buttonStyle(.plain)
                 Button(action: onCustomize) {
                     Text("Customize").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
-                        .foregroundStyle(Color(hex: "#A7C7FF"))
+                        .foregroundStyle(Color(hex: "#C9AE80"))
                 }
                 .buttonStyle(.plain)
                 if isFavorite {
-                    Image(systemName: "star.fill").font(.caption2).foregroundStyle(Color(hex: "#A7C7FF"))
+                    Image(systemName: "star.fill").font(.caption2).foregroundStyle(Color(hex: "#C9AE80"))
                 }
             }
         }
         .padding(10)
         .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(isApplied ? Color(hex: "#A7C7FF") : Color.white.opacity(0.16), lineWidth: isApplied ? 1.2 : 0.7))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(isApplied ? Color(hex: "#C9AE80") : Color.white.opacity(0.16), lineWidth: isApplied ? 1.2 : 0.7))
     }
 
     private func galleryKey(_ title: String, wide: Bool) -> some View {
