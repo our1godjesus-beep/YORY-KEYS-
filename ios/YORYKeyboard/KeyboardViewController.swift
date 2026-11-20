@@ -30,7 +30,9 @@ private struct YoryKeyboardLayout {
         }
         guard !enabled.isEmpty else { return supported[0].tag }
         guard enabled.count > 1 else { return enabled[0].tag }
-        let index = enabled.firstIndex(where: { $0.tag.caseInsensitiveCompare(current) == .orderedSame }) ?? 0
+        guard let index = enabled.firstIndex(where: { $0.tag.caseInsensitiveCompare(current) == .orderedSame }) else {
+            return enabled[0].tag
+        }
         let step = direction < 0 ? -1 : 1
         return enabled[(index + step + enabled.count) % enabled.count].tag
     }
