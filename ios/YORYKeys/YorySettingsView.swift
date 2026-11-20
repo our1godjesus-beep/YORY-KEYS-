@@ -191,7 +191,7 @@ private struct YorySettingsDetailView: View {
             }
             .padding(.vertical, 5)
         }
-        .listRowBackground(.ultraThinMaterial)
+        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
     }
 
     private func glassToggle(_ label: String, detail: String, isOn: Binding<Bool>) -> some View {
@@ -202,7 +202,7 @@ private struct YorySettingsDetailView: View {
             }
         }
         .tint(Color(red: 0.62, green: 0.76, blue: 1.0))
-        .listRowBackground(.ultraThinMaterial)
+        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
     }
 
     private func settingsInfo(_ heading: String, _ detail: String) -> some View {
@@ -211,7 +211,7 @@ private struct YorySettingsDetailView: View {
             Text(detail).foregroundStyle(.white.opacity(0.63)).font(.footnote)
         }
         .padding(.vertical, 5)
-        .listRowBackground(.ultraThinMaterial)
+        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
     }
 }
 
