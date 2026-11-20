@@ -5,7 +5,7 @@ enum YoryThemeReader {
     private static var settings: UserDefaults? { UserDefaults(suiteName: groupID) }
 
     static var backgroundColor: UIColor {
-        color(for: "backgroundHex", fallback: "#D91A1D")
+        color(for: "backgroundHex", fallback: "#1A1D2B")
     }
     static var keyColor: UIColor {
         color(for: "keyHex", fallback: "#F1F3FA")
@@ -17,10 +17,22 @@ enum YoryThemeReader {
         color(for: "accentHex", fallback: "#78B8F8")
     }
     static var cornerRadius: CGFloat {
-        CGFloat(settings?.double(forKey: "cornerRadius") ?? 13)
+        CGFloat(settings?.double(forKey: "cornerRadius") ?? 13).clamped(to: 4...28)
     }
     static var opacity: CGFloat {
-        CGFloat(settings?.double(forKey: "opacity") ?? 0.92)
+        CGFloat(settings?.double(forKey: "opacity") ?? 0.92).clamped(to: 0.35...1)
+    }
+
+    static var isArabic: Bool {
+        settings?.string(forKey: "language") == "العربية"
+    }
+
+    static var soundEnabled: Bool {
+        settings?.object(forKey: "soundEnabled") as? Bool ?? true
+    }
+
+    static var hapticsEnabled: Bool {
+        settings?.object(forKey: "hapticsEnabled") as? Bool ?? true
     }
 
     private static func color(for key: String, fallback: String) -> UIColor {
@@ -41,5 +53,11 @@ enum YoryThemeReader {
             blue: CGFloat(number & 0xFF) / 255,
             alpha: 1
         )
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
