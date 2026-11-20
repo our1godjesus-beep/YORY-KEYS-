@@ -70,7 +70,7 @@ enum YoryLocalWordSuggestions {
               word.range(of: "^[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) != nil else {
             return
         }
-        let language = languageTag.lowercased().hasPrefix("ar") ? "ar" : "en"
+        let language = String(languageTag.lowercased().split(separator: "-").first ?? "en")
         let defaults = localDefaults
         var all = defaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         var languageWords = all[language] ?? [:]
@@ -105,7 +105,7 @@ enum YoryLocalWordSuggestions {
     static func suggestions(prefix: String, languageTag: String, limit: Int = 3) -> [String] {
         let clean = prefix.lowercased()
         guard !clean.isEmpty else { return [] }
-        let language = languageTag.lowercased().hasPrefix("ar") ? "ar" : "en"
+        let language = String(languageTag.lowercased().split(separator: "-").first ?? "en")
         let personal = personalSuggestions(prefix: clean, language: language, limit: limit)
         let bundled = (words[language] ?? [])
             .filter { $0.hasPrefix(clean) && $0.caseInsensitiveCompare(clean) != .orderedSame }

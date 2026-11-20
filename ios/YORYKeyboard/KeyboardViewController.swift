@@ -1,3 +1,31 @@
+private struct YoryKeyboardLayout {
+    let tag: String
+    let name: String
+    let spaceLabel: String
+    let rows: [String]
+    let isRightToLeft: Bool
+    let hasBundledDictionary: Bool
+
+    static let supported: [YoryKeyboardLayout] = [
+        .init(tag: "en-US", name: "English (US)", spaceLabel: "English", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: true),
+        .init(tag: "ar", name: "العربية (مصر)", spaceLabel: "العربية", rows: ["ضصثقفغعهخح", "شسيبلاتنم", "ئءؤرىةوز"], isRightToLeft: true, hasBundledDictionary: true),
+        .init(tag: "de", name: "Deutsch (DE)", spaceLabel: "Deutsch", rows: ["qwertzuiop", "asdfghjkl", "yxcvbnm"], isRightToLeft: false, hasBundledDictionary: false),
+        .init(tag: "es", name: "Español", spaceLabel: "Español", rows: ["qwertyuiop", "asdfghjklñ", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: false),
+        .init(tag: "fr", name: "Français", spaceLabel: "Français", rows: ["azertyuiop", "qsdfghjklm", "wxcvbn"], isRightToLeft: false, hasBundledDictionary: false),
+        .init(tag: "pt", name: "Português", spaceLabel: "Português", rows: ["qwertyuiop", "asdfghjklç", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: false),
+        .init(tag: "it", name: "Italiano", spaceLabel: "Italiano", rows: ["qwertyuiop", "asdfghjklò", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: false)
+    ]
+
+    static func resolve(_ tag: String) -> YoryKeyboardLayout {
+        supported.first(where: { $0.tag.caseInsensitiveCompare(tag) == .orderedSame }) ?? supported[0]
+    }
+
+    static func nextTag(after current: String) -> String {
+        let index = supported.firstIndex(where: { $0.tag.caseInsensitiveCompare(current) == .orderedSame }) ?? -1
+        return index < 0 ? supported[0].tag : supported[(index + 1) % supported.count].tag
+    }
+}
+
 import UIKit
 
 private final class YoryKeyboardRootView: UIView, UIInputViewAudioFeedback {
@@ -33,8 +61,9 @@ final class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.black.withAlphaComponent(0.94)
-        languageTag = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "yory.active.language") ?? (YoryThemeReader.isArabic ? "ar" : "en-US")
-        isArabic = languageTag == "ar"
+        let savedLanguage = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "yory.active.language") ?? (YoryThemeReader.isArabic ? "ar" : "en-US")
+        languageTag = YoryKeyboardLayout.resolve(savedLanguage).tag
+        isArabic = YoryKeyboardLayout.resolve(languageTag).isRightToLeft
         primaryLanguage = languageTag
         applyCurrentTheme()
         buildInterface()
@@ -247,7 +276,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func rebuildKeys() {
         updateKeyboardHeight()
-        let direction: UISemanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
+        let direction: UISemanticContentAttribute = YoryKeyboardLayout.resolve(languageTag).isRightToLeft && !numericInput ? .forceRightToLeft : .forceLeftToRight
         root.semanticContentAttribute = direction
         toolbarRow?.semanticContentAttribute = direction
         suggestionRow.semanticContentAttribute = direction
@@ -281,16 +310,10 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
 
-        let rows: [String]
-        if symbolMode {
-            rows = ["@#$%&*()-", "_+=[]{}?!", "<>/\\|;:"]
-        } else if isArabic {
-            rows = ["ضصثقفغعهخح", "شسيبلاتنم", "ئءؤرىةوز"]
-        } else if languageTag == "de" {
-            rows = ["qwertzuiop", "asdfghjkl", "yxcvbnm"]
-        } else {
-            rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
-        }
+        let activeLayout = YoryKeyboardLayout.resolve(languageTag)
+        let rows: [String] = symbolMode
+            ? ["@#$%&*()-", "_+=[]{}?!", "<>/\\|;:"]
+            : activeLayout.rows
 
         if YoryThemeReader.numberRowEnabled && YoryThemeReader.numberPosition == "top" {
             keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
@@ -313,7 +336,7 @@ final class KeyboardViewController: UIInputViewController {
         bottom.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
         let fieldSymbol = currentKeyboardType == .emailAddress ? "@" : (currentKeyboardType == .URL ? "/" : ",")
         bottom.addArrangedSubview(keyButton(fieldSymbol))
-        let space = keyButton(isArabic ? "العربية" : (languageTag == "de" ? "Deutsch" : "English"), action: #selector(insertSpace))
+        let space = keyButton(activeLayout.spaceLabel, action: #selector(insertSpace))
         bottom.addArrangedSubview(space)
         bottom.addArrangedSubview(keyButton("."))
         bottom.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
@@ -616,8 +639,8 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func toggleLanguage() {
         playKeyClick()
-        languageTag = languageTag == "en-US" ? "de" : (languageTag == "de" ? "ar" : "en-US")
-        isArabic = languageTag == "ar"
+        languageTag = YoryKeyboardLayout.nextTag(after: languageTag)
+        isArabic = YoryKeyboardLayout.resolve(languageTag).isRightToLeft
         UserDefaults(suiteName: "group.app.yory.keys")?.set(languageTag, forKey: "yory.active.language")
         primaryLanguage = languageTag
         symbolMode = false
@@ -642,7 +665,7 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         let word = String(context[range])
-        YoryLocalWordSuggestions.learnAcceptedWord(word, languageTag: languageTag == "de" ? "de" : (isArabic ? "ar" : "en"))
+        YoryLocalWordSuggestions.learnAcceptedWord(word, languageTag: languageTag)
     }
 
     @objc private func toggleTools() {
@@ -838,9 +861,7 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         let prefix = String(context[range])
-        guard languageTag != "de" else { return }
-        let language = isArabic ? "ar" : "en"
-        let suggestions = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: language)
+        let suggestions = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
 
         for suggestion in suggestions.prefix(suggestionLimit) {
             let button = UIButton(type: .system)

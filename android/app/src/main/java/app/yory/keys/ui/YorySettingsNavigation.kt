@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.yory.keys.theme.YoryThemeStore
 import app.yory.keys.ime.PersonalDictionaryStore
+import app.yory.keys.ime.ClipboardHistoryStore
 
 private data class SettingsItem(val icon: String, val title: String, val subtitle: String = "")
 
@@ -166,12 +167,16 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
             when (page) {
                 "Languages" -> {
                     Text("YOUR LANGUAGES", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
-                    LanguageChoice("English (US)", "Layout: QWERTY", "en-US", activeLanguage == "en-US") { chooseLanguage("en-US") }
-                    LanguageChoice("العربية (مصر)", "Layout: Arabic 123 (PC)", "ar", activeLanguage == "ar") { chooseLanguage("ar") }
-                    LanguageChoice("Deutsch (DE)", "Layout: QWERTZ · Basic layout", "de", activeLanguage == "de") { chooseLanguage("de") }
+                    LanguageChoice("English (US)", "QWERTY · starter word list", "en-US", activeLanguage == "en-US") { chooseLanguage("en-US") }
+                    LanguageChoice("العربية (مصر)", "Arabic 123 (PC) · starter word list", "ar", activeLanguage == "ar") { chooseLanguage("ar") }
+                    LanguageChoice("Deutsch (DE)", "QWERTZ · layout only", "de", activeLanguage == "de") { chooseLanguage("de") }
+                    LanguageChoice("Español", "QWERTY · layout only", "es", activeLanguage == "es") { chooseLanguage("es") }
+                    LanguageChoice("Français", "AZERTY · layout only", "fr", activeLanguage == "fr") { chooseLanguage("fr") }
+                    LanguageChoice("Português", "QWERTY · layout only", "pt", activeLanguage == "pt") { chooseLanguage("pt") }
+                    LanguageChoice("Italiano", "QWERTY · layout only", "it", activeLanguage == "it") { chooseLanguage("it") }
                     GlassPanel(Modifier.fillMaxWidth()) {
-                        Text("Changing layouts", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        Text("Switch between installed layouts from the language key on the keyboard. The selected language is saved on this device.", color = GlassMuted, fontSize = 13.sp)
+                        Text("Layouts and dictionaries are separate", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Seven keyboard layouts are available offline. Bundled starter word lists are currently available only for English and Arabic; the other languages can use personal learning, but do not have shipped prediction dictionaries yet. The full 120-language catalogue is a target list, not 120 ready-to-use languages.", color = GlassMuted, fontSize = 13.sp)
                     }
                 }
                 "Emoji" -> {

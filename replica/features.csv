@@ -10,7 +10,7 @@
 "Theme editor with color and geometry controls","themes","must","yes","partial","Existing editor remains integrated; users can name and save a custom theme locally from Android and iOS. Unsaved-draft/discard flow and full renderer parity remain."
 "Theme import and export","themes","should","yes","partial","Versioned .yorytheme implementation exists; round-trip/device QA remains."
 "Theme duplicate, favorite and delete management","themes","should","yes","partial","Both platforms implement favorite, duplicate, rename and delete actions for saved themes; built-in presets are protected. Persistence/relaunch QA remains."
-"Language list with active layout state","languages","must","yes","partial","English, Arabic and German basic layout are represented; add true installed/available state."
+"Language list with active layout state","languages","must","yes","partial","Seven working offline letter layouts on both Android and iOS: English US, Arabic, German, Spanish, French, Portuguese and Italian. Only English and Arabic currently have bundled starter prefix dictionaries; others have layout-only support. 120 languages remain a target catalogue."
 "Add/download language packs","languages","should","yes","no","Language catalogue is not proof of production language packs; signed pack pipeline is not integrated."
 "Language-specific layout selection","languages","must","yes","partial","Basic layout tags exist; full layout editor/quality validation remains."
 "Typing suggestions toggle","typing","must","yes","partial","Local prefix suggestions exist; model quality and settings parity require QA."

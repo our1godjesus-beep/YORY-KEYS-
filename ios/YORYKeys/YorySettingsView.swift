@@ -131,15 +131,17 @@ private struct YorySettingsDetailView: View {
                 switch title {
                 case "Languages":
                     Section("YOUR LANGUAGES") {
-                        languageRow("Deutsch (DE)", detail: "Layout: QWERTZ", tag: "de")
-                        languageRow("English (US)", detail: "Layout: QWERTY", tag: "en-US")
-                        languageRow("العربية (مصر)", detail: "Layout: Arabic 123 (PC)", tag: "ar")
+                        languageRow("English (US)", detail: "QWERTY · starter word list", tag: "en-US")
+                        languageRow("العربية (مصر)", detail: "Arabic 123 (PC) · starter word list", tag: "ar")
+                        languageRow("Deutsch (DE)", detail: "QWERTZ · layout only", tag: "de")
+                        languageRow("Español", detail: "QWERTY · layout only", tag: "es")
+                        languageRow("Français", detail: "AZERTY · layout only", tag: "fr")
+                        languageRow("Português", detail: "QWERTY · layout only", tag: "pt")
+                        languageRow("Italiano", detail: "QWERTY · layout only", tag: "it")
                     }
                     Section {
-                        Text("Change the active layout using the language key on the keyboard. The selection is shared with the keyboard extension.")
+                        Text("Seven keyboard layouts are available offline. Bundled starter word lists are currently available only for English and Arabic. Other languages have a working letter layout and can learn personal words, but do not yet ship a prediction dictionary. The 120-language catalogue is a target list, not 120 ready-to-use languages.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.65))
-                        Button("＋ Add languages") {}
-                            .disabled(true)
                     }
                 case "Emoji":
                     Section {

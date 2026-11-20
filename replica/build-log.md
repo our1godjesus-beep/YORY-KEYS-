@@ -106,3 +106,13 @@ Status: **source implemented on Android and iOS; automated builds pending**.
 - Extracted Android clipboard expiry, pinning, size cap and heuristic sensitive-pattern checks into a pure Kotlin policy object.
 - Added JVM unit tests for common sensitive patterns, unpinned expiry, pinned retention, unpinning expiry and the 50-entry cap.
 - These tests run as part of Android `:app:testDebugUnitTest`; final CI status is pending for the new commit.
+
+
+## Milestone L1 — Seven runtime keyboard layouts (2026-11-20)
+
+- Added offline layouts for English US, Arabic, German, Spanish, French, Portuguese and Italian on Android and iOS.
+- Language settings now show these seven options; language key cycles through the same runtime set.
+- Android and iOS use matching key-row definitions, labels and direction rules.
+- English and Arabic retain starter prefix dictionaries. Other languages currently have layout-only support and may use opt-in per-language personal learning; they do not receive English/Arabic predictions.
+- Target catalogue remains 120 languages and is not a statement of implemented models.
+- Device layout QA, especially small widths and Arabic RTL/mixed text, remains pending.

@@ -12,41 +12,46 @@
       "tag": "ar",
       "name": "Arabic",
       "tier": "tier1",
-      "implementationStatus": "basic_layout_scaffold",
-      "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "implementationStatus": "keyboard_layout_available",
+      "modelStatus": "starter_prefix_dictionary",
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "arabic_123_pc"
     },
     {
       "tag": "en",
       "name": "English",
       "tier": "tier1",
-      "implementationStatus": "basic_layout_scaffold",
-      "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "implementationStatus": "keyboard_layout_available",
+      "modelStatus": "starter_prefix_dictionary",
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "qwerty_us"
     },
     {
       "tag": "es",
       "name": "Spanish",
       "tier": "tier1",
-      "implementationStatus": "catalog_only",
+      "implementationStatus": "keyboard_layout_available",
       "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "qwerty_es"
     },
     {
       "tag": "fr",
       "name": "French",
       "tier": "tier1",
-      "implementationStatus": "catalog_only",
+      "implementationStatus": "keyboard_layout_available",
       "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "azerty_fr"
     },
     {
       "tag": "de",
       "name": "German",
       "tier": "tier1",
-      "implementationStatus": "catalog_only",
+      "implementationStatus": "keyboard_layout_available",
       "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "qwertz_de"
     },
     {
       "tag": "hi",
@@ -68,9 +73,10 @@
       "tag": "pt",
       "name": "Portuguese",
       "tier": "tier1",
-      "implementationStatus": "catalog_only",
+      "implementationStatus": "keyboard_layout_available",
       "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "qwerty_pt"
     },
     {
       "tag": "tr",
@@ -92,9 +98,10 @@
       "tag": "it",
       "name": "Italian",
       "tier": "tier2",
-      "implementationStatus": "catalog_only",
+      "implementationStatus": "keyboard_layout_available",
       "modelStatus": "not_shipped",
-      "qualityGate": "pending"
+      "qualityGate": "layout_qa_pending",
+      "layoutProfile": "qwerty_it"
     },
     {
       "tag": "ru",

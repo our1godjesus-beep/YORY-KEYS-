@@ -75,3 +75,8 @@ Environment: Android emulator/device and iOS simulator/device. No test in this d
 
 | C02-H2 | Search clipboard history | happy | Type a word or phrase in the clipboard manager search field | Matching clips are filtered case-insensitively; clear search restores all entries; an informative empty result appears | JVM policy test + Android UI QA | Pending CI |
 | C02-E2 | Legacy clipboard migration write failure | edge | Simulate encrypted write failure during legacy migration | The old preference copy is retained until an encrypted replacement is saved successfully | Unit/instrumentation test with injected storage failure | Not run |
+
+| L01-H1 | Seven offline language layouts | happy | Select English US, Arabic, German, Spanish, French, Portuguese and Italian from Languages and cycle with the language key | Correct letter rows and language label appear on Android and iOS; Arabic uses RTL and others LTR | JVM layout unit tests + manual platform QA | Pending CI |
+| L01-E1 | Unknown saved language tag | edge | Restore an unknown or unsupported language tag from app settings | Keyboard safely falls back to English US without crashing | JVM unit test + manual iOS QA | Pending CI |
+| L01-H2 | Language-specific learning separation | happy | Enable personal learning and accept a word under each supported language tag | Learned words are stored under that language's base tag and never appear as English suggestions in another language | JVM unit test + manual iOS QA | Pending CI |
+| L01-N1 | Layout-only language prediction | negative | Select German, Spanish, French, Portuguese or Italian with no local learned words | No English or Arabic bundled suggestions are shown; UI labels these layouts as layout-only | Manual UI/input test | Not run |

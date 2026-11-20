@@ -516,6 +516,16 @@
         "ios"
       ],
       "notes": "Long-press an emoji to add/remove it from local favorites; the Favorites category displays saved items. Favorites remain device-local and physical-device accessibility/touch QA is pending."
+    },
+    {
+      "id": "language-layouts",
+      "name": "Offline keyboard language layouts",
+      "status": "partial_implementation",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German, Spanish, French, Portuguese and Italian. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
     }
   ]
 }

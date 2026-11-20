@@ -217,7 +217,8 @@ class YoryInputMethodService : InputMethodService() {
         val container = keysContainer ?: return
         theme = YoryThemeStore.load(applicationContext)
         keyboardRoot?.background = panelBackground()
-        val direction = if (languageTag.startsWith("ar") && !numericField && !emailField && !urlField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        val activeLayout = YoryLanguageLayouts.forTag(languageTag)
+        val direction = if (activeLayout.isRtl && !numericField && !emailField && !urlField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         keyboardRoot?.layoutDirection = direction
         container.layoutDirection = direction
         container.removeAllViews()
@@ -244,13 +245,9 @@ class YoryInputMethodService : InputMethodService() {
             addKeyRow(container, "@#$%&-*+=")
             addKeyRow(container, "()[]{}⌫")
         } else {
-            addKeyRow(container, when {
-                languageTag.startsWith("ar") -> "ضصثقفغعهخح"
-                languageTag.startsWith("de") -> "qwertzuiop"
-                else -> "qwertyuiop"
-            })
-            addKeyRow(container, if (languageTag.startsWith("ar")) "شسيبلاتنم" else "asdfghjkl")
-            addSpecialLetterRow(container)
+            addKeyRow(container, activeLayout.rows[0])
+            addKeyRow(container, activeLayout.rows[1])
+            addSpecialLetterRow(container, activeLayout.rows[2])
         }
         addBottomRow(container)
         if (showNumberRow && numberPosition == "bottom") addKeyRow(container, "1234567890")
@@ -448,17 +445,12 @@ class YoryInputMethodService : InputMethodService() {
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
     }
 
-    private fun addSpecialLetterRow(parent: LinearLayout) {
+    private fun addSpecialLetterRow(parent: LinearLayout, letters: String) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
         addKey(row, "⇧", 1.25f) { shifted = !shifted; refreshKeyboard() }
-        val letters = when {
-            languageTag.startsWith("ar") -> "ئءؤرىةوز"
-            languageTag.startsWith("de") -> "yxcvbnm"
-            else -> "zxcvbnm"
-        }
         letters.forEach { char ->
             val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
             addKey(row, label, 1f) { handleKey(label) }
@@ -477,7 +469,7 @@ class YoryInputMethodService : InputMethodService() {
             refreshKeyboard()
         }
         addKey(row, "🌐", 1f) {
-            languageTag = if (languageTag.startsWith("ar")) "en-US" else "ar"
+            cycleLanguage()
             shifted = false
             refreshKeyboard()
             updateSuggestions()
@@ -487,11 +479,7 @@ class YoryInputMethodService : InputMethodService() {
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
             updateSuggestions()
         }
-        addKey(row, when {
-            languageTag.startsWith("ar") -> "العربية"
-            languageTag.startsWith("de") -> "Deutsch"
-            else -> "English"
-        }, 3.8f) {
+        addKey(row, YoryLanguageLayouts.forTag(languageTag).shortLabel, 3.8f) {
             learnCurrentWord()
             currentInputConnection?.commitText(" ", 1)
             refreshAutomaticShift()
@@ -729,11 +717,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun cycleLanguage() {
-        val next = when {
-            languageTag.startsWith("en") -> "de"
-            languageTag.startsWith("de") -> "ar"
-            else -> "en-US"
-        }
+        val next = YoryLanguageLayouts.nextTag(languageTag)
         languageTag = next
         getSharedPreferences("yory_user_settings", MODE_PRIVATE).edit()
             .putString("active_language", next).apply()
@@ -847,14 +831,10 @@ class YoryInputMethodService : InputMethodService() {
         val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
         val suggestionLimit = if (compactMode) 2 else 3
         val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
-        val bundled = if (languageTag.startsWith("de")) emptyList() else wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
+        val bundled = wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
         val suggestions = (personal + bundled).distinct().take(suggestionLimit)
         if (suggestions.isEmpty()) {
-            addToolbarButton(row, when {
-                languageTag.startsWith("ar") -> "العربية"
-                languageTag.startsWith("de") -> "Deutsch"
-                else -> "English"
-            }, 1f) { }
+            addToolbarButton(row, YoryLanguageLayouts.forTag(languageTag).shortLabel, 1f) { }
         } else {
             suggestions.forEach { suggestion ->
                 addToolbarButton(row, suggestion, 1f) { replaceCurrentWord(suggestion) }

@@ -205,3 +205,11 @@ The following code work supersedes older "not implemented" bullets above where n
 ### Clipboard search addendum — 2026-11-20
 - Android Clipboard manager now includes case-insensitive search across stored clip text, with an empty-results state and a clear-search action.
 - Search normalization and filtering are covered by JVM unit tests; Android UI validation remains in CI/manual QA.
+
+
+### Runtime language-layout addendum — 2026-11-20
+- Added seven offline layouts on Android and iOS: English US (QWERTY), Arabic (Arabic 123 PC), German (QWERTZ), Spanish (QWERTY with ñ), French (AZERTY), Portuguese (QWERTY with ç) and Italian (QWERTY with ò).
+- The language switch key cycles through the seven installed layouts and settings allow direct selection.
+- Arabic alone among the current set uses right-to-left keyboard direction.
+- Bundled starter prefix dictionaries currently exist only for English and Arabic. Other layouts are usable for typing, but do not ship a prediction dictionary; opt-in personal learning is stored by language tag.
+- The 120-language catalogue remains a target list. Only seven layouts are available in this build.
