@@ -89,3 +89,23 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Extended the glass styling into Android YORY Studio controls/previews and the iOS YORY Studio screen, preview keys, presets, and segmented controls.
 - Preserved the existing keyboard row order, key labels, language layout selection, and core input actions; this visual pass does not intentionally change the main typing layout.
 - Build/device verification for this visual update is pending. Native blur rendering differs by platform; Android currently uses translucent gradient surfaces rather than a true real-time blur behind each key.
+
+
+## SwiftKey-reference glass settings pass (2026-11-20)
+
+### Interface implemented
+- Android and iOS app settings now use a dedicated settings landing page with the same broad section order shown in the reference screenshots: Account, YORY Rewards, Languages, Themes, Typing, Emoji, Rich input, Layout & keys, Sound & vibration, Privacy, Achievements, Help & Feedback, and About.
+- Settings sections open their own detail pages. The Themes destination retains the existing theme editor and preview.
+- Dark premium-glass surfaces, borders, translucent panels and light gradients are applied across settings and previews. iOS uses native material blur; Android uses translucent gradient glass panels and highlights.
+- The keyboard keeps its existing main key-row geometry and typing actions. Language switching now includes English QWERTY, basic German QWERTZ, and Arabic layout on both platforms.
+
+### Preferences connected
+- Android: selected language, number-row preference, emoji shortcut visibility, word suggestions, auto-capitalization, personal dictionary, sound, haptics and optional clipboard history are connected to the relevant local settings/keyboard code.
+- iOS: selected language, number row, emoji shortcut visibility, word suggestions, auto-capitalization, personal dictionary, sound and haptics are connected through the shared App Group settings.
+- Voice typing, external search, and iOS clipboard history are not yet implemented; the settings screens identify these as unavailable rather than implying they work.
+- Options such as accented-character behavior, arrow keys, long-press symbol variants, recent-emoji behavior and key pop-up behavior still need full interaction wiring. Do not describe those as completed until separately implemented and tested.
+
+### Verification
+- Android build and repository validation are running for the latest preference-wiring commits; earlier commits for the new settings navigation and initial German layout passed Android CI.
+- iOS CI is still running for the latest settings and keyboard preference commits. The earlier iOS settings view compile errors were corrected and a subsequent iOS simulator build passed at commit 43dd0df6ed2b90b75b4beef7eb6d85889109442b.
+- Physical-device validation is still outstanding. The iOS build remains an unsigned simulator build, not an installable signed iPhone release.
