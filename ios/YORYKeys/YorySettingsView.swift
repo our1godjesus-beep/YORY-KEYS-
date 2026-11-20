@@ -74,9 +74,9 @@ struct ContentView: View {
                     NavigationLink(value: "Keyboard Setup") {
                         Image(systemName: "keyboard.fill")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color(hex: "#101725"))
+                            .foregroundStyle(Color(red: 0.0627, green: 0.0902, blue: 0.1451))
                             .frame(width: 52, height: 52)
-                            .background(Color(hex: "#A7C7FF"), in: RoundedRectangle(cornerRadius: 16))
+                            .background(Color(red: 0.6549, green: 0.7804, blue: 1.0), in: RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.42), lineWidth: 0.8))
                             .shadow(color: Color.black.opacity(0.24), radius: 12, y: 5)
                     }
