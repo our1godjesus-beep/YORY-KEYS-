@@ -28,7 +28,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 - The iOS keyboard renderer reads and applies theme colors, pressed-key color, shape, spacing, font size, corner radius, opacity, sounds and haptic preferences.
 - The iOS host app exposes a personal-learning opt-in through its App Group preferences; the keyboard extension stores learned terms in its own extension-private UserDefaults store. The keyboard's ••• tools row can clear the learned-word store. The extension does not upload these terms.
 - Automatic capitalization respects the host text object's \`autocapitalizationType\`.
-- The extension declares \`RequestsOpenAccess = true\) so iOS can offer the system Allow Full Access option. This is user-controlled, not automatic. Basic typing remains available without Full Access; iOS keyboard click audio is only invoked when \`hasFullAccess\` is true.
+- The extension declares `RequestsOpenAccess = true` so iOS can offer the system Allow Full Access option. This is user-controlled, not automatic. Basic typing remains available without Full Access. App Group dictionary writes/clears, shared keyboard preference writes and iOS keyboard click audio are gated on `hasFullAccess`; no keystroke or editor-context upload is implemented.
 - No code in the keyboard typing path sends keystrokes, passwords, surrounding text, or clipboard payloads to a server.
 
 ### Backend source
