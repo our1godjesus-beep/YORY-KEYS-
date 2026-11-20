@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.yory.keys.ime.PersonalDictionaryStore
 import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
 
