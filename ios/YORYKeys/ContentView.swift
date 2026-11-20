@@ -77,6 +77,7 @@ struct ContentView: View {
                         Text("Squircle").tag("squircle")
                         Text("Pill").tag("pill")
                         Text("Rect").tag("rect")
+                        Text("Circle").tag("circle")
                     }
                     .pickerStyle(.segmented)
 
@@ -329,7 +330,7 @@ struct ContentView: View {
         keySpacing = min(12.0, max(0.0, (importedGeometry["keySpacing"] as? NSNumber)?.doubleValue ?? keySpacing))
         fontSize = min(26.0, max(12.0, (importedTypography["fontSize"] as? NSNumber)?.doubleValue ?? fontSize))
         let importedShape = importedGeometry["keyShape"] as? String ?? keyShape
-        keyShape = ["rounded", "squircle", "pill", "rect"].contains(importedShape) ? importedShape : "rounded"
+        keyShape = ["rounded", "squircle", "pill", "rect", "circle"].contains(importedShape) ? importedShape : "rounded"
         soundEnabled = importedSound["enabled"] as? Bool ?? soundEnabled
         hapticsEnabled = importedHaptics["enabled"] as? Bool ?? hapticsEnabled
         themeName = String((document["name"] as? String ?? "Imported Theme").prefix(48))
@@ -358,9 +359,10 @@ private extension Color {
         let raw = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         let value = UInt64(raw, radix: 16) ?? 0x1A1D2B
         let hasAlpha = raw.count == 8
-        let red = hasAlpha ? ((value >> 24) & 0xFF) : ((value >> 16) & 0xFF)
-        let green = hasAlpha ? ((value >> 16) & 0xFF) : ((value >> 8) & 0xFF)
-        let blue = hasAlpha ? ((value >> 8) & 0xFF) : (value & 0xFF)
+        // Eight-digit theme colors use CSS-style #RRGGBBAA on every platform.
+        let red = (value >> (hasAlpha ? 24 : 16)) & 0xFF
+        let green = (value >> (hasAlpha ? 16 : 8)) & 0xFF
+        let blue = (value >> (hasAlpha ? 8 : 0)) & 0xFF
         let alpha = hasAlpha ? (value & 0xFF) : 0xFF
         self.init(
             .sRGB,
