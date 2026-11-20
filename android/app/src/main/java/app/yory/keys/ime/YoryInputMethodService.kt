@@ -308,7 +308,7 @@ class YoryInputMethodService : InputMethodService() {
             addToolbarButton(row, "No saved clips", 1f) { }
         } else {
             entries.take(3).forEach { entry ->
-                val label = entry.text.replace('\\n', ' ').take(18)
+                val label = entry.text.lineSequence().firstOrNull().orEmpty().take(18)
                 addToolbarButton(row, label, 1f) {
                     currentInputConnection?.commitText(entry.text, 1)
                     clipboardMode = false
