@@ -95,7 +95,7 @@ private struct YorySettingsDetailView: View {
 
     var body: some View {
         ZStack {
-            yoryGlassBackground
+            yoryGlassBackground()
             List {
                 switch title {
                 case "Languages":
