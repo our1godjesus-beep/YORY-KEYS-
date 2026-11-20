@@ -50,7 +50,7 @@
 
 ## Milestone T2 — Theme library and toolbar management
 
-Status: **implemented in source; latest iOS CI still running at this update**.
+Status: **implemented in source; Android and contract checks passed before the emoji-picker commit; iOS build for the current emoji-picker commit is pending**.
 
 - [x] Android and iOS theme detail/preview screens.
 - [x] Favorites, rename, duplicate, delete and protected built-in presets.
@@ -63,3 +63,11 @@ Status: **implemented in source; latest iOS CI still running at this update**.
 - [ ] Voice typing is not connected on either platform.
 - [ ] Gallery preview rendering is still separate from the live keyboard renderer.
 - [ ] Physical-device QA, accessibility/RTL QA, and release signing still remain.
+
+
+## Phase 6 — Emoji picker
+- [x] Replace the fixed emoji strip with category browsing on Android and iOS (Recent, Smile, People, Nature, Food, Travel, Symbols).
+- [x] Store up to 24 recently used emoji locally and insert through the active input connection.
+- [x] Add a starter skin-tone selector for supported basic people/hand emoji.
+- [ ] Add searchable localized emoji catalogue, favorites and full Unicode compound/ZWJ coverage.
+- [ ] Verify the picker height and scroll behavior on small devices and iPad/landscape.
