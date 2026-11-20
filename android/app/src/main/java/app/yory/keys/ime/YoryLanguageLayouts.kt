@@ -13,7 +13,7 @@ internal data class YoryKeyboardLayout(
 internal object YoryLanguageLayouts {
     val supported: List<YoryKeyboardLayout> = listOf(
         YoryKeyboardLayout("en-US", "English (US)", "English", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), hasBundledDictionary = true),
-        YoryKeyboardLayout("ar", "العربية (مصر)", "العربية", listOf("ضصثقفغعهخح", "شسيبلاتنم", "ئءؤرىةوز"), isRtl = true, hasBundledDictionary = true),
+        YoryKeyboardLayout("ar", "العربية (مصر)", "العربية", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكذ", "طظئءؤرىةوز"), isRtl = true, hasBundledDictionary = true),
         YoryKeyboardLayout("de", "Deutsch (DE)", "Deutsch", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm")),
         YoryKeyboardLayout("es", "Español", "Español", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm")),
         YoryKeyboardLayout("fr", "Français", "Français", listOf("azertyuiop", "qsdfghjklm", "wxcvbn")),
@@ -28,8 +28,24 @@ internal object YoryLanguageLayouts {
             ?: if (tag.lowercase().startsWith("en-")) supported.first()
             else supported.first()
 
-    fun nextTag(current: String): String {
-        val index = supported.indexOfFirst { it.tag.equals(current, ignoreCase = true) }
-        return if (index < 0) supported.first().tag else supported[(index + 1) % supported.size].tag
+    /**
+     * Cycles only through layouts explicitly added by the user.
+     * Direction +1 means next (spacebar swipe left); -1 means previous (swipe right).
+     */
+    fun nextTag(
+        current: String,
+        availableTags: Collection<String> = supportedTags,
+        direction: Int = 1
+    ): String {
+        val enabled = supported.filter { layout ->
+            availableTags.any { it.equals(layout.tag, ignoreCase = true) }
+        }
+        if (enabled.isEmpty()) return supported.first().tag
+        if (enabled.size == 1) return enabled.first().tag
+
+        val index = enabled.indexOfFirst { it.tag.equals(current, ignoreCase = true) }
+        val safeIndex = if (index < 0) 0 else index
+        val step = if (direction < 0) -1 else 1
+        return enabled[(safeIndex + step + enabled.size) % enabled.size].tag
     }
 }
