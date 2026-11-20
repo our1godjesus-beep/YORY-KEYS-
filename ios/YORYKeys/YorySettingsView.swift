@@ -103,6 +103,10 @@ private struct YorySettingsDetailView: View {
     let onSignOut: () -> Void
 
     @AppStorage("yory.active.language", store: yorySettingsStore) private var activeLanguage = "en-US"
+    @State private var addedLanguageTags: [String] = {
+        let stored = yorySettingsStore?.stringArray(forKey: "yory.added.languages.v1") ?? ["en-US", "ar"]
+        return stored.isEmpty ? ["en-US", "ar"] : stored
+    }()
     @AppStorage("yory.emoji.predictions", store: yorySettingsStore) private var emojiPredictions = true
     @AppStorage("yory.emoji.dedicatedKey", store: yorySettingsStore) private var emojiDedicatedKey = true
     @AppStorage("yory.emoji.recentFirst", store: yorySettingsStore) private var emojiRecentFirst = true
@@ -131,16 +135,16 @@ private struct YorySettingsDetailView: View {
                 switch title {
                 case "Languages":
                     Section("YOUR LANGUAGES") {
-                        languageRow("English (US)", detail: "QWERTY · starter word list", tag: "en-US")
-                        languageRow("العربية (مصر)", detail: "Arabic 123 (PC) · starter word list", tag: "ar")
-                        languageRow("Deutsch (DE)", detail: "QWERTZ · layout only", tag: "de")
-                        languageRow("Español", detail: "QWERTY · layout only", tag: "es")
-                        languageRow("Français", detail: "AZERTY · layout only", tag: "fr")
-                        languageRow("Português", detail: "QWERTY · layout only", tag: "pt")
-                        languageRow("Italiano", detail: "QWERTY · layout only", tag: "it")
+                        languageRow("English (US)", detail: "QWERTY · starter word list", tag: "en-US", isAdded: addedLanguageTags.contains("en-US"))
+                        languageRow("العربية (مصر)", detail: "Arabic 123 (PC) · starter word list", tag: "ar", isAdded: addedLanguageTags.contains("ar"))
+                        languageRow("Deutsch (DE)", detail: "QWERTZ · layout only", tag: "de", isAdded: addedLanguageTags.contains("de"))
+                        languageRow("Español", detail: "QWERTY · layout only", tag: "es", isAdded: addedLanguageTags.contains("es"))
+                        languageRow("Français", detail: "AZERTY · layout only", tag: "fr", isAdded: addedLanguageTags.contains("fr"))
+                        languageRow("Português", detail: "QWERTY · layout only", tag: "pt", isAdded: addedLanguageTags.contains("pt"))
+                        languageRow("Italiano", detail: "QWERTY · layout only", tag: "it", isAdded: addedLanguageTags.contains("it"))
                     }
                     Section {
-                        Text("Seven keyboard layouts are available offline. Bundled starter word lists are currently available only for English and Arabic. Other languages have a working letter layout and can learn personal words, but do not yet ship a prediction dictionary. The 120-language catalogue is a target list, not 120 ready-to-use languages.")
+                        Text("Tap a language name to make it active. Add languages to include them in the spacebar swipe cycle. The keyboard switches only through languages you add here. English and Arabic have starter word lists; the remaining installed layouts are available for typing and local personal learning.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.65))
                     }
                 case "Emoji":
@@ -281,22 +285,58 @@ private struct YorySettingsDetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
     }
 
-    private func languageRow(_ name: String, detail: String, tag: String) -> some View {
-        Button {
-            activeLanguage = tag
-        } label: {
-            HStack {
+    private func languageRow(_ name: String, detail: String, tag: String, isAdded: Bool) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                activeLanguage = tag
+                if !addedLanguageTags.contains(tag) {
+                    addedLanguageTags.append(tag)
+                    yorySettingsStore?.set(addedLanguageTags, forKey: "yory.added.languages.v1")
+                }
+            } label: {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(name).foregroundStyle(.white)
                     Text(detail).font(.footnote).foregroundStyle(.white.opacity(0.6))
+                    if activeLanguage == tag {
+                        Text("Active layout").font(.caption2.weight(.semibold)).foregroundStyle(Color(red: 0.65, green: 0.78, blue: 1.0))
+                    }
                 }
-                Spacer()
-                Image(systemName: activeLanguage == tag ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(activeLanguage == tag ? Color.blue : Color.white.opacity(0.35))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 5)
+            .buttonStyle(.plain)
+
+            Button {
+                setLanguageAdded(tag, enabled: !addedLanguageTags.contains(tag))
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: isAdded ? "checkmark.circle.fill" : "plus.circle")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text(isAdded ? "Added" : "Add")
+                        .font(.caption2.weight(.medium))
+                }
+                .foregroundStyle(isAdded ? Color(red: 0.65, green: 0.78, blue: 1.0) : .white.opacity(0.62))
+                .frame(width: 54, height: 48)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isAdded ? "Remove \(name) from keyboard" : "Add \(name) to keyboard")
         }
+        .padding(.vertical, 5)
         .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+    }
+
+    private func setLanguageAdded(_ tag: String, enabled: Bool) {
+        if enabled {
+            if !addedLanguageTags.contains(tag) { addedLanguageTags.append(tag) }
+        } else {
+            guard addedLanguageTags.count > 1 else { return }
+            addedLanguageTags.removeAll { $0 == tag }
+        }
+        yorySettingsStore?.set(addedLanguageTags, forKey: "yory.added.languages.v1")
+        if !enabled && activeLanguage == tag {
+            activeLanguage = addedLanguageTags.first ?? "en-US"
+        }
     }
 
     private func glassToggle(_ label: String, detail: String, isOn: Binding<Bool>) -> some View {
