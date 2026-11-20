@@ -777,7 +777,7 @@ class YoryInputMethodService : InputMethodService() {
             includeFontPadding = false
             val baseSize = when {
                 compact -> (theme.fontSizeSp - 2.5f).coerceIn(12f, 16f)
-                label == "space" || label == "English" || label == "العربية" || label == "Deutsch" ->
+                label.startsWith("‹") || label == "space" || label == "English" || label == "العربية" || label == "Deutsch" ->
                     (theme.fontSizeSp - 6f).coerceAtLeast(10f)
                 else -> theme.fontSizeSp
             }
@@ -990,7 +990,18 @@ class YoryInputMethodService : InputMethodService() {
             setTextColor(theme.accentArgb)
             background = keyBackground(label)
             setOnClickListener { performKeyFeedback(this); action() }
-            contentDescription = label
+            contentDescription = when (label) {
+                "☺" -> "Emoji picker"
+                "⇄" -> "Switch language"
+                "123" -> "Show symbols"
+                "⚙" -> "Open YORY Studio"
+                "▣" -> "Clipboard history"
+                "◎" -> "Privacy mode"
+                "◉" -> "Incognito mode"
+                "⋯" -> "More tools"
+                "×" -> "Close tools"
+                else -> label
+            }
         }
         parent.addView(item, LinearLayout.LayoutParams(0, dp(34), weight).apply {
             setMargins(dp(5), dp(1), dp(5), dp(1))
