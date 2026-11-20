@@ -69,5 +69,16 @@ Status: **implemented in source; Android and contract checks passed before the e
 - [x] Replace the fixed emoji strip with category browsing on Android and iOS (Recent, Smile, People, Nature, Food, Travel, Symbols).
 - [x] Store up to 24 recently used emoji locally and insert through the active input connection.
 - [x] Add a starter skin-tone selector for supported basic people/hand emoji.
-- [ ] Add searchable localized emoji catalogue, favorites and full Unicode compound/ZWJ coverage.
+- [ ] Add searchable localized emoji catalogue and expand Unicode compound/ZWJ coverage (favorites are implemented locally).
 - [ ] Verify the picker height and scroll behavior on small devices and iPad/landscape.
+
+
+## Validation refresh — 2026-11-20 23:45 EET
+
+Latest verified main commit: `7374e805ea6b7a1944dbe241cf68c62f96098624`.
+
+- [x] Android CI completed successfully (run `44771343560`).
+- [x] iOS CI completed successfully (run `44771343591`).
+- [x] Repository contract validation completed successfully (run `44771343573`).
+- [x] Latest Android test job includes the clipboard policy and emoji catalog JVM test suites.
+- [ ] Physical-device QA and reference screenshot comparison remain release gates; CI success does not establish visual parity or real-device behavior.

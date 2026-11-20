@@ -116,3 +116,15 @@ Status: **source implemented on Android and iOS; automated builds pending**.
 - English and Arabic retain starter prefix dictionaries. Other languages currently have layout-only support and may use opt-in per-language personal learning; they do not receive English/Arabic predictions.
 - Target catalogue remains 120 languages and is not a statement of implemented models.
 - Device layout QA, especially small widths and Arabic RTL/mixed text, remains pending.
+
+
+## Validation refresh — 2026-11-20 23:45 EET
+
+Latest verified main commit: `7374e805ea6b7a1944dbe241cf68c62f96098624`.
+
+- Android CI: **success**, run `44771343560`, job `build`.
+- iOS CI: **success**, run `44771343591`, job `build`.
+- Repository contract validation: **success**, run `44771343573`, job `validate`.
+- The latest source includes the Android/iOS toolbar preference flows, Android encrypted clipboard manager, Incognito guards, and categorized emoji picker.
+- JVM test sources include clipboard retention/sensitive-pattern policy tests and emoji catalog behavior tests.
+- This confirms automated compilation/tests/contracts only. Physical Android/iOS testing, screenshot-diff against the supplied reference images, accessibility, RTL/mixed text, navigation-bar/home-indicator, keyboard extension lifecycle, and release signing are still outstanding.
