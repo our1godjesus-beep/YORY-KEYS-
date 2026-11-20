@@ -96,26 +96,60 @@ enum YoryLocalWordSuggestions {
         prepareLocalStorage()
         let all = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         return (all[language] ?? [:])
-            .filter { $0.key.hasPrefix(prefix) && $0.key != prefix }
+            .filter { matchesPrefix($0.key, prefix: prefix) }
             .sorted { $0.value > $1.value }
             .prefix(max(1, min(limit, 5)))
             .map { $0.key }
     }
 
+    /// Search-only Arabic normalization. Returned words keep their original spelling.
+    private static func normalizeForMatch(_ raw: String) -> String {
+        var normalized = String.UnicodeScalarView()
+        for scalar in raw.precomposedStringWithCanonicalMapping.unicodeScalars {
+            let value = scalar.value
+            if value == 0x0640 ||
+                (value >= 0x064B && value <= 0x065F) ||
+                value == 0x0670 ||
+                (value >= 0x06D6 && value <= 0x06ED) {
+                continue
+            }
+            switch value {
+            case 0x0623, 0x0625, 0x0622, 0x0671: normalized.append(UnicodeScalar(0x0627)!)
+            case 0x0649, 0x06CC: normalized.append(UnicodeScalar(0x064A)!)
+            case 0x06A9: normalized.append(UnicodeScalar(0x0643)!)
+            default: normalized.append(scalar)
+            }
+        }
+        return String(normalized).lowercased()
+    }
+
+    private static func matchesPrefix(_ candidate: String, prefix: String) -> Bool {
+        let normalizedCandidate = normalizeForMatch(candidate)
+        let normalizedPrefix = normalizeForMatch(prefix)
+        return !normalizedPrefix.isEmpty &&
+            normalizedCandidate != normalizedPrefix &&
+            normalizedCandidate.hasPrefix(normalizedPrefix)
+    }
+
     static func suggestions(prefix: String, languageTag: String, limit: Int = 3) -> [String] {
-        let clean = prefix.lowercased()
+        let clean = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return [] }
         let language = String(languageTag.lowercased().split(separator: "-").first ?? "en")
         let personal = personalSuggestions(prefix: clean, language: language, limit: limit)
         let bundled = (words[language] ?? [])
-            .filter { $0.hasPrefix(clean) && $0.caseInsensitiveCompare(clean) != .orderedSame }
-        return (personal + bundled)
-            .reduce(into: [String]()) { result, word in
-                if !result.contains(where: { $0.caseInsensitiveCompare(word) == .orderedSame }) {
-                    result.append(word)
-                }
+            .filter { matchesPrefix($0, prefix: clean) }
+        var direct: [String] = []
+        var normalizedMatches: [String] = []
+        var seen = Set<String>()
+        for word in personal + bundled {
+            let unique = word.lowercased()
+            guard seen.insert(unique).inserted, matchesPrefix(word, prefix: clean) else { continue }
+            if word.lowercased().hasPrefix(clean.lowercased()) {
+                direct.append(word)
+            } else {
+                normalizedMatches.append(word)
             }
-            .prefix(max(1, min(limit, 5)))
-            .map { $0 }
+        }
+        return Array((direct + normalizedMatches).prefix(max(1, min(limit, 5))))
     }
 }
