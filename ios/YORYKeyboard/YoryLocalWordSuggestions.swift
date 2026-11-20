@@ -52,9 +52,12 @@ enum YoryLocalWordSuggestions {
         var all = defaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         var languageWords = all[language] ?? [:]
         languageWords[word] = min((languageWords[word] ?? 0) + 1, 100)
-        languageWords = Dictionary(
-            uniqueKeysWithValues: languageWords.sorted { $0.value > $1.value }.prefix(1500)
-        )
+        let rankedWords = languageWords.sorted { $0.value > $1.value }.prefix(1500)
+        var boundedWords: [String: Int] = [:]
+        for entry in rankedWords {
+            boundedWords[entry.key] = entry.value
+        }
+        languageWords = boundedWords
         all[language] = languageWords
         defaults.set(all, forKey: personalWordsKey)
     }
