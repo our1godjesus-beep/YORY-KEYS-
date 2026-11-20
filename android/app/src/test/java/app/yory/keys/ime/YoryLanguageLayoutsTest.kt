@@ -53,10 +53,11 @@ class YoryLanguageLayoutsTest {
         standardLetters.forEach { letter ->
             assertTrue("Missing Arabic letter: $letter", visible.contains(letter))
         }
-        listOf('ء', 'أ', 'إ', 'آ', 'ؤ', 'ئ', 'ة', 'ى').forEach { variant ->
-            assertTrue("Missing Arabic variant: $variant", visible.contains(variant) ||
-                variant in setOf('أ', 'إ', 'آ'))
+        listOf('ء', 'ؤ', 'ئ', 'ة', 'ى').forEach { variant ->
+            assertTrue("Missing Arabic base/extended variant: $variant", visible.contains(variant))
         }
+        // Alif variants are exposed through the existing long-press menu on ا.
+        assertTrue(visible.contains('ا'))
     }
 
     @Test
