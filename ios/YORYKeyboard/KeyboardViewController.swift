@@ -767,7 +767,9 @@ final class KeyboardViewController: UIInputViewController {
         }
         languageTag = YoryKeyboardLayout.nextTag(after: languageTag, availableTags: available, direction: direction)
         isArabic = YoryKeyboardLayout.resolve(languageTag).isRightToLeft
-        defaults?.set(languageTag, forKey: "yory.active.language")
+        if hasFullAccess {
+            defaults?.set(languageTag, forKey: "yory.active.language")
+        }
         primaryLanguage = languageTag
         symbolMode = false
         symbolPage = 0
@@ -812,7 +814,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func learnCurrentWord() {
-        guard !incognitoMode,
+        guard hasFullAccess,
+              !incognitoMode,
               YoryThemeReader.personalLearningEnabled,
               !numericInput,
               currentKeyboardType != .emailAddress,
@@ -1019,14 +1022,17 @@ final class KeyboardViewController: UIInputViewController {
             suggestionRow.distribution = .fillEqually
             suggestionRow.spacing = 7
             suggestionRowHeightConstraint?.constant = 168
-            let items: [(String, String, () -> Void)] = [
+            var items: [(String, String, () -> Void)] = [
                 ("Emoji", "face.smiling", { [weak self] in self?.toggleEmoji() }),
                 ("Language", "globe", { [weak self] in self?.cycleLanguage(direction: 1) }),
                 ("Symbols", "character", { [weak self] in self?.toggleSymbols() }),
                 ("Next keyboard", "keyboard", { [weak self] in self?.switchKeyboard() }),
-                ("Incognito", "eye.slash", { [weak self] in self?.toggleIncognito() }),
-                ("Clear words", "text.badge.minus", { [weak self] in self?.clearLearnedWords() })
+                ("Incognito", "eye.slash", { [weak self] in self?.toggleIncognito() })
             ]
+            // App Group writes are available only when the user explicitly enables Full Access.
+            if hasFullAccess {
+                items.append(("Clear words", "text.badge.minus", { [weak self] in self?.clearLearnedWords() }))
+            }
             let grid = UIStackView()
             grid.axis = .vertical
             grid.spacing = 7
