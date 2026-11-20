@@ -1,6 +1,10 @@
 package app.yory.keys.ui
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
+import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -46,6 +50,7 @@ fun YoryAppFlow() {
     val context = LocalContext.current
     val launchPrefs = remember { context.getSharedPreferences("yory_launch_state", 0) }
     var introSeen by remember { mutableStateOf(launchPrefs.getBoolean("intro_seen", false)) }
+    var keyboardSetupSeen by remember { mutableStateOf(launchPrefs.getBoolean("keyboard_setup_seen", false)) }
     var offlineMode by remember { mutableStateOf(launchPrefs.getBoolean("offline_mode", false)) }
     var authReady by remember { mutableStateOf(false) }
     var authenticated by remember { mutableStateOf(false) }
@@ -81,6 +86,12 @@ fun YoryAppFlow() {
             launchPrefs.edit().putBoolean("intro_seen", true).apply()
             introSeen = true
         }
+        !keyboardSetupSeen -> YoryKeyboardSetupScreen(
+            onContinue = {
+                launchPrefs.edit().putBoolean("keyboard_setup_seen", true).apply()
+                keyboardSetupSeen = true
+            }
+        )
         authenticated || offlineMode -> YoryStudioScreen(onSignOut = { returnToAccountGate() })
         else -> YoryAuthGate(
             onAuthenticated = {
@@ -94,6 +105,117 @@ fun YoryAppFlow() {
             }
         )
     }
+}
+
+@Composable
+private fun YoryKeyboardSetupScreen(onContinue: () -> Unit) {
+    val context = LocalContext.current
+    var enabled by remember { mutableStateOf(isYoryKeyboardEnabled(context)) }
+    var selected by remember { mutableStateOf(isYoryKeyboardSelected(context)) }
+    var testText by remember { mutableStateOf("") }
+
+    fun refreshStatus() {
+        enabled = isYoryKeyboardEnabled(context)
+        selected = isYoryKeyboardSelected(context)
+    }
+
+    LaunchBackdrop()
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 26.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        LaunchBrandMark()
+        Text("Set up your keyboard", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            "Two Android system steps are required before YORY KEYS can type in other apps.",
+            color = LaunchMuted, fontSize = 13.sp
+        )
+        Spacer(Modifier.height(18.dp))
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
+                .background(Color.White.copy(alpha = 0.07f))
+                .border(1.dp, LaunchGlassBorder, RoundedCornerShape(22.dp))
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(13.dp)
+        ) {
+            Text(if (enabled) "✓  1. Keyboard enabled" else "1. Enable YORY KEYS", color = if (enabled) Color(0xFF9DE5B2) else Color.White, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Android opens its own secure settings page. Find YORY KEYS Keyboard and turn it on.",
+                color = LaunchMuted, fontSize = 12.sp, lineHeight = 17.sp
+            )
+            Button(
+                onClick = {
+                    context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(if (enabled) "OPEN KEYBOARD SETTINGS" else "ENABLE YORY KEYS") }
+
+            Divider(color = Color.White.copy(alpha = 0.14f))
+            Text(if (selected) "✓  2. YORY KEYS selected" else "2. Choose YORY KEYS", color = if (selected) Color(0xFF9DE5B2) else Color.White, fontWeight = FontWeight.SemiBold)
+            Text(
+                "After enabling it, open the keyboard picker and select YORY KEYS as your current input method.",
+                color = LaunchMuted, fontSize = 12.sp, lineHeight = 17.sp
+            )
+            OutlinedButton(
+                onClick = {
+                    refreshStatus()
+                    if (enabled) {
+                        val manager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        manager.showInputMethodPicker()
+                    }
+                },
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("CHOOSE YORY KEYS", color = Color.White) }
+
+            TextButton(onClick = { refreshStatus() }, modifier = Modifier.fillMaxWidth()) {
+                Text("I finished — check status", color = LaunchAccent)
+            }
+            Text(
+                if (selected) "YORY KEYS is selected. Tap the field below to test typing."
+                else if (enabled) "Keyboard is enabled, but it may not be the selected keyboard yet."
+                else "YORY KEYS is not enabled yet.",
+                color = LaunchMuted, fontSize = 11.sp
+            )
+            OutlinedTextField(
+                value = testText,
+                onValueChange = { testText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Test your keyboard") },
+                placeholder = { Text("Tap here and type…") },
+                singleLine = false,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = LaunchAccent,
+                    focusedBorderColor = LaunchAccent,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.22f),
+                    focusedLabelColor = LaunchAccent,
+                    unfocusedLabelColor = LaunchMuted
+                )
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        LaunchGlassButton(label = "CONTINUE", onClick = onContinue)
+        TextButton(onClick = onContinue) {
+            Text("Set it up later", color = LaunchMuted, fontSize = 12.sp)
+        }
+        Text(
+            "No microphone, contacts or location permission is needed for basic typing. Android manages keyboard activation separately in system settings.",
+            color = LaunchMuted.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 16.sp
+        )
+    }
+}
+
+private fun isYoryKeyboardEnabled(context: Context): Boolean {
+    val manager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    return manager.enabledInputMethodList.any { it.packageName == context.packageName }
+}
+
+private fun isYoryKeyboardSelected(context: Context): Boolean {
+    val selected = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+    return selected?.startsWith(context.packageName) == true
 }
 
 @Composable
