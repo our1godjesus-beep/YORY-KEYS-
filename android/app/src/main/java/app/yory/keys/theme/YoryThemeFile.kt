@@ -1,75 +1,126 @@
 package app.yory.keys.theme
 
-import android.graphics.Color
-import org.json.JSONObject
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 
+/**
+ * Portable cross-platform .yorytheme file codec.
+ * Uses plain JVM JSON and color parsing so validation can run in local unit tests.
+ */
 object YoryThemeFile {
     const val MAX_FILE_BYTES = 128 * 1024
 
     fun encode(theme: YoryTheme): String {
-        val appearance = JSONObject()
-            .put("background", theme.backgroundArgb.toRgbHex())
-            .put("key", theme.keyArgb.toRgbHex())
-            .put("keyPressed", theme.accentArgb.toRgbHex())
-            .put("text", theme.textArgb.toRgbHex())
-            .put("accent", theme.accentArgb.toRgbHex())
-        val geometry = JSONObject()
-            .put("keyShape", "rounded")
-            .put("cornerRadius", theme.cornerRadiusDp)
-            .put("keyHeight", theme.keyHeightDp)
-        val sensory = JSONObject().put("enabled", theme.soundEnabled)
-        val haptics = JSONObject().put("enabled", theme.hapticsEnabled)
-        val safeId = theme.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").take(32)
-        return JSONObject()
-            .put("schemaVersion", 1)
-            .put("id", "local-" + safeId)
-            .put("name", theme.name.take(48))
-            .put("appearance", appearance)
-            .put("glass", JSONObject().put("opacity", theme.opacity))
-            .put("geometry", geometry)
-            .put("sound", sensory)
-            .put("haptics", haptics)
-            .toString(2)
+        val appearance = JsonObject().apply {
+            addProperty("background", theme.backgroundArgb.toRgbaHex())
+            addProperty("key", theme.keyArgb.toRgbaHex())
+            addProperty("keyPressed", theme.accentArgb.toRgbaHex())
+            addProperty("text", theme.textArgb.toRgbaHex())
+            addProperty("accent", theme.accentArgb.toRgbaHex())
+        }
+        val geometry = JsonObject().apply {
+            addProperty("keyShape", "rounded")
+            addProperty("cornerRadius", theme.cornerRadiusDp)
+            addProperty("keyHeight", theme.keyHeightDp)
+        }
+        val sound = JsonObject().apply { addProperty("enabled", theme.soundEnabled) }
+        val haptics = JsonObject().apply { addProperty("enabled", theme.hapticsEnabled) }
+        val glass = JsonObject().apply { addProperty("opacity", theme.opacity) }
+
+        val root = JsonObject().apply {
+            addProperty("schemaVersion", 1)
+            addProperty(
+                "id",
+                "local-" + theme.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").take(32)
+            )
+            addProperty("name", theme.name.take(48))
+            add("appearance", appearance)
+            add("glass", glass)
+            add("geometry", geometry)
+            add("sound", sound)
+            add("haptics", haptics)
+        }
+        return GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(root)
     }
 
     fun decode(raw: String): YoryTheme {
-        require(raw.toByteArray(Charsets.UTF_8).size <= MAX_FILE_BYTES) { "Theme file is too large." }
-        val root = JSONObject(raw)
-        require(root.optInt("schemaVersion", -1) == 1) { "Unsupported YORY theme version." }
+        require(raw.toByteArray(Charsets.UTF_8).size <= MAX_FILE_BYTES) {
+            "Theme file is too large."
+        }
+        try {
+            val root = JsonParser.parseString(raw).asJsonObject
+            require(root.intValue("schemaVersion", -1) == 1) {
+                "Unsupported YORY theme version."
+            }
 
-        val name = root.optString("name", "Imported Theme").trim().take(48)
-        require(name.isNotBlank()) { "Theme name is missing." }
-        val appearance = root.optJSONObject("appearance")
-            ?: throw IllegalArgumentException("Theme appearance is missing.")
-        val glass = root.optJSONObject("glass") ?: JSONObject()
-        val geometry = root.optJSONObject("geometry") ?: JSONObject()
-        val sensory = root.optJSONObject("sound") ?: JSONObject()
-        val haptics = root.optJSONObject("haptics") ?: JSONObject()
+            val name = root.stringValue("name", "Imported Theme").trim().take(48)
+            require(name.isNotBlank()) { "Theme name is missing." }
 
-        return YoryTheme(
-            name = name,
-            backgroundArgb = parseColor(appearance.optString("background", "#D91A1D2B")),
-            keyArgb = parseColor(appearance.optString("key", "#E8F1F3FA")),
-            textArgb = parseColor(appearance.optString("text", "#FF171923")),
-            accentArgb = parseColor(appearance.optString("accent", "#FF78B8F8")),
-            opacity = glass.optDouble("opacity", 0.92).toFloat().coerceIn(0.35f, 1f),
-            cornerRadiusDp = geometry.optDouble("cornerRadius", geometry.optDouble("cornerRadiusDp", 14.0)).toFloat().coerceIn(4f, 28f),
-            keyHeightDp = geometry.optDouble("keyHeight", geometry.optDouble("keyHeightDp", 46.0)).toFloat().coerceIn(36f, 60f),
-            soundEnabled = sensory.optBoolean("enabled", true),
-            hapticsEnabled = haptics.optBoolean("enabled", true)
-        )
+            val appearance = root.objectValue("appearance")
+                ?: throw IllegalArgumentException("Theme appearance is missing.")
+            val glass = root.objectValue("glass") ?: JsonObject()
+            val geometry = root.objectValue("geometry") ?: JsonObject()
+            val sound = root.objectValue("sound") ?: JsonObject()
+            val haptics = root.objectValue("haptics") ?: JsonObject()
+
+            return YoryTheme(
+                name = name,
+                backgroundArgb = parseColor(appearance.stringValue("background", "#1A1D2BD9")),
+                keyArgb = parseColor(appearance.stringValue("key", "#F1F3FAE8")),
+                textArgb = parseColor(appearance.stringValue("text", "#171923FF")),
+                accentArgb = parseColor(appearance.stringValue("accent", "#78B8F8FF")),
+                opacity = glass.floatValue("opacity", 0.92f).coerceIn(0.35f, 1f),
+                cornerRadiusDp = geometry.floatValue(
+                    "cornerRadius",
+                    geometry.floatValue("cornerRadiusDp", 14f)
+                ).coerceIn(4f, 28f),
+                keyHeightDp = geometry.floatValue(
+                    "keyHeight",
+                    geometry.floatValue("keyHeightDp", 46f)
+                ).coerceIn(36f, 60f),
+                soundEnabled = sound.booleanValue("enabled", true),
+                hapticsEnabled = haptics.booleanValue("enabled", true)
+            )
+        } catch (error: IllegalArgumentException) {
+            throw error
+        } catch (error: Exception) {
+            throw IllegalArgumentException("Invalid YORY theme file.", error)
+        }
     }
 
     private fun parseColor(raw: String): Int {
-        require(raw.matches(Regex("^#[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$"))) { "Invalid theme color." }
-        val hex = raw.drop(1)
-        val argb = if (hex.length == 8) {
-            "#" + hex.substring(6, 8) + hex.substring(0, 6)
-        } else {
-            "#FF" + hex
+        require(raw.matches(Regex("^#[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$"))) {
+            "Invalid theme color."
         }
-        return Color.parseColor(argb)
+        val hex = raw.drop(1)
+        val red = hex.substring(0, 2).toInt(16)
+        val green = hex.substring(2, 4).toInt(16)
+        val blue = hex.substring(4, 6).toInt(16)
+        val alpha = if (hex.length == 8) hex.substring(6, 8).toInt(16) else 255
+        return (alpha shl 24) or (red shl 16) or (green shl 8) or blue
     }
 
-    private fun Int.toRgbHex(): String = "#%06X".format(this and 0x00FFFFFF)
+    private fun Int.toRgbaHex(): String {
+        val red = (this ushr 16) and 0xFF
+        val green = (this ushr 8) and 0xFF
+        val blue = this and 0xFF
+        val alpha = (this ushr 24) and 0xFF
+        return "#%02X%02X%02X%02X".format(red, green, blue, alpha)
+    }
+
+    private fun JsonObject.stringValue(key: String, fallback: String): String =
+        get(key)?.takeUnless { it.isJsonNull }?.asString ?: fallback
+
+    private fun JsonObject.intValue(key: String, fallback: Int): Int =
+        get(key)?.takeUnless { it.isJsonNull }?.asInt ?: fallback
+
+    private fun JsonObject.floatValue(key: String, fallback: Float): Float =
+        get(key)?.takeUnless { it.isJsonNull }?.asFloat ?: fallback
+
+    private fun JsonObject.booleanValue(key: String, fallback: Boolean): Boolean =
+        get(key)?.takeUnless { it.isJsonNull }?.asBoolean ?: fallback
+
+    private fun JsonObject.objectValue(key: String): JsonObject? =
+        get(key)?.takeUnless { it.isJsonNull }?.takeIf { it.isJsonObject }?.asJsonObject
 }
