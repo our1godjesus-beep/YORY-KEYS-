@@ -9,6 +9,8 @@ final class KeyboardViewController: UIInputViewController {
     private var isShifted = false
     private var emojiMode = false
     private var symbolMode = false
+    private var numericInput = false
+    private var currentKeyboardType: UIKeyboardType = .default
     private let root = UIStackView()
     private let emojiRow = UIStackView()
     private let suggestionRow = UIStackView()
@@ -29,7 +31,33 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        updateInputTraits()
         applyCurrentTheme()
+    }
+
+    override func textDidChange(_ textInput: UITextInput?) {
+        super.textDidChange(textInput)
+        updateInputTraits()
+        updateSuggestions()
+    }
+
+    private func updateInputTraits() {
+        let nextType = textDocumentProxy.keyboardType
+        guard nextType != currentKeyboardType else { return }
+        currentKeyboardType = nextType
+        numericInput = nextType == .numberPad || nextType == .decimalPad || nextType == .phonePad
+        rebuildKeys()
+    }
+
+    private var returnKeyTitle: String {
+        switch textDocumentProxy.returnKeyType {
+        case .go: return "Go"
+        case .search: return "Search"
+        case .send: return "Send"
+        case .next: return "Next"
+        case .done: return "Done"
+        default: return "↵"
+        }
     }
 
     private func applyCurrentTheme() {
@@ -61,6 +89,7 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.addArrangedSubview(toolButton("Aa", action: #selector(toggleSymbols)))
         toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
         toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleEmoji)))
+        toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         root.addArrangedSubview(toolbar)
 
         suggestionRow.axis = .horizontal
@@ -86,9 +115,33 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func rebuildKeys() {
+        keysStack.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         keysStack.arrangedSubviews.forEach { item in
             keysStack.removeArrangedSubview(item)
             item.removeFromSuperview()
+        }
+
+        if numericInput {
+            for row in ["123", "456", "789"] {
+                keysStack.addArrangedSubview(makeRow(Array(row).map(String.init)))
+            }
+            let finalRow = UIStackView()
+            finalRow.axis = .horizontal
+            finalRow.spacing = 4
+            finalRow.distribution = .fillEqually
+            finalRow.addArrangedSubview(keyButton("-", action: #selector(insertKey(_:))))
+            finalRow.addArrangedSubview(keyButton("0", action: #selector(insertKey(_:))))
+            finalRow.addArrangedSubview(keyButton(currentKeyboardType == .phonePad ? "+" : ".", action: #selector(insertKey(_:))))
+            keysStack.addArrangedSubview(finalRow)
+            let actions = UIStackView()
+            actions.axis = .horizontal
+            actions.spacing = 4
+            actions.distribution = .fillEqually
+            actions.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
+            actions.addArrangedSubview(keyButton("⌫", action: #selector(deleteBackward)))
+            actions.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
+            keysStack.addArrangedSubview(actions)
+            return
         }
 
         let rows: [String]
@@ -111,22 +164,25 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let bottom = UIStackView()
+        bottom.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         bottom.axis = .horizontal
         bottom.spacing = 4
         bottom.distribution = .fill
         bottom.addArrangedSubview(keyButton(symbolMode ? "ABC" : "!#1", action: #selector(toggleSymbols)))
         bottom.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
-        bottom.addArrangedSubview(keyButton(","))
+        let fieldSymbol = currentKeyboardType == .emailAddress ? "@" : (currentKeyboardType == .URL ? "/" : ",")
+        bottom.addArrangedSubview(keyButton(fieldSymbol))
         let space = keyButton(isArabic ? "العربية" : "English", action: #selector(insertSpace))
         bottom.addArrangedSubview(space)
         bottom.addArrangedSubview(keyButton("."))
-        bottom.addArrangedSubview(keyButton("↵", action: #selector(insertReturn)))
+        bottom.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
         space.widthAnchor.constraint(equalTo: bottom.widthAnchor, multiplier: 0.38).isActive = true
         keysStack.addArrangedSubview(bottom)
     }
 
     private func makeRow(_ labels: [String]) -> UIStackView {
         let row = UIStackView()
+        row.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
         row.spacing = 4
         row.distribution = .fillEqually
@@ -242,8 +298,8 @@ final class KeyboardViewController: UIInputViewController {
             suggestionRow.removeArrangedSubview(item)
             item.removeFromSuperview()
         }
-        suggestionRow.isHidden = emojiMode
-        guard !emojiMode else { return }
+        suggestionRow.isHidden = emojiMode || numericInput
+        guard !emojiMode && !numericInput else { return }
 
         let context = textDocumentProxy.documentContextBeforeInput ?? ""
         guard let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) else {
