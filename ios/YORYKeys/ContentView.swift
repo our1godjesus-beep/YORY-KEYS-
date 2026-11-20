@@ -482,7 +482,15 @@ struct YoryThemeGalleryView: View {
 
     var body: some View {
         ZStack {
-            yoryGlassBackground()
+            LinearGradient(
+                colors: [
+                    Color(red: 0.12, green: 0.16, blue: 0.25),
+                    Color(red: 0.025, green: 0.035, blue: 0.065),
+                    Color(red: 0.10, green: 0.09, blue: 0.17)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 5) {
