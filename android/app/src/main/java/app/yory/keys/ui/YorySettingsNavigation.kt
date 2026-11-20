@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.yory.keys.theme.YoryThemeStore
+import app.yory.keys.ime.PersonalDictionaryStore
 
 private data class SettingsItem(val icon: String, val title: String, val subtitle: String = "")
 
@@ -91,6 +92,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit) {
     val prefs = remember { context.getSharedPreferences("yory_user_settings", Context.MODE_PRIVATE) }
     var refresh by remember { mutableIntStateOf(0) }
     var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
+    var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
 
     fun readBool(key: String, default: Boolean = false): Boolean {
         refresh
@@ -126,7 +128,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit) {
                     Text("YOUR LANGUAGES", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                     LanguageChoice("English (US)", "Layout: QWERTY", "en-US", activeLanguage == "en-US") { chooseLanguage("en-US") }
                     LanguageChoice("العربية (مصر)", "Layout: Arabic 123 (PC)", "ar", activeLanguage == "ar") { chooseLanguage("ar") }
-                    LanguageChoice("Deutsch (DE)", "Layout: QWERTZ · Preview layout", "de", activeLanguage == "de") { chooseLanguage("de") }
+                    LanguageChoice("Deutsch (DE)", "Layout: QWERTZ · Basic layout", "de", activeLanguage == "de") { chooseLanguage("de") }
                     GlassPanel(Modifier.fillMaxWidth()) {
                         Text("Changing layouts", color = Color.White, fontWeight = FontWeight.SemiBold)
                         Text("Switch between installed layouts from the language key on the keyboard. The selected language is saved on this device.", color = GlassMuted, fontSize = 13.sp)
@@ -167,7 +169,10 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit) {
                 "Typing" -> {
                     ToggleCard("Word suggestions", "Show local word suggestions while typing", readBool("word_suggestions", true)) { writeBool("word_suggestions", it) }
                     ToggleCard("Auto-capitalization", "Capitalize the first letter of sentences", readBool("auto_caps", true)) { writeBool("auto_caps", it) }
-                    ToggleCard("Personal dictionary", "Learn accepted words on this device", readBool("personal_learning", false)) { writeBool("personal_learning", it) }
+                    ToggleCard("Personal dictionary", "Learn accepted words on this device", personalLearning) {
+                        personalLearning = it
+                        PersonalDictionaryStore.setEnabled(context, it)
+                    }
                     InfoCard("Personal learning", "Learned words are stored locally. Password, numeric, email and URL fields are excluded.")
                 }
                 "Privacy" -> {
