@@ -274,11 +274,25 @@ class YoryInputMethodService : InputMethodService() {
         val view = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            textSize = if (label == "space" || label == "English" || label == "العربية") 12f else 18f
+            textSize = if (label == "space" || label == "English" || label == "العربية") {
+                (theme.fontSizeSp - 6f).coerceAtLeast(10f)
+            } else theme.fontSizeSp
             setTextColor(theme.textArgb)
             background = keyBackground(label)
             isClickable = true
             isFocusable = true
+            setOnTouchListener { touched, event ->
+                when (event.action) {
+                    android.view.MotionEvent.ACTION_DOWN -> {
+                        background = keyBackground(label, pressed = true)
+                    }
+                    android.view.MotionEvent.ACTION_UP,
+                    android.view.MotionEvent.ACTION_CANCEL -> {
+                        background = keyBackground(label)
+                    }
+                }
+                false
+            }
             setOnClickListener { performKeyFeedback(this); action() }
             contentDescription = when (label) {
                 "⌫" -> "Delete"
@@ -288,8 +302,9 @@ class YoryInputMethodService : InputMethodService() {
                 else -> label
             }
         }
+        val gap = dp(theme.keySpacingDp / 2f)
         val params = LinearLayout.LayoutParams(0, dp(theme.keyHeightDp), weight).apply {
-            setMargins(dp(2), dp(3), dp(2), dp(3))
+            setMargins(gap, dp(3), gap, dp(3))
         }
         parent.addView(view, params)
     }
@@ -451,13 +466,26 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
-    private fun keyBackground(label: String): GradientDrawable {
+    private fun keyBackground(label: String, pressed: Boolean = false): GradientDrawable {
         val special = label in setOf("⇧", "⌫", "↵", "!#1", "ABC", "🌐", "123", "⚙", "⋯")
-        val raw = if (special) theme.accentArgb else theme.keyArgb
-        val fill = if (special) Color.argb(48, Color.red(raw), Color.green(raw), Color.blue(raw)) else raw
+        val raw = when {
+            pressed -> theme.keyPressedArgb
+            special -> theme.accentArgb
+            else -> theme.keyArgb
+        }
+        val fill = if (special && !pressed) {
+            Color.argb(48, Color.red(raw), Color.green(raw), Color.blue(raw))
+        } else raw
+        val keyHeight = dp(theme.keyHeightDp).toFloat()
+        val radius = when (theme.keyShape) {
+            "pill", "circle" -> keyHeight / 2f
+            "squircle" -> dp(theme.cornerRadiusDp * 1.35f).toFloat()
+            "rect" -> dp(3).toFloat()
+            else -> dp(theme.cornerRadiusDp).toFloat()
+        }
         return GradientDrawable().apply {
             setColor(fill)
-            cornerRadius = dp(theme.cornerRadiusDp).toFloat()
+            cornerRadius = radius
             setStroke(dp(1), Color.argb(42, 255, 255, 255))
         }
     }
