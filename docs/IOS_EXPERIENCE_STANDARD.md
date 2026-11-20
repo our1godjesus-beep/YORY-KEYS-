@@ -72,3 +72,8 @@ YORY KEYS must feel intentionally designed for iPhone while remaining an origina
 - https://developer.apple.com/documentation/uikit/configuring-a-custom-keyboard-interface
 - https://developer.apple.com/documentation/uikit/handling-text-interactions-in-custom-keyboards
 - https://developer.apple.com/documentation/uikit/configuring-open-access-for-a-custom-keyboard
+
+
+## Optional Open Access
+
+The extension declares `RequestsOpenAccess = true` so iOS can offer the user the system's **Allow Full Access** setting. This is a request, not an automatic grant. YORY must continue normal typing when `hasFullAccess == false`. The only current keyboard-side behavior gated by Full Access is the iOS input-click audio API. No typed content, surrounding text, passwords, or clipboard payloads are transmitted. Keep all account, marketplace and downloads in the containing app, not in the live typing path.
