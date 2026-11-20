@@ -98,6 +98,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     var keypressVolume by remember { mutableFloatStateOf(prefs.getFloat("keypress_volume", 0.35f)) }
     var vibrationDuration by remember { mutableFloatStateOf(prefs.getFloat("vibration_duration", 12f)) }
     var numberPosition by remember { mutableStateOf(prefs.getString("number_position", "top") ?: "top") }
+    var soundProfile by remember { mutableStateOf(prefs.getString("sound_profile", "Modern") ?: "Modern") }
 
     fun readBool(key: String, default: Boolean = false): Boolean {
         refresh
@@ -186,6 +187,21 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     PreferenceSlider("Keypress sound volume", keypressVolume, 0f..1f, "${(keypressVolume * 100).toInt()}%") {
                         keypressVolume = it
                         prefs.edit().putFloat("keypress_volume", it).apply()
+                    }
+                    GlassPanel(Modifier.fillMaxWidth()) {
+                        Text("Keypress sound profile", color = Color.White, fontWeight = FontWeight.Medium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("Classic", "Modern", "Soft").forEach { profile ->
+                                FilterChip(
+                                    selected = soundProfile == profile,
+                                    onClick = {
+                                        soundProfile = profile
+                                        prefs.edit().putString("sound_profile", profile).apply()
+                                    },
+                                    label = { Text(profile) }
+                                )
+                            }
+                        }
                     }
                     ToggleCard("Keypress vibration", "Use haptic feedback for key presses", theme.value.hapticsEnabled) {
                         theme.value = theme.value.copy(hapticsEnabled = it); YoryThemeStore.save(context, theme.value)
