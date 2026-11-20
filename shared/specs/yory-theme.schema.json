@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yorykeys.app/schemas/yory-theme-v1.schema.json",
   "title": "YORY KEYS Theme",
-  "description": "Portable, versioned theme contract shared by Android and iOS.",
+  "description": "Portable, versioned theme contract shared by Android and iOS. Eight-digit colors use CSS-style #RRGGBBAA ordering.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "id", "name", "appearance"],
