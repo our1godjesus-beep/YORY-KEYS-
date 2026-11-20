@@ -11,7 +11,11 @@ data class YoryTheme(
     val keyHeightDp: Float = 46f,
     val soundEnabled: Boolean = true,
     val hapticsEnabled: Boolean = true,
-    val clipboardEnabled: Boolean = false
+    val clipboardEnabled: Boolean = false,
+    val keyPressedArgb: Int = accentArgb,
+    val keySpacingDp: Float = 4f,
+    val keyShape: String = "rounded",
+    val fontSizeSp: Float = 18f
 ) {
     companion object {
         val presets = listOf(
