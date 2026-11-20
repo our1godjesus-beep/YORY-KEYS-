@@ -191,3 +191,7 @@ Validation notes:
 - Repository contract validation has passed for the measurement spec and latest documentation updates.
 - No physical Android/iOS device test or reference screenshot-diff has been run in this implementation pass. Gesture recognition, Arabic typing accuracy, adjacent-key taps, RTL punctuation, navigation insets, screen-reader ordering and keyboard-extension height remain release gates.
 - Voice typing, image/screenshot paste, GIF/stickers and keyboard search remain intentionally unconnected; they require real platform permissions/content sources/host-editor compatibility before an interactive button can truthfully be shown.
+
+
+### Spacebar visual affordance
+The active language label is now visually flanked by left and right chevrons on both platforms. A tap inserts a space; directional swipes change only the selected Added language. This visual cue is separate from the accessibility hint and does not promise a swipe will work in every host editor without device testing.
