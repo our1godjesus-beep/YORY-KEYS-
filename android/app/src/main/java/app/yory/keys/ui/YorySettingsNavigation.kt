@@ -93,6 +93,11 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     var refresh by remember { mutableIntStateOf(0) }
     var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
     var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
+    var keyHeight by remember { mutableFloatStateOf(YoryThemeStore.load(context).keyHeightDp) }
+    var longPressDuration by remember { mutableFloatStateOf(prefs.getFloat("long_press_duration", 450f)) }
+    var keypressVolume by remember { mutableFloatStateOf(prefs.getFloat("keypress_volume", 0.35f)) }
+    var vibrationDuration by remember { mutableFloatStateOf(prefs.getFloat("vibration_duration", 12f)) }
+    var numberPosition by remember { mutableStateOf(prefs.getString("number_position", "top") ?: "top") }
 
     fun readBool(key: String, default: Boolean = false): Boolean {
         refresh
@@ -141,22 +146,55 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                 }
                 "Layout & keys" -> {
                     ToggleCard("Number row", "Always show a number row above letters", readBool("number_row", false)) { writeBool("number_row", it) }
+                    GlassPanel(Modifier.fillMaxWidth()) {
+                        Text("Number position", color = Color.White, fontWeight = FontWeight.Medium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("top", "bottom").forEach { position ->
+                                FilterChip(
+                                    selected = numberPosition == position,
+                                    onClick = {
+                                        numberPosition = position
+                                        prefs.edit().putString("number_position", position).apply()
+                                    },
+                                    label = { Text(position.replaceFirstChar { it.uppercase() }) }
+                                )
+                            }
+                        }
+                    }
                     ToggleCard("Long-press symbols", "Show secondary symbols on letter keys", readBool("long_press_symbols", true)) { writeBool("long_press_symbols", it) }
-                    ToggleCard("Accented characters", "Enable accented character shortcuts", readBool("accented_chars", true)) { writeBool("accented_chars", it) }
-                    ToggleCard("Arrow keys", "Show cursor movement keys", readBool("arrow_keys", false)) { writeBool("arrow_keys", it) }
+                    ToggleCard("Accented characters", "Long-press to see available accents", readBool("accented_chars", true)) { writeBool("accented_chars", it) }
+                    ToggleCard("Arrow keys", "Show cursor movement keys on a dedicated row", readBool("arrow_keys", false)) { writeBool("arrow_keys", it) }
                     ToggleCard("Key pop-ups", "Show a visual pop-up when tapping a key", readBool("key_popups", true)) { writeBool("key_popups", it) }
                     ToggleCard("Large key text", "Use larger labels on keyboard keys", readBool("large_key_text", true)) { writeBool("large_key_text", it) }
-                    InfoCard("Keyboard size", "Resize, key spacing, corner radius and lettering are available in Themes.")
+                    PreferenceSlider("Long-press duration", longPressDuration, 200f..900f, "${longPressDuration.toInt()} ms") {
+                        longPressDuration = it
+                        prefs.edit().putFloat("long_press_duration", it).apply()
+                    }
+                    Text("RESIZE", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                    PreferenceSlider("Keyboard height", keyHeight, 36f..60f, "${keyHeight.toInt()} dp") {
+                        keyHeight = it
+                        val theme = YoryThemeStore.load(context).copy(keyHeightDp = it)
+                        YoryThemeStore.save(context, theme)
+                    }
+                    InfoCard("More sizing controls", "Change key spacing, corner radius and letter font in Themes.")
                 }
                 "Sound & vibration" -> {
                     val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
                     ToggleCard("Keypress sound", "Play a soft sound when a key is pressed", theme.value.soundEnabled) {
                         theme.value = theme.value.copy(soundEnabled = it); YoryThemeStore.save(context, theme.value)
                     }
+                    PreferenceSlider("Keypress sound volume", keypressVolume, 0f..1f, "${(keypressVolume * 100).toInt()}%") {
+                        keypressVolume = it
+                        prefs.edit().putFloat("keypress_volume", it).apply()
+                    }
                     ToggleCard("Keypress vibration", "Use haptic feedback for key presses", theme.value.hapticsEnabled) {
                         theme.value = theme.value.copy(hapticsEnabled = it); YoryThemeStore.save(context, theme.value)
                     }
-                    ToggleCard("Use Android default vibration", "Follow the device vibration preference", readBool("system_haptics", false)) { writeBool("system_haptics", it) }
+                    ToggleCard("Use Android default vibration", "Follow the device haptic feedback settings", readBool("system_haptics", true)) { writeBool("system_haptics", it) }
+                    PreferenceSlider("Keypress vibration duration", vibrationDuration, 0f..80f, "${vibrationDuration.toInt()} ms") {
+                        vibrationDuration = it
+                        prefs.edit().putFloat("vibration_duration", it).apply()
+                    }
                 }
                 "Rich input" -> {
                     val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
@@ -181,7 +219,10 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     InfoCard("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields.")
                     InfoCard("Permissions", "The keyboard does not request camera, contacts or location access.")
                 }
-                "Account" -> InfoCard("YORY account", "Account sign-in and cloud sync are not connected in this preview. Local keyboard features work without an account.")
+                "Account" -> {
+                    InfoCard("YORY account", "Manage the account used by YORY Studio. The keyboard itself remains usable offline and does not require the settings app to stay open.")
+                    Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) { Text("Sign out") }
+                }
                 "YORY Rewards", "Achievements" -> InfoCard("Coming to YORY", "This section is part of the settings structure. Rewards and achievement tracking are not connected in this preview.")
                 "Help & Feedback" -> {
                     InfoCard("Help", "Enable YORY KEYS in Android keyboard settings, then choose it as the active keyboard.")
@@ -207,6 +248,23 @@ private fun LanguageChoice(title: String, subtitle: String, tag: String, selecte
             }
             Text(if (selected) "●" else "○", color = if (selected) GlassAccent else GlassMuted, fontSize = 21.sp)
         }
+    }
+}
+
+@Composable
+private fun PreferenceSlider(
+    title: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    valueLabel: String,
+    onChange: (Float) -> Unit
+) {
+    GlassPanel(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+            Text(valueLabel, color = GlassMuted, fontSize = 12.sp)
+        }
+        Slider(value = value, onValueChange = onChange, valueRange = range)
     }
 }
 
