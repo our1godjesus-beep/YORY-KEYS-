@@ -59,7 +59,7 @@
         "android",
         "ios"
       ],
-      "notes": "Starter local word lists and prefix matching on both platforms; not neural prediction or autocorrect."
+      "notes": "Starter local prefix lists now use Arabic search-only normalization for alef/hamza variants, tashkeel and tatweel, and include a curated starter set of Egyptian conversational terms on Android and iOS. Candidate text is returned in its original spelling. This remains prefix completion only, not autocorrect, neural prediction or a quality-certified dialect model."
     },
     {
       "id": "neural-prediction",
@@ -526,6 +526,16 @@
         "ios"
       ],
       "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German, Spanish, French, Portuguese and Italian. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
+    },
+    {
+      "id": "freemium-entitlements",
+      "name": "Free and premium entitlements",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "A monetization catalogue defines free and planned premium benefits, but no billing SDK, purchase UI, prices or live entitlements are implemented. Do not show purchase CTAs until platform billing, restore, refund and support flows pass review."
     }
   ]
 }
