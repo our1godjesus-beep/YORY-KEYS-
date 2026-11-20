@@ -15,11 +15,12 @@ struct YoryToolbarCustomizationView: View {
         YoryToolbarOption(id: "language", title: "Language", detail: "Change the active keyboard layout", symbol: "globe", required: false),
         YoryToolbarOption(id: "symbols", title: "Symbols", detail: "Switch to numbers and symbols", symbol: "character", required: false),
         YoryToolbarOption(id: "switch", title: "Next keyboard", detail: "Switch to another installed keyboard", symbol: "keyboard", required: true),
-        YoryToolbarOption(id: "tools", title: "More tools", detail: "Open additional keyboard controls", symbol: "ellipsis", required: false)
+        YoryToolbarOption(id: "tools", title: "More tools", detail: "Open additional keyboard controls", symbol: "ellipsis", required: false),
+        YoryToolbarOption(id: "privacy", title: "Incognito mode", detail: "Pause learning and local suggestions while typing", symbol: "eye.slash", required: false)
     ]
 
     @State private var order: [String] = {
-        let base = ["emoji", "language", "symbols", "switch", "tools"]
+        let base = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
         let stored = UserDefaults(suiteName: "group.app.yory.keys")?.stringArray(forKey: "yory.toolbar.order") ?? base
         let valid = stored.filter { base.contains($0) }
         return valid + base.filter { !valid.contains($0) }

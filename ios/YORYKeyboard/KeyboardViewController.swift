@@ -9,6 +9,7 @@ final class KeyboardViewController: UIInputViewController {
     private var languageTag = "en-US"
     private var isShifted = false
     private var emojiMode = false
+    private var incognitoMode = false
     private var symbolMode = false
     private var numericInput = false
     private var currentKeyboardType: UIKeyboardType = .default
@@ -40,7 +41,9 @@ final class KeyboardViewController: UIInputViewController {
         updateInputTraits()
         refreshAutomaticShift()
         applyCurrentTheme()
+        incognitoMode = false
         refreshToolbarItems()
+        updateSuggestions()
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
@@ -58,7 +61,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
-        let defaultOrder = ["emoji", "language", "symbols", "switch", "tools"]
+        let defaultOrder = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
         let storedOrder = defaults?.stringArray(forKey: "yory.toolbar.order") ?? defaultOrder
         let order = storedOrder.filter { defaultOrder.contains($0) } + defaultOrder.filter { !storedOrder.contains($0) }
         let visible = Set(defaults?.stringArray(forKey: "yory.toolbar.visible") ?? defaultOrder)
@@ -77,6 +80,8 @@ final class KeyboardViewController: UIInputViewController {
                 toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
             case "tools":
                 toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
+            case "privacy":
+                toolbar.addArrangedSubview(toolButton(incognitoMode ? "◉" : "◎", action: #selector(toggleIncognito)))
             default:
                 break
             }
@@ -607,6 +612,13 @@ final class KeyboardViewController: UIInputViewController {
         return button
     }
 
+    @objc private func toggleIncognito() {
+        incognitoMode.toggle()
+        if incognitoMode { toolsMode = false }
+        refreshToolbarItems()
+        updateSuggestions()
+    }
+
     @objc private func toggleEmoji() {
         playKeyClick()
         emojiMode.toggle()
@@ -623,8 +635,8 @@ final class KeyboardViewController: UIInputViewController {
             suggestionRow.removeArrangedSubview(item)
             item.removeFromSuperview()
         }
-        suggestionRow.isHidden = emojiMode || numericInput || !YoryThemeReader.wordSuggestionsEnabled
-        guard !emojiMode && !numericInput && YoryThemeReader.wordSuggestionsEnabled else { return }
+        suggestionRow.isHidden = incognitoMode || emojiMode || numericInput || !YoryThemeReader.wordSuggestionsEnabled
+        guard !incognitoMode && !emojiMode && !numericInput && YoryThemeReader.wordSuggestionsEnabled else { return }
         if toolsMode {
             suggestionRow.addArrangedSubview(toolActionButton("Clear learned words", action: #selector(clearLearnedWords)))
             suggestionRow.addArrangedSubview(toolActionButton("Done", action: #selector(toggleTools)))

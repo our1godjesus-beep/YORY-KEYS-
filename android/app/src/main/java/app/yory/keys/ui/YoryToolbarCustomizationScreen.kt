@@ -31,7 +31,8 @@ internal fun YoryToolbarCustomizationScreen(onBack: () -> Unit) {
             YoryToolbarTool("language", "Language switch", "Change the active keyboard layout", "⇄", true),
             YoryToolbarTool("symbols", "Symbols", "Switch to numbers and symbols", "123"),
             YoryToolbarTool("settings", "YORY Studio", "Open keyboard settings", "⚙", true),
-            YoryToolbarTool("clipboard", "Clipboard", "Open local clipboard history when enabled", "▣")
+            YoryToolbarTool("clipboard", "Clipboard", "Open local clipboard history when enabled", "▣"),
+            YoryToolbarTool("privacy", "Incognito mode", "Pause learning, suggestions and clipboard capture", "◉")
         )
     }
     val order = remember {

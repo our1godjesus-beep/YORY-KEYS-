@@ -45,6 +45,7 @@ class YoryInputMethodService : InputMethodService() {
     private var symbolMode = false
     private var emojiMode = false
     private var clipboardMode = false
+    private var incognitoMode = false
     private var sensitiveField = false
     private var numericField = false
     private var emailField = false
@@ -133,6 +134,7 @@ class YoryInputMethodService : InputMethodService() {
         urlField = inputClass == InputType.TYPE_CLASS_TEXT &&
             variation == InputType.TYPE_TEXT_VARIATION_URI
         clipboardMode = false
+        incognitoMode = false
         refreshAutomaticShift()
         refreshToolbar()
         refreshKeyboard()
@@ -144,7 +146,7 @@ class YoryInputMethodService : InputMethodService() {
         val toolbar = toolbarRoot ?: return
         toolbar.removeAllViews()
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val defaultOrder = listOf("emoji", "language", "symbols", "settings", "clipboard")
+        val defaultOrder = listOf("emoji", "language", "symbols", "settings", "clipboard", "privacy")
         val savedOrder = prefs.getString("toolbar_order", null)
             ?.split(",")
             ?.map { it.trim() }
@@ -173,12 +175,20 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                 }
                 "settings" -> addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
-                "clipboard" -> if (theme.clipboardEnabled) {
+                "clipboard" -> if (theme.clipboardEnabled && !incognitoMode) {
                     addToolbarButton(toolbar, "▣", 1f) {
                         clipboardMode = !clipboardMode
                         refreshKeyboard()
                         refreshClipboardRow()
                     }
+                }
+                "privacy" -> addToolbarButton(toolbar, if (incognitoMode) "◉" else "◎", 1f) {
+                    incognitoMode = !incognitoMode
+                    if (incognitoMode) clipboardMode = false
+                    refreshToolbar()
+                    refreshKeyboard()
+                    updateSuggestions()
+                    refreshClipboardListener()
                 }
             }
         }
@@ -606,7 +616,7 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun refreshClipboardListener() {
         val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        val shouldListen = theme.clipboardEnabled && !sensitiveField && !numericField
+        val shouldListen = theme.clipboardEnabled && !sensitiveField && !numericField && !emailField && !urlField && !incognitoMode
         if (shouldListen && !clipboardListenerRegistered) {
             manager.addPrimaryClipChangedListener(clipboardListener)
             clipboardListenerRegistered = true
@@ -617,7 +627,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun captureClipboard() {
-        if (sensitiveField || numericField || !theme.clipboardEnabled) return
+        if (sensitiveField || numericField || emailField || urlField || incognitoMode || !theme.clipboardEnabled) return
         val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val clip = manager.primaryClip ?: return
         if (clip.itemCount < 1) return
@@ -629,7 +639,7 @@ class YoryInputMethodService : InputMethodService() {
     private fun refreshClipboardRow() {
         val row = clipboardRow ?: return
         row.removeAllViews()
-        if (!theme.clipboardEnabled || sensitiveField || !clipboardMode) {
+        if (!theme.clipboardEnabled || sensitiveField || emailField || urlField || incognitoMode || !clipboardMode) {
             row.visibility = View.GONE
             return
         }
@@ -673,7 +683,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun learnCurrentWord() {
-        if (sensitiveField || numericField || emailField || urlField ||
+        if (incognitoMode || sensitiveField || numericField || emailField || urlField ||
             !PersonalDictionaryStore.isEnabled(applicationContext)) return
         val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
         val word = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value ?: return
@@ -690,7 +700,7 @@ class YoryInputMethodService : InputMethodService() {
         row.layoutParams = row.layoutParams.apply { height = dp(if (compactMode) 22 else 34) }
         row.requestLayout()
         row.removeAllViews()
-        if (sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
+        if (incognitoMode || sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
             !getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("word_suggestions", true)) {
             row.visibility = View.GONE
             return
