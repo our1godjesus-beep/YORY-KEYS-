@@ -268,7 +268,8 @@ private struct YorySettingsDetailView: View {
         ) {
             Button("Clear dictionary", role: .destructive) {
                 yorySettingsStore?.removeObject(forKey: "yory.personal.words.v1")
-                privacyMessage = "Personal dictionary cleared from this device."
+                yorySettingsStore?.set(true, forKey: "yory.personal.words.clearLegacyRequested")
+                privacyMessage = "Personal dictionary cleared from this device. Legacy local data will also be removed when the keyboard next opens."
             }
             Button("Cancel", role: .cancel) {}
         } message: {

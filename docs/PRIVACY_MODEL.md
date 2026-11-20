@@ -47,3 +47,8 @@ Provide controls to pause local learning, clear learned words, clear clipboard h
 ## Local personal-dictionary deletion
 - Android exposes a confirmation action to clear the encrypted local dictionary. Clearing removes the encrypted file and its Android Keystore key; the opt-in preference remains unchanged.
 - iOS stores personal words in the app's local App Group container so the host app can execute an explicit user-requested clear action. This remains local device storage and is not a network sync.
+
+
+## iOS local-dictionary migration
+- Existing keyboard-extension-private dictionaries are migrated once into the local App Group store so the host app can execute the user's clear-data request.
+- If the host app requests a clear, a one-shot flag is processed by the keyboard extension before any legacy migration; old extension-local data is deleted and cannot repopulate the cleared shared store.

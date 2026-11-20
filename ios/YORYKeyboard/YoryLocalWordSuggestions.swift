@@ -37,14 +37,34 @@ enum YoryLocalWordSuggestions {
 
 
     private static let personalWordsKey = "yory.personal.words.v1"
+    private static let legacyClearRequestedKey = "yory.personal.words.clearLegacyRequested"
     private static var localDefaults: UserDefaults {
         UserDefaults(suiteName: "group.app.yory.keys") ?? .standard
+    }
+
+    /// Move an existing extension-private dictionary into App Group storage once.
+    /// A host-app clear request takes precedence so legacy data cannot reappear afterward.
+    private static func prepareLocalStorage() {
+        let shared = localDefaults
+        if shared.bool(forKey: legacyClearRequestedKey) {
+            shared.removeObject(forKey: personalWordsKey)
+            UserDefaults.standard.removeObject(forKey: personalWordsKey)
+            shared.set(false, forKey: legacyClearRequestedKey)
+            return
+        }
+
+        if shared.object(forKey: personalWordsKey) == nil,
+           let legacy = UserDefaults.standard.dictionary(forKey: personalWordsKey) {
+            shared.set(legacy, forKey: personalWordsKey)
+            UserDefaults.standard.removeObject(forKey: personalWordsKey)
+        }
     }
 
     /// Personal words remain local in the shared App Group container so the host app
     /// can honor a user's explicit clear-data request. No network sync is performed.
     static func learnAcceptedWord(_ rawWord: String, languageTag: String) {
         guard YoryThemeReader.personalLearningEnabled else { return }
+        prepareLocalStorage()
         let word = rawWord.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard word.count >= 2, word.count <= 32,
               word.range(of: "^[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) != nil else {
@@ -67,10 +87,13 @@ enum YoryLocalWordSuggestions {
 
     static func clearPersonalWords() {
         localDefaults.removeObject(forKey: personalWordsKey)
+        UserDefaults.standard.removeObject(forKey: personalWordsKey)
+        localDefaults.set(false, forKey: legacyClearRequestedKey)
     }
 
     private static func personalSuggestions(prefix: String, language: String, limit: Int) -> [String] {
         guard YoryThemeReader.personalLearningEnabled else { return [] }
+        prepareLocalStorage()
         let all = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         return (all[language] ?? [:])
             .filter { $0.key.hasPrefix(prefix) && $0.key != prefix }
