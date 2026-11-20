@@ -35,7 +35,7 @@ struct YoryThemeStudioView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("YORY KEYS").font(.caption.weight(.bold)).tracking(2.4).foregroundStyle(accent)
                         Text("YORY Studio").font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                        Text("Your keyboard. Your universe.").foregroundStyle(.white.opacity(0.62))
+                        Text("Your words. Your flow.").foregroundStyle(.white.opacity(0.62))
                     }
 
                     keyboardPreview

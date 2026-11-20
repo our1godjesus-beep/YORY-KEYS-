@@ -14,12 +14,16 @@ targets:
     sources:
       - path: YORYKeys
     resources:
+      - path: YORYKeys/LOGO7.jpeg
+      - path: YORYKeys/Assets.xcassets
       - path: YORYKeys/SupabaseConfig.plist
         optional: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.yory.keys
         PRODUCT_NAME: YORY KEYS
+        INFOPLIST_KEY_CFBundleDisplayName: YORY KEYS
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: YORYKeys/YORYKeys.entitlements
     dependencies:

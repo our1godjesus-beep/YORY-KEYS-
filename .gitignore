@@ -16,6 +16,7 @@ xcuserdata/
 ios/YORYKeys.xcodeproj/
 ios/*.xcworkspace/
 ios/YORYKeys/SupabaseConfig.plist
+ios/YORYKeys/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
 
 # Local configuration and credentials
 .env

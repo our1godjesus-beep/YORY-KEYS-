@@ -9,13 +9,13 @@ The **YORY Studio settings app** and the **YORY keyboard extension / Android IME
 - A saved Supabase session is restored on later launches. A signed-in user opens the settings home; Account contains Sign Out.
 - The keyboard is not gated by this flow. After the user enables and selects YORY KEYS in operating-system keyboard settings, it is available in text fields and remains usable offline. It does not open the intro or require account sign-in.
 
-## Logo asset required from product owner
+## Canonical logo asset (included in both app targets)
 
-The intro loader expects the supplied brand asset at:
+The original owner-supplied image is preserved byte-for-byte at branding/LOGO7.jpeg and copied to Android assets, Android launcher icon resources, and the iOS YORYKeys app target.
 - Android: `android/app/src/main/assets/LOGO7.jpeg`
 - iOS: add the source image as `LOGO7.jpeg` to the YORYKeys app target resources (or add it to the asset catalog as `LOGO7`).
 
-Until the real file is added, Android shows a temporary Y mark and iOS falls back to a keyboard symbol. The code already looks for the real asset.
+The canonical logo is now included in both app packages, so the launch, account and launcher branding use the same image.
 
 ## Supabase development configuration
 

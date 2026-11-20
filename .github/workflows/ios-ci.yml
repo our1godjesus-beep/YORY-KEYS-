@@ -34,6 +34,8 @@ jobs:
           with target.open("wb") as stream:
               plistlib.dump(payload, stream, fmt=plistlib.FMT_XML, sort_keys=True)
           PY
+      - name: Generate YORY KEYS app icon from the canonical logo
+        run: swift tools/generate_ios_app_icon.swift branding/LOGO7.jpeg ios/YORYKeys/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project

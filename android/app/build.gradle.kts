@@ -16,8 +16,10 @@ val localSupabaseConfig = Properties().apply {
         file.inputStream().use { load(it) }
     }
 }
-val supabaseUrlValue = localSupabaseConfig.getProperty("SUPABASE_URL", "")
-val supabasePublishableKeyValue = localSupabaseConfig.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
+val supabaseUrlValue = System.getenv("SUPABASE_URL")?.takeIf { it.isNotBlank() }
+    ?: localSupabaseConfig.getProperty("SUPABASE_URL", "")
+val supabasePublishableKeyValue = System.getenv("SUPABASE_PUBLISHABLE_KEY")?.takeIf { it.isNotBlank() }
+    ?: localSupabaseConfig.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
 
 android {
     namespace = "app.yory.keys"

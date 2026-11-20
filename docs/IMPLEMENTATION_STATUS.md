@@ -83,6 +83,16 @@ This is the source of truth for repository state. UI presence is not proof that 
 8. Add signed language packs one language at a time after quality and licensing checks.
 
 
+## Offline-first and canonical branding update (2026-11-20)
+
+- YORY KEYS is the product and keyboard display name; YORY Studio is the companion settings experience. The stable app identifiers remain app.yory.keys and app.yory.keys.keyboard.
+- First launch includes an explicit Continue Offline path. Local keyboard use, bundled layouts, theme settings and on-device preferences are not gated on account creation.
+- Account registration/sign-in and any cloud-only service require internet. Expired sessions are preserved locally; opening the app no longer attempts a refresh-token request.
+- Sign-out clears the locally stored session and does not need a network connection.
+- The canonical owner-provided logo is preserved byte-for-byte in branding/LOGO7.jpeg; Android and iOS app resources use the same source image. Platform launcher icons are generated from that image.
+- A root .env.example and local config generator create ignored Android/iOS Supabase configuration files. No privileged Supabase credentials belong in client configuration.
+- These changes require fresh CI and physical-device airplane-mode QA before being treated as validated.
+
 ## Premium Glass UI update (2026-11-20)
 
 - Applied a unified dark premium-glass visual treatment to Android and iOS keyboard surfaces, including translucent key fills, subtle glass highlights/borders, and pressed-state emphasis.

@@ -3,6 +3,7 @@ import UIKit
 
 struct YoryLaunchFlowView: View {
     @AppStorage("yory.launch.intro.completed") private var introCompleted = false
+    @AppStorage("yory.launch.offline.mode") private var offlineMode = false
     @State private var authReady = false
     @State private var authenticated = false
 
@@ -17,22 +18,30 @@ struct YoryLaunchFlowView: View {
                 YoryAnimatedIntroView {
                     introCompleted = true
                 }
-            } else if authenticated {
+            } else if authenticated || offlineMode {
                 ContentView(onSignOut: {
                     Task {
                         await YoryAuthService.signOut()
                         authenticated = false
+                        offlineMode = false
                     }
                 })
             } else {
-                YoryAuthGateView {
-                    authenticated = true
-                }
+                YoryAuthGateView(
+                    onAuthenticated: {
+                        authenticated = true
+                        offlineMode = false
+                    },
+                    onContinueOffline: {
+                        offlineMode = true
+                    }
+                )
             }
         }
         .preferredColorScheme(.dark)
         .task {
             authenticated = await YoryAuthService.restoreSession()
+            if authenticated { offlineMode = false }
             authReady = true
         }
     }
@@ -145,6 +154,7 @@ private struct YoryAnimatedIntroView: View {
 
 private struct YoryAuthGateView: View {
     let onAuthenticated: () -> Void
+    let onContinueOffline: () -> Void
 
     @State private var isRegister = true
     @State private var displayName = ""
@@ -232,6 +242,23 @@ private struct YoryAuthGateView: View {
                                 .foregroundStyle(Color(red: 0.67, green: 0.80, blue: 1.0))
                         }
                         .padding(.top, 2)
+
+                        Button(action: onContinueOffline) {
+                            Text("CONTINUE OFFLINE")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .tracking(1.1)
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.22), lineWidth: 0.8))
+                        }
+                        Text("Typing, layouts and personalization work on this device. Internet is only needed for account and cloud features.")
+                            .font(.system(size: 11))
+                            .lineSpacing(3)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white.opacity(0.60))
+                            .padding(.horizontal, 8)
                     }
                     .padding(18)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
@@ -301,15 +328,23 @@ private struct YoryAuthGateView: View {
 }
 
 private struct YorySmallBrand: View {
+    private var logo: UIImage {
+        UIImage(named: "LOGO7")
+            ?? Bundle.main.url(forResource: "LOGO7", withExtension: "jpeg").flatMap { UIImage(contentsOfFile: $0.path) }
+            ?? UIImage(systemName: "keyboard")!
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
                 Circle().fill(.ultraThinMaterial)
                     .overlay(Circle().stroke(.white.opacity(0.30), lineWidth: 0.8))
-                    .frame(width: 72, height: 72)
-                Text("Y")
-                    .font(.system(size: 37, weight: .light, design: .rounded))
-                    .foregroundStyle(.white)
+                    .frame(width: 76, height: 76)
+                Image(uiImage: logo)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(9)
+                    .frame(width: 70, height: 70)
             }
             Text("YORY KEYS")
                 .font(.system(size: 11, weight: .bold))

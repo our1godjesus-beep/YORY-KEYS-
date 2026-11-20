@@ -123,29 +123,13 @@ object YoryAuthRepository {
 
     suspend fun restoreSession(): Boolean = withContext(Dispatchers.IO) {
         val current = loadSession() ?: return@withContext false
-        if (current.expiresAtEpochSeconds > (System.currentTimeMillis() / 1000L) + 60) {
-            return@withContext true
-        }
-        runCatching {
-            val response = request(
-                "/auth/v1/token?grant_type=refresh_token",
-                mapOf("refresh_token" to current.refreshToken)
-            )
-            val refreshed = sessionFrom(response, current.email)
-                ?: throw YoryAuthException("The saved session could not be refreshed.")
-            saveSession(refreshed)
-            true
-        }.getOrElse {
-            clearSession()
-            false
-        }
+        // App launch must stay local. Never refresh a session just to open YORY Studio.
+        // An expired session remains encrypted on-device until the user signs in again online.
+        current.expiresAtEpochSeconds > (System.currentTimeMillis() / 1000L) + 60
     }
 
     suspend fun signOut() = withContext(Dispatchers.IO) {
-        val current = loadSession()
-        if (current != null) runCatching {
-            request("/auth/v1/logout", emptyMap(), current.accessToken)
-        }
+        // Local sign-out must work without a network connection.
         clearSession()
     }
 

@@ -46,6 +46,7 @@ fun YoryAppFlow() {
     val context = LocalContext.current
     val launchPrefs = remember { context.getSharedPreferences("yory_launch_state", 0) }
     var introSeen by remember { mutableStateOf(launchPrefs.getBoolean("intro_seen", false)) }
+    var offlineMode by remember { mutableStateOf(launchPrefs.getBoolean("offline_mode", false)) }
     var authReady by remember { mutableStateOf(false) }
     var authenticated by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -53,7 +54,20 @@ fun YoryAppFlow() {
     LaunchedEffect(Unit) {
         YoryAuthRepository.initialize(context)
         authenticated = runCatching { YoryAuthRepository.restoreSession() }.getOrDefault(false)
+        if (authenticated) {
+            offlineMode = false
+            launchPrefs.edit().remove("offline_mode").apply()
+        }
         authReady = true
+    }
+
+    fun returnToAccountGate() {
+        scope.launch {
+            YoryAuthRepository.signOut()
+            authenticated = false
+            offlineMode = false
+            launchPrefs.edit().putBoolean("offline_mode", false).apply()
+        }
     }
 
     when {
@@ -67,13 +81,18 @@ fun YoryAppFlow() {
             launchPrefs.edit().putBoolean("intro_seen", true).apply()
             introSeen = true
         }
-        !authenticated -> YoryAuthGate(onAuthenticated = { authenticated = true })
-        else -> YoryStudioScreen(onSignOut = {
-            scope.launch {
-                YoryAuthRepository.signOut()
-                authenticated = false
+        authenticated || offlineMode -> YoryStudioScreen(onSignOut = { returnToAccountGate() })
+        else -> YoryAuthGate(
+            onAuthenticated = {
+                authenticated = true
+                offlineMode = false
+                launchPrefs.edit().remove("offline_mode").apply()
+            },
+            onContinueOffline = {
+                offlineMode = true
+                launchPrefs.edit().putBoolean("offline_mode", true).apply()
             }
-        })
+        )
     }
 }
 
@@ -134,7 +153,7 @@ private fun YoryGlassIntroScreen(onContinue: () -> Unit) {
 }
 
 @Composable
-private fun YoryAuthGate(onAuthenticated: () -> Unit) {
+private fun YoryAuthGate(onAuthenticated: () -> Unit, onContinueOffline: () -> Unit) {
     var isRegister by remember { mutableStateOf(true) }
     var displayName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -212,6 +231,15 @@ private fun YoryAuthGate(onAuthenticated: () -> Unit) {
                     fontSize = 13.sp
                 )
             }
+            TextButton(onClick = onContinueOffline, modifier = Modifier.fillMaxWidth()) {
+                Text("CONTINUE OFFLINE", color = Color.White, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            }
+            Text(
+                "Typing, layouts and personalization work on this device. Internet is only needed for account and cloud features.",
+                color = LaunchMuted.copy(alpha = 0.78f),
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
         }
         Spacer(Modifier.height(13.dp))
         Text(
@@ -225,12 +253,24 @@ private fun YoryAuthGate(onAuthenticated: () -> Unit) {
 
 @Composable
 private fun LaunchBrandMark() {
+    val context = LocalContext.current
+    val logo = remember {
+        runCatching {
+            context.assets.open("LOGO7.jpeg").use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+        }.getOrNull()
+    }
     Box(
-        Modifier.size(70.dp).clip(CircleShape)
+        Modifier.size(76.dp).clip(CircleShape)
             .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.045f))))
             .border(0.9.dp, LaunchGlassBorder, CircleShape),
         contentAlignment = Alignment.Center
-    ) { Text("Y", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Light) }
+    ) {
+        if (logo != null) {
+            Image(bitmap = logo, contentDescription = "YORY KEYS logo", modifier = Modifier.fillMaxSize().padding(8.dp))
+        } else {
+            Text("Y", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Light)
+        }
+    }
     Spacer(Modifier.height(10.dp))
     Text("YORY KEYS", color = LaunchAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
     Spacer(Modifier.height(18.dp))

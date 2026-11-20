@@ -91,32 +91,13 @@ enum YoryAuthService {
 
     static func restoreSession() async -> Bool {
         guard let current = loadSession() else { return false }
-        if current.expiresAt > Date().timeIntervalSince1970 + 60 { return true }
-
-        do {
-            let response = try await post(
-                path: "/auth/v1/token?grant_type=refresh_token",
-                body: ["refresh_token": current.refreshToken]
-            )
-            guard let refreshed = try session(from: response, fallbackEmail: current.email) else {
-                throw YoryAuthError.invalidResponse
-            }
-            try save(refreshed)
-            return true
-        } catch {
-            clearSession()
-            return false
-        }
+        // Opening the local Studio must never require a network refresh.
+        // Keep an expired session in Keychain; the user can sign in again when online.
+        return current.expiresAt > Date().timeIntervalSince1970 + 60
     }
 
     static func signOut() async {
-        if let current = loadSession() {
-            _ = try? await post(
-                path: "/auth/v1/logout",
-                body: [:],
-                bearer: current.accessToken
-            )
-        }
+        // Sign-out is a local action and remains available without internet.
         clearSession()
     }
 
