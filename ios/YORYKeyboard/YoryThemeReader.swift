@@ -25,6 +25,10 @@ enum YoryThemeReader {
     static var fontSize: CGFloat {
         CGFloat(settings?.double(forKey: "fontSize") ?? 18).clamped(to: 12...26)
     }
+    static var fontFamily: String {
+        let value = settings?.string(forKey: "fontFamily") ?? "system"
+        return ["system", "rounded", "serif", "mono"].contains(value) ? value : "system"
+    }
     static var keyShape: String {
         let value = settings?.string(forKey: "keyShape") ?? "rounded"
         return ["rounded", "squircle", "pill", "circle", "rect"].contains(value) ? value : "rounded"
