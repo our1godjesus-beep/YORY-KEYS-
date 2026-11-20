@@ -16,12 +16,9 @@ class LocalWordSuggestions(private val context: Context) {
         val language = languageTag.substringBefore('-').lowercase(Locale.ROOT)
         val personal = PersonalDictionaryStore.suggestions(context, clean, languageTag, limit)
         val bundled = dictionaries[language].orEmpty()
-            .asSequence()
-            .filter { it.startsWith(clean) && !it.equals(clean, ignoreCase = true) }
-            .distinct()
+        val candidates = personal + bundled
+        return YorySuggestionText.rankByTypedPrefix(candidates, clean)
             .take(limit.coerceIn(1, 5))
-            .toList()
-        return (personal + bundled).distinct().take(limit.coerceIn(1, 5))
     }
 
     private fun loadWords(context: Context, path: String): List<String> = runCatching {
