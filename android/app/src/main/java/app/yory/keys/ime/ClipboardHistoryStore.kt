@@ -45,7 +45,7 @@ object ClipboardHistoryStore {
 
     private fun isSafeToStore(text: String): Boolean {
         if (text.isBlank() || text.length > MAX_TEXT_LENGTH) return false
-        val compact = text.filterNot(Char::isWhitespace)
+        val compact = text.filterNot { it.isWhitespace() }
         if (compact.matches(Regex("\\d{4,10}"))) return false
         if (compact.matches(Regex("\\d{12,19}"))) return false
         if (Regex("(?i)otp|one[- ]time|verification code|رمز التحقق|كود التحقق").containsMatchIn(text)) return false
