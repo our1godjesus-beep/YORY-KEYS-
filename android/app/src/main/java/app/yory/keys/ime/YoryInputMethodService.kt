@@ -205,7 +205,7 @@ class YoryInputMethodService : InputMethodService() {
         }
         addKey(actions, "↵", 1f) {
             val handled = sendDefaultEditorAction(true)
-            if (!handled) currentInputConnection?.commitText("\\n", 1)
+            if (!handled) currentInputConnection?.commitText("\n", 1)
         }
         parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
     }
