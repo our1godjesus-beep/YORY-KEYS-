@@ -598,16 +598,7 @@ struct YoryThemeGalleryView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(categories, id: \.self) { item in
-                                Button {
-                                    category = item
-                                } label: {
-                                    Text(item).font(.subheadline.weight(.medium))
-                                        .padding(.horizontal, 15).padding(.vertical, 9)
-                                        .background(category == item ? Color(hex: "#A7C7FF").opacity(0.22) : Color.white.opacity(0.055), in: Capsule())
-                                        .overlay(Capsule().stroke(category == item ? Color(hex: "#A7C7FF").opacity(0.72) : Color.white.opacity(0.15), lineWidth: 0.8))
-                                        .foregroundStyle(.white)
-                                }
-                                .buttonStyle(.plain)
+                                categoryChip(item)
                             }
                         }
                         .padding(.vertical, 2)
@@ -690,6 +681,29 @@ struct YoryThemeGalleryView: View {
         .navigationDestination(isPresented: $showEditor) {
             YoryThemeStudioView()
         }
+    }
+
+    @ViewBuilder
+    private func categoryChip(_ item: String) -> some View {
+        let selected = category == item
+        let backgroundColor = selected
+            ? Color(hex: "#A7C7FF").opacity(0.22)
+            : Color.white.opacity(0.055)
+        let borderColor = selected
+            ? Color(hex: "#A7C7FF").opacity(0.72)
+            : Color.white.opacity(0.15)
+
+        Button(action: { category = item }) {
+            Text(item)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 15)
+                .padding(.vertical, 9)
+                .background(backgroundColor)
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(borderColor, lineWidth: 0.8))
+        }
+        .buttonStyle(.plain)
     }
 
     private func apply(_ preset: YoryGalleryPreset) {
