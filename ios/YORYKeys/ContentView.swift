@@ -14,6 +14,7 @@ struct YoryThemeStudioView: View {
     @State private var cornerRadius = 13.0
     @State private var keySpacing = 4.0
     @State private var fontSize = 18.0
+    @State private var fontFamily = "system"
     @State private var keyShape = "rounded"
     @State private var soundEnabled = true
     @State private var hapticsEnabled = true
@@ -76,6 +77,16 @@ struct YoryThemeStudioView: View {
                     valueSlider("Key corner radius", value: $cornerRadius, range: 4...28, suffix: " pt")
                     valueSlider("Key spacing", value: $keySpacing, range: 0...12, suffix: " pt")
                     valueSlider("Letter size", value: $fontSize, range: 12...26, suffix: " pt")
+                    Picker("Letter font", selection: $fontFamily) {
+                        Text("System").tag("system")
+                        Text("Rounded").tag("rounded")
+                        Text("Serif").tag("serif")
+                        Text("Mono").tag("mono")
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.18), lineWidth: 0.7))
                     Picker("Key shape", selection: $keyShape) {
                         Text("Rounded").tag("rounded")
                         Text("Squircle").tag("squircle")
@@ -139,6 +150,7 @@ struct YoryThemeStudioView: View {
         .onChange(of: cornerRadius) { _ in persistTheme() }
         .onChange(of: keySpacing) { _ in persistTheme() }
         .onChange(of: fontSize) { _ in persistTheme() }
+        .onChange(of: fontFamily) { _ in persistTheme() }
         .onChange(of: keyShape) { _ in persistTheme() }
         .onChange(of: soundEnabled) { _ in persistTheme() }
         .onChange(of: hapticsEnabled) { _ in persistTheme() }
@@ -188,7 +200,7 @@ struct YoryThemeStudioView: View {
                 HStack(spacing: keySpacing) {
                     ForEach(Array(row), id: \.self) { character in
                         Text(String(character))
-                            .font(.system(size: fontSize, weight: .medium))
+                            .font(keyboardFont(size: fontSize, family: fontFamily))
                             .foregroundStyle(text)
                             .frame(maxWidth: .infinity)
                             .frame(height: 35)
@@ -222,6 +234,15 @@ struct YoryThemeStudioView: View {
             .background(.ultraThinMaterial, in: keyShapeView)
             .background((label == "↵" ? pressedKey : key).opacity(0.32), in: keyShapeView)
             .overlay(keyShapeView.stroke(.white.opacity(0.25), lineWidth: 0.7))
+    }
+
+    private func keyboardFont(size: Double, family: String) -> Font {
+        switch family {
+        case "rounded": return .system(size: size, weight: .medium, design: .rounded)
+        case "serif": return .system(size: size, weight: .medium, design: .serif)
+        case "mono": return .system(size: size, weight: .medium, design: .monospaced)
+        default: return .system(size: size, weight: .medium, design: .default)
+        }
     }
 
     private var keyShapeView: RoundedRectangle {
@@ -284,6 +305,8 @@ struct YoryThemeStudioView: View {
         cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
         keySpacing = defaults.object(forKey: "keySpacing") == nil ? 4 : defaults.double(forKey: "keySpacing")
         fontSize = defaults.object(forKey: "fontSize") == nil ? 18 : defaults.double(forKey: "fontSize")
+        let savedFont = defaults.string(forKey: "fontFamily") ?? "system"
+        fontFamily = ["system", "rounded", "serif", "mono"].contains(savedFont) ? savedFont : "system"
         keyShape = defaults.string(forKey: "keyShape") ?? "rounded"
         soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
         hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
@@ -314,7 +337,7 @@ struct YoryThemeStudioView: View {
                 "keySpacing": keySpacing,
                 "keyHeight": 46
             ],
-            "typography": ["fontSize": fontSize],
+            "typography": ["fontSize": fontSize, "fontFamily": fontFamily],
             "sound": ["enabled": soundEnabled],
             "haptics": ["enabled": hapticsEnabled],
             "emoji": ["displayScale": 1.0, "recentFirst": true]
@@ -360,6 +383,8 @@ struct YoryThemeStudioView: View {
         cornerRadius = min(28.0, max(4.0, (importedGeometry["cornerRadius"] as? NSNumber)?.doubleValue ?? cornerRadius))
         keySpacing = min(12.0, max(0.0, (importedGeometry["keySpacing"] as? NSNumber)?.doubleValue ?? keySpacing))
         fontSize = min(26.0, max(12.0, (importedTypography["fontSize"] as? NSNumber)?.doubleValue ?? fontSize))
+        let importedFont = importedTypography["fontFamily"] as? String ?? fontFamily
+        fontFamily = ["system", "rounded", "serif", "mono"].contains(importedFont) ? importedFont : "system"
         let importedShape = importedGeometry["keyShape"] as? String ?? keyShape
         keyShape = ["rounded", "squircle", "pill", "rect", "circle"].contains(importedShape) ? importedShape : "rounded"
         soundEnabled = importedSound["enabled"] as? Bool ?? soundEnabled
@@ -378,6 +403,7 @@ struct YoryThemeStudioView: View {
         defaults.set(cornerRadius, forKey: "cornerRadius")
         defaults.set(keySpacing, forKey: "keySpacing")
         defaults.set(fontSize, forKey: "fontSize")
+        defaults.set(fontFamily, forKey: "fontFamily")
         defaults.set(keyShape, forKey: "keyShape")
         defaults.set(soundEnabled, forKey: "soundEnabled")
         defaults.set(hapticsEnabled, forKey: "hapticsEnabled")
