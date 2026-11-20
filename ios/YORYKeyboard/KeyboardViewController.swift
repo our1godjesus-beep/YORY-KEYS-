@@ -130,7 +130,7 @@ final class KeyboardViewController: UIInputViewController {
                 toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
                 toolbar.addArrangedSubview(toolButton(
-                    symbolMode ? "⇄" : "123",
+                    symbolMode ? (symbolPage == 0 ? "2/2" : "1/2") : "123",
                     accessibilityLabel: symbolMode ? "Show next symbol page" : "Show symbols",
                     action: #selector(toggleSymbols)
                 ))
@@ -241,7 +241,7 @@ final class KeyboardViewController: UIInputViewController {
                 toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
                 toolbar.addArrangedSubview(toolButton(
-                    symbolMode ? "⇄" : "123",
+                    symbolMode ? (symbolPage == 0 ? "2/2" : "1/2") : "123",
                     accessibilityLabel: symbolMode ? "Show next symbol page" : "Show symbols",
                     action: #selector(toggleSymbols)
                 ))
