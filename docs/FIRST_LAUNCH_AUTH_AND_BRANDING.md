@@ -1,4 +1,4 @@
-# YORY KEYS: first-launch experience, account flow, and branding
+# YORY KEYS: first-launch experience, account flow, branding, and Supabase setup
 
 ## Separation of the two experiences
 
@@ -15,36 +15,45 @@ The intro loader expects the supplied brand asset at:
 - Android: `android/app/src/main/assets/LOGO7.jpeg`
 - iOS: add the source image as `LOGO7.jpeg` to the YORYKeys app target resources (or add it to the asset catalog as `LOGO7`).
 
-The file named `LOGO7.jpeg` was not present in the available conversation files when this pass was implemented. Until the real file is added, Android shows a temporary Y mark and iOS falls back to a keyboard symbol. The code already looks for the real asset.
+Until the real file is added, Android shows a temporary Y mark and iOS falls back to a keyboard symbol. The code already looks for the real asset.
 
-## Supabase mobile configuration
+## Supabase development configuration
 
-The client only uses the Supabase **Project URL** and **publishable key**. Never put a Supabase secret/service-role key in a mobile app.
+YORY KEYS is connected to the confirmed development Supabase project:
+- Project reference: `qyiipvwjwojrikokwjgz`
+- Project URL: `https://qyiipvwjwojrikokwjgz.supabase.co`
+
+The example config files currently contain the project's **publishable** key for development. This is designed for mobile clients and is not an administrative secret. Replace it with the publishable key from the new project when switching environments. Never use an `sb_secret_` or legacy `service_role` key in the app.
 
 ### Android
-1. Copy `android/local.properties.example` to `android/local.properties`.
-2. Replace `YOUR_PROJECT_REF` and `sb_publishable_YOUR_KEY` with the YORY project's Project URL and publishable key.
-3. Sync/build Android. `local.properties` is ignored by Git.
+
+1. Copy `android/supabase.local.properties.example` to `android/supabase.local.properties`.
+2. The file contains `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+3. Android Gradle reads this separate file; keep Android Studio's `android/local.properties` (SDK path) untouched.
+4. `android/supabase.local.properties` is ignored by Git.
 
 ### iOS
-1. Copy `ios/YORYKeys/SupabaseConfig.plist.example` to `ios/YORYKeys/SupabaseConfig.plist`.
-2. Replace the two placeholder values with the YORY project's Project URL and publishable key.
-3. Add `SupabaseConfig.plist` to the **YORYKeys app target** as a bundle resource. The real plist is ignored by Git.
 
-## Auth behavior
+1. Copy `ios/YORYKeys/SupabaseConfig.plist.example` to `ios/YORYKeys/SupabaseConfig.plist`.
+2. The local plist contains the same two values and is read by the YORYKeys host app.
+3. Run `cd ios && xcodegen generate` after copying it so XcodeGen includes the plist in the generated app project.
+4. `ios/YORYKeys/SupabaseConfig.plist` is ignored by Git.
+
+### Auth and privacy
 
 - Signup uses Supabase Auth email/password and sends the display name as user metadata.
 - When Supabase requires email confirmation, the app explains that the user must verify their email and then sign in.
 - Sign-in restores a session; Android protects the stored session with Android Keystore AES-GCM, and iOS stores it in Keychain.
-- The app does not write typed text or keyboard input to Supabase. Auth requests contain only the account fields needed by Supabase Auth.
-- The app currently displays a configuration error rather than pretending registration succeeded if URL/key configuration is missing.
+- The app does not write typed text or keyboard input to Supabase. Auth requests contain only account fields needed by Supabase Auth.
+- The app displays a configuration error rather than pretending registration succeeded if either URL or key is missing.
+- A publishable key is intended to be visible in a mobile app. Access to future user data must still be protected by Row Level Security (RLS).
 
-## Backend binding still requiring owner confirmation
+## Backend scope and rollout
 
-A Supabase project is visible on the connected account, but its name is generic and its public schema is empty. It has not been confirmed as the YORY production project. Do not deploy YORY tables or bind production mobile builds to it until the owner confirms the project reference. The mobile clients deliberately use local configuration placeholders rather than hard-coding an unconfirmed project.
+The mobile sign-up/sign-in flow uses Supabase Auth. The repository also contains separate schema migrations for profiles, themes, preferences, storage policies, and encrypted dictionary backup metadata. Only deploy those migrations after verifying the target project and reviewing the security advisor results. Never upload raw keystrokes, prediction context, clipboard contents, or plaintext dictionaries.
 
 ## Keyboard reference layout
 
-The keyboard's main letter rows and language-specific order remain separate from app launch/auth. English QWERTY, German QWERTZ and Arabic are selectable basic layouts. The keyboard's spacing, height, corner radius, font size, and font family are customizable through the local theme. Basic Android settings now expose number-row placement, cursor arrows, long-press duration, long-press symbols, accent options, key popups, large key text, sound volume, and haptic duration.
+The keyboard's main letter rows and language-specific order remain separate from app launch/auth. English QWERTY, German QWERTZ and Arabic are selectable basic layouts. The keyboard's spacing, height, corner radius, font size, and font family are customizable through the local theme. Basic Android settings expose number-row placement, cursor arrows, long-press duration, long-press symbols, accent options, key popups, large key text, sound volume, and haptic duration.
 
 The settings UI also exposes several reference sections whose advanced implementation is not yet complete on both platforms (for example voice dictation, search, iOS clipboard history, and some advanced emoji catalog options). Their screens must not imply those features are active until implemented and tested.
