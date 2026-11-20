@@ -81,3 +81,11 @@ This is the source of truth for repository state. UI presence is not proof that 
 6. Add emoji search, sticker creation, clipboard controls and writing tools within platform rules.
 7. Confirm the correct Supabase project, test migrations locally, run RLS/Storage tests, then deploy deliberately.
 8. Add signed language packs one language at a time after quality and licensing checks.
+
+
+## Premium Glass UI update (2026-11-20)
+
+- Applied a unified dark premium-glass visual treatment to Android and iOS keyboard surfaces, including translucent key fills, subtle glass highlights/borders, and pressed-state emphasis.
+- Extended the glass styling into Android YORY Studio controls/previews and the iOS YORY Studio screen, preview keys, presets, and segmented controls.
+- Preserved the existing keyboard row order, key labels, language layout selection, and core input actions; this visual pass does not intentionally change the main typing layout.
+- Build/device verification for this visual update is pending. Native blur rendering differs by platform; Android currently uses translucent gradient surfaces rather than a true real-time blur behind each key.
