@@ -69,6 +69,8 @@ Never upload live typed text, editor context, passwords, OTPs, payment informati
 
 ## Specifications
 
+- shared/specs/monetization-catalog.json — free/premium product boundary and billing readiness gates
+- docs/COMPETITIVE_STRATEGY_AND_MONETIZATION.md
 - docs/MASTER_PRODUCT_SPEC.md
 - docs/IOS_EXPERIENCE_STANDARD.md
 - docs/LANGUAGE_QUALITY_PROGRAM.md
