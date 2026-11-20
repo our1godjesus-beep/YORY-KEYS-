@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
@@ -133,6 +134,7 @@ class YoryInputMethodService : InputMethodService() {
         urlField = inputClass == InputType.TYPE_CLASS_TEXT &&
             variation == InputType.TYPE_TEXT_VARIATION_URI
         clipboardMode = false
+        refreshAutomaticShift()
         refreshKeyboard()
         updateSuggestions()
         refreshClipboardListener()
@@ -258,13 +260,14 @@ class YoryInputMethodService : InputMethodService() {
         }
         addKey(row, if (languageTag.startsWith("ar")) "العربية" else "English", 3.8f) {
             currentInputConnection?.commitText(" ", 1)
-            shifted = true
+            refreshAutomaticShift()
             updateSuggestions()
         }
         addKey(row, ".", 0.8f) { currentInputConnection?.commitText(".", 1); updateSuggestions() }
         addKey(row, "↵", 1.15f) {
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
+            refreshAutomaticShift()
             updateSuggestions()
         }
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
@@ -329,6 +332,8 @@ class YoryInputMethodService : InputMethodService() {
         when (label) {
             "⌫" -> {
                 connection.deleteSurroundingText(1, 0)
+                refreshAutomaticShift()
+                refreshKeyboard()
                 updateSuggestions()
             }
             "⇧" -> {
@@ -338,11 +343,17 @@ class YoryInputMethodService : InputMethodService() {
             else -> {
                 val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
                 connection.commitText(output, 1)
-                if (shifted) shifted = false
+                refreshAutomaticShift()
                 refreshKeyboard()
                 updateSuggestions()
             }
         }
+    }
+
+    private fun refreshAutomaticShift() {
+        val requestedModes = TextUtils.CAP_MODE_CHARACTERS or
+            TextUtils.CAP_MODE_WORDS or TextUtils.CAP_MODE_SENTENCES
+        shifted = (currentInputConnection?.getCursorCapsMode(requestedModes) ?: 0) != 0
     }
 
     private fun refreshClipboardListener() {
