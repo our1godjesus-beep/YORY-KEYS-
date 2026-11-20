@@ -246,6 +246,7 @@ struct ContentView: View {
             "glass": ["enabled": true, "opacity": opacity],
             "geometry": [
                 "keyShape": "rounded",
+                "keyShape": "rounded",
                 "cornerRadius": cornerRadius,
                 "keySpacing": 4,
                 "keyHeight": 46
