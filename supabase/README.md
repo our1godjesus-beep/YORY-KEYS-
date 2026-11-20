@@ -15,7 +15,7 @@ Recommended workflow:
 
 ## Hosted project safety
 
-Do not link this repository to an unrelated project. The previously discovered connected project was inactive and has not been modified. Confirm the correct YORY project and bring it to an active state before deploying.
+Do not link this repository to an unrelated project. One connected Supabase project was visible during this session and its status was ACTIVE_HEALTHY. Its generic project name does not prove it is intended for YORY, so no hosted schema or data was changed. Confirm the project identity before deployment.
 
 ## Secrets
 
