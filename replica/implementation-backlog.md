@@ -89,17 +89,17 @@ Latest verified main commit: `7374e805ea6b7a1944dbe241cf68c62f96098624`.
 Detailed evidence and per-platform findings: `keyboard-reference-audit.md`.
 
 ### P0 — key inventory and input correctness
-- [ ] Define a complete shared Arabic alphabet profile for Android/iOS. Current source rows omit standard letters ج، د، ذ، ك، ط، ظ from the default rows; keep every existing key action reachable and provide extended hamza/alif/ta-marbuta/maqṣūra forms.
-- [ ] Add tests proving all standard Arabic letters and documented extended forms can be inserted from the base layout or a clearly discoverable long-press menu.
-- [ ] Add secondary number legends on Arabic keys without changing inserted text or accessibility labels.
-- [ ] Replace the one-page Android/iOS symbol layouts with one shared two-page symbol inventory, including Arabic punctuation, paired brackets/quotes, operators and ABC/123 transitions.
+- [x] Add the missing standard Arabic letters to the Android/iOS primary rows; retain extended hamza/alif/ta-marbuta/maqṣūra forms through discoverable alternatives. Device typing/RTL QA remains.
+- [x] Add a layout unit test for all standard Arabic letters and the base extended forms; manual verification of long-press alternatives remains.
+- [x] Add secondary digit legends to Arabic first-row keys on both platforms; screen-reader and physical tap QA remains.
+- [x] Add two symbol pages with matched ordered inventories on Android/iOS and ABC/page transitions; move the inventory into a shared data contract and complete insertion QA next.
 - [ ] Verify Backspace, Shift, language switch, comma, space, period and editor-specific Enter remain present and functional on every page.
 
 ### P1 — toolbar and suggestion experience
-- [ ] Build a real More-tools grid on Android and iOS from a shared capability registry. Current Android has no grid; current iOS More/tools view only offers Clear learned words and Done.
+- [x] Add native More-tools grids on Android and iOS with platform-available actions. A shared capability registry and persistence/reorder UI still need consolidation.
 - [ ] Use original YORY icons, labels, accessibility descriptions, stable tool IDs and persistent order/visibility. Never expose Microsoft Rewards, Microsoft account or proprietary branded assets as YORY features.
-- [ ] Add suggestion-row collapse/expand and a typed contextual-chip model while preserving Incognito, secure-field, numeric, email and URL privacy guards.
-- [ ] Add spacebar language/cursor affordances only after dedicated RTL, hit-target and editor-focus tests.
+- [ ] Add editor-aware contextual chips; [x] suggestion-row collapse/expand is now implemented while preserving restricted-field/Incognito suppression.
+- [x] Add spacebar swipe: left = next added language, right = previous added language. Gesture/RTL hit-target/focus tests remain.
 
 ### P2 — optional rich input (only with complete real integrations)
 - [ ] Speech-to-text via approved platform APIs, with a user-initiated permission explanation and cancellation/error handling.
@@ -114,3 +114,14 @@ Detailed evidence and per-platform findings: `keyboard-reference-audit.md`.
 - [ ] Complete TalkBack/VoiceOver, RTL/mixed-bidi, process recreation, keyboard-extension lifecycle and physical-device QA.
 
 No runtime keyboard source files were changed by this reference-audit pass; this phase records the verified gaps and acceptance criteria before the code changes.
+
+
+## Implementation update — added-language swipe and runtime parity
+
+- Android and iOS settings now distinguish an active language from languages added to the keyboard.
+- Only added layouts participate in the spacebar swipe cycle. Selecting a language in Settings automatically adds it; the Add/Added control can manage the cycle membership.
+- Spacebar tap remains a normal space insertion; a horizontal swipe changes language without inserting text.
+- Android and iOS now have two symbol pages, expanded Arabic key rows, secondary Arabic digit legends, a collapsible suggestion row, and a platform-appropriate More grid.
+- Exact dimensions and responsive targets are documented in `design/keyboard-measurements.md`.
+- The first CI pass caught an Android callback-overload issue and an outdated unknown-language unit expectation; both were corrected in source. Re-run CI on the latest commit before marking this work validated.
+- No physical-device QA has been performed by this change set; gesture accuracy, Arabic typing, system navigation and extension height remain release gates.
