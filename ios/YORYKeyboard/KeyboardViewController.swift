@@ -12,6 +12,7 @@ final class KeyboardViewController: UIInputViewController {
     private var numericInput = false
     private var currentKeyboardType: UIKeyboardType = .default
     private let root = UIStackView()
+    private var toolbarRow: UIStackView?
     private let emojiRow = UIStackView()
     private let suggestionRow = UIStackView()
     private let keysStack = UIStackView()
@@ -47,6 +48,7 @@ final class KeyboardViewController: UIInputViewController {
         currentKeyboardType = nextType
         numericInput = nextType == .numberPad || nextType == .decimalPad || nextType == .phonePad
         rebuildKeys()
+        updateSuggestions()
     }
 
     private var returnKeyTitle: String {
@@ -90,6 +92,7 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
         toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleEmoji)))
         toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
+        toolbarRow = toolbar
         root.addArrangedSubview(toolbar)
 
         suggestionRow.axis = .horizontal
@@ -115,7 +118,12 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func rebuildKeys() {
-        keysStack.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
+        let direction: UISemanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
+        root.semanticContentAttribute = direction
+        toolbarRow?.semanticContentAttribute = direction
+        suggestionRow.semanticContentAttribute = direction
+        emojiRow.semanticContentAttribute = direction
+        keysStack.semanticContentAttribute = direction
         keysStack.arrangedSubviews.forEach { item in
             keysStack.removeArrangedSubview(item)
             item.removeFromSuperview()
@@ -182,7 +190,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func makeRow(_ labels: [String]) -> UIStackView {
         let row = UIStackView()
-        row.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
+        row.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
         row.spacing = 4
         row.distribution = .fillEqually
