@@ -172,7 +172,7 @@ private fun YoryAuthGate(onAuthenticated: () -> Unit, onContinueOffline: () -> U
         LaunchBrandMark()
         Text(if (isRegister) "Create your YORY account" else "Welcome back", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            if (isRegister) "Register first to personalize and sync your settings." else "Sign in to continue to YORY Studio.",
+            if (isRegister) "Create an optional account to sync settings and use cloud features." else "Sign in to continue to YORY Studio.",
             color = LaunchMuted,
             fontSize = 13.sp
         )

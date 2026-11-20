@@ -181,7 +181,7 @@ private struct YoryAuthGateView: View {
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
                     Text(isRegister
-                         ? "Register first to personalize and sync your settings."
+                         ? "Create an optional account to sync settings and use cloud features."
                          : "Sign in to continue to YORY Studio.")
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.65))

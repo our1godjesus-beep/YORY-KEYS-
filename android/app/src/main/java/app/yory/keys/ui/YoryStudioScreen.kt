@@ -134,7 +134,7 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("YORY KEYS", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                         Text("YORY Studio", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Make the keyboard yours.", color = Color(0xFF9CA7BD), fontSize = 14.sp)
+                        Text("Your words. Your flow.", color = Color(0xFF9CA7BD), fontSize = 14.sp)
                     }
                     Text("✦", color = Color(theme.accentArgb), fontSize = 34.sp)
                 }
