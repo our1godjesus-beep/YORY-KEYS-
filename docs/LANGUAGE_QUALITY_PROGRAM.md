@@ -75,3 +75,8 @@ Clients verify manifest signature, checksum, file size, compatibility and free s
 - Never train or personalize from users' live typing in the cloud.
 - Optional personal learning remains local and can be reviewed or erased.
 - Do not scrape private conversations or upload clipboard data to build a corpus.
+
+
+## Arabic search normalization — initial slice
+
+The local suggestion match now treats Arabic hamza/alef variants as the same search prefix, removes tashkeel and tatweel for lookup, and maps selected Persian yeh/kaf characters to Arabic yeh/kaf. This is search-only: the candidate inserted into the user's text retains its original spelling. Ta marbuta is not folded into ha. Android JVM coverage checks these boundaries; iOS mirrors the algorithm and must pass its extension build. The bundled Arabic starter words include an initial curated Egyptian conversational list, not a complete dialect dictionary. A language reviewer and a representative corpus are still required before claiming Egyptian Arabic autocorrect or prediction quality.
