@@ -23,6 +23,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrlValue\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"$supabasePublishableKeyValue\"")
     }
 
     buildFeatures {
@@ -30,10 +32,6 @@ android {
         buildConfig = true
     }
 
-    defaultConfig {
-        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrlValue\"")
-        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"$supabasePublishableKeyValue\"")
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
