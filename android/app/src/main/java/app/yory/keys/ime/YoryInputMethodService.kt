@@ -1,11 +1,14 @@
 package app.yory.keys.ime
 
 import android.content.Intent
+import android.media.AudioManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
+import android.view.SoundEffectConstants
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -200,7 +203,7 @@ class YoryInputMethodService : InputMethodService() {
             background = keyBackground(label)
             isClickable = true
             isFocusable = true
-            setOnClickListener { action() }
+            setOnClickListener { performKeyFeedback(this); action() }
             contentDescription = when (label) {
                 "⌫" -> "Delete"
                 "↵" -> "Return"
@@ -222,7 +225,7 @@ class YoryInputMethodService : InputMethodService() {
             textSize = if (label.length > 2) 12f else 19f
             setTextColor(theme.accentArgb)
             background = keyBackground(label)
-            setOnClickListener { action() }
+            setOnClickListener { performKeyFeedback(this); action() }
             contentDescription = label
         }
         parent.addView(item, LinearLayout.LayoutParams(0, dp(34), weight).apply {
@@ -278,6 +281,16 @@ class YoryInputMethodService : InputMethodService() {
         connection.deleteSurroundingText(prefix.length, 0)
         connection.commitText(suggestion, 1)
         updateSuggestions()
+    }
+
+    private fun performKeyFeedback(target: View) {
+        if (theme.hapticsEnabled) {
+            target.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+        if (theme.soundEnabled) {
+            val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+            audio.playSoundEffect(SoundEffectConstants.CLICK)
+        }
     }
 
     private fun openStudio() {
