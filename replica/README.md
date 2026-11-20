@@ -20,6 +20,7 @@ The Android navigation bar/gesture region and iOS home indicator are operating-s
 - screens/README.md — private screenshot reference registry; screenshots are not shipped
 - design/tokens.json — YORY-owned design tokens and contrast pairs
 - design/components.md — reusable component and screen behavior specification
+- design/keyboard-measurements.md — responsive dimensions for letter/symbol rows, toolbar, suggestions, More grid and added-language spacebar gestures
 - architecture.md — native implementation plan and local/cloud boundaries
 - test-plan.md — test cases and device QA requirements
 - implementation-backlog.md — build order and acceptance criteria
