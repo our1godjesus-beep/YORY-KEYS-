@@ -22,7 +22,7 @@ internal object YorySuggestionText {
                 append(
                     when (char) {
                         'أ', 'إ', 'آ', 'ٱ' -> 'ا'
-                        'ى', 'ی' -> 'ي'
+                        'ی' -> 'ي'
                         'ک' -> 'ك'
                         else -> char
                     }
