@@ -100,8 +100,9 @@ struct YoryThemeStudioView: View {
 
                     sectionTitle("LANGUAGE")
                     Picker("Primary layout", selection: $selectedLanguage) {
-                        Text("English").tag("English")
-                        Text("العربية").tag("العربية")
+                        Text("English (US)").tag("English")
+                        Text("Deutsch (DE)").tag("Deutsch")
+                        Text("العربية (مصر)").tag("العربية")
                     }
                     .pickerStyle(.segmented)
 
@@ -287,6 +288,11 @@ struct YoryThemeStudioView: View {
         soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
         hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
         personalLearningEnabled = defaults.object(forKey: "personalLearningEnabled") as? Bool ?? false
+        switch defaults.string(forKey: "yory.active.language") ?? "en-US" {
+        case "ar": selectedLanguage = "العربية"
+        case "de": selectedLanguage = "Deutsch"
+        default: selectedLanguage = "English"
+        }
     }
 
     private func encodeTheme() -> Data {
@@ -377,6 +383,8 @@ struct YoryThemeStudioView: View {
         defaults.set(hapticsEnabled, forKey: "hapticsEnabled")
         defaults.set(personalLearningEnabled, forKey: "personalLearningEnabled")
         defaults.set(selectedLanguage, forKey: "language")
+        let languageTag = selectedLanguage == "العربية" ? "ar" : (selectedLanguage == "Deutsch" ? "de" : "en-US")
+        defaults.set(languageTag, forKey: "yory.active.language")
     }
 }
 
