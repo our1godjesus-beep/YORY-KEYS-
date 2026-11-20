@@ -1,5 +1,9 @@
 import UIKit
 
+private final class YoryKeyboardRootView: UIView, UIInputViewAudioFeedback {
+    var enableInputClicksWhenVisible: Bool { true }
+}
+
 final class KeyboardViewController: UIInputViewController {
     private var isArabic = false
     private var isShifted = false
@@ -8,6 +12,10 @@ final class KeyboardViewController: UIInputViewController {
     private let root = UIStackView()
     private let emojiRow = UIStackView()
     private let keysStack = UIStackView()
+
+    override func loadView() {
+        view = YoryKeyboardRootView()
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -153,6 +161,7 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func insertKey(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
+        playKeyClick()
         textDocumentProxy.insertText(isShifted ? title.uppercased() : title)
         if isShifted {
             isShifted = false
@@ -165,17 +174,20 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func insertReturn() { textDocumentProxy.insertText("\n") }
 
     @objc private func toggleShift() {
+        playKeyClick()
         isShifted.toggle()
         rebuildKeys()
     }
 
     @objc private func toggleLanguage() {
+        playKeyClick()
         isArabic.toggle()
         symbolMode = false
         rebuildKeys()
     }
 
     @objc private func toggleSymbols() {
+        playKeyClick()
         symbolMode.toggle()
         rebuildKeys()
     }
