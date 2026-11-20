@@ -1,0 +1,38 @@
+name: YORYKeys
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  YORYKeys:
+    type: application
+    platform: iOS
+    sources:
+      - path: YORYKeys
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.yory.keys
+        PRODUCT_NAME: YORY KEYS
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: YORYKeys/YORYKeys.entitlements
+    dependencies:
+      - target: YORYKeyboard
+        embed: true
+  YORYKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: YORYKeyboard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.yory.keys.keyboard
+        PRODUCT_NAME: YORYKeyboard
+        INFOPLIST_FILE: YORYKeyboard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: YORYKeyboard/YORYKeyboard.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        GENERATE_INFOPLIST_FILE: NO
