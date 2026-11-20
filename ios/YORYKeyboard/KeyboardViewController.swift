@@ -124,14 +124,18 @@ final class KeyboardViewController: UIInputViewController {
             switch tool {
             case "emoji":
                 if YoryThemeReader.emojiKeyEnabled {
-                    toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+                    toolbar.addArrangedSubview(toolButton("☺", accessibilityLabel: "Emoji picker", action: #selector(toggleEmoji)))
                 }
             case "language":
-                toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
+                toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
-                toolbar.addArrangedSubview(toolButton(symbolMode ? "⇄" : "123", action: #selector(toggleSymbols)))
+                toolbar.addArrangedSubview(toolButton(
+                    symbolMode ? "⇄" : "123",
+                    accessibilityLabel: symbolMode ? "Show next symbol page" : "Show symbols",
+                    action: #selector(toggleSymbols)
+                ))
             case "switch":
-                toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+                toolbar.addArrangedSubview(toolButton("⌨", accessibilityLabel: "Next keyboard", action: #selector(switchKeyboard)))
             case "tools":
                 toolbar.addArrangedSubview(toolButton(
                     toolsMode ? "×" : "•••",
@@ -150,8 +154,8 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         if toolbar.arrangedSubviews.isEmpty {
-            toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
-            toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+            toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
+            toolbar.addArrangedSubview(toolButton("⌨", accessibilityLabel: "Next keyboard", action: #selector(switchKeyboard)))
         }
         toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         view.setNeedsLayout()
@@ -231,14 +235,18 @@ final class KeyboardViewController: UIInputViewController {
             switch tool {
             case "emoji":
                 if YoryThemeReader.emojiKeyEnabled {
-                    toolbar.addArrangedSubview(toolButton("☺", action: #selector(toggleEmoji)))
+                    toolbar.addArrangedSubview(toolButton("☺", accessibilityLabel: "Emoji picker", action: #selector(toggleEmoji)))
                 }
             case "language":
-                toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
+                toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
-                toolbar.addArrangedSubview(toolButton(symbolMode ? "⇄" : "123", action: #selector(toggleSymbols)))
+                toolbar.addArrangedSubview(toolButton(
+                    symbolMode ? "⇄" : "123",
+                    accessibilityLabel: symbolMode ? "Show next symbol page" : "Show symbols",
+                    action: #selector(toggleSymbols)
+                ))
             case "switch":
-                toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+                toolbar.addArrangedSubview(toolButton("⌨", accessibilityLabel: "Next keyboard", action: #selector(switchKeyboard)))
             case "tools":
                 toolbar.addArrangedSubview(toolButton(
                     toolsMode ? "×" : "•••",
@@ -250,8 +258,8 @@ final class KeyboardViewController: UIInputViewController {
             }
         }
         if toolbar.arrangedSubviews.isEmpty {
-            toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
-            toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
+            toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
+            toolbar.addArrangedSubview(toolButton("⌨", accessibilityLabel: "Next keyboard", action: #selector(switchKeyboard)))
         }
         toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         toolbarRow = toolbar
