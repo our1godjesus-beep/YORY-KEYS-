@@ -11,7 +11,7 @@ The supplied screenshots show a hierarchical settings app, not a four-tab applic
 
 The most important corrections for YORY are:
 1. Preserve hierarchical settings navigation; do not add a persistent four-tab bottom bar just because the app is mobile.
-2. Build a real theme gallery, theme detail/preview and editor flow. YORY currently has a theme editor and presets, but not the full browsing/library experience shown in the reference.
+2. Build a real theme gallery, theme detail/preview and editor flow. YORY now has native Android/iOS theme galleries, local categories, Apply states, and named offline custom-theme saving. A dedicated theme-detail route, full theme-library management and live-renderer parity remain.
 3. Upgrade the current height slider into platform-aware keyboard sizing. Microsoft documents drag-handle resizing and repositioning on Android; it explicitly says this resize feature is not offered on iOS.
 4. Treat Rich Input as platform-specific. The current YORY source has an Android local clipboard slice, while iOS explicitly tells users that clipboard history is not available in the current preview.
 5. Keep live typing offline. Account, cloud sync and any optional online tools are separate from the keyboard input path.
@@ -41,7 +41,7 @@ Open YORY Studio → find a setting or theme → make a change → save it local
 | ID | Screen | Route / how to reach | Purpose | Key components | States seen / required |
 |---|---|---|---|---|---|
 | S01 | Studio settings home | Launch YORY Studio | Main destination for configuration | Brand header, vertical settings rows, icon, title, subtitle, chevron, keyboard quick-action | Populated; long list scroll; selected keyboard; keyboard not enabled |
-| S02 | Theme gallery | S01 → Themes | Browse and choose themes | Top bar with back/Create, category chips, Yours section, horizontal theme cards, preview, selected marker, download/apply affordance | Selected, not selected, owned, unavailable/offline, empty category |
+| S02 | Theme gallery | S01 → Themes | Browse and choose themes | Top bar with back/Create, category chips (All/Yours/Dark/Light/Colorful), theme cards, generated keyboard preview, applied marker, local Apply/Customize | Selected, built-in, user-saved, offline, empty category |
 | S03 | Theme detail / preview | S02 → theme card | Inspect a theme before applying | Large keyboard preview, theme name, apply button, details | Preview, applying, applied, error |
 | S04 | Theme editor | S02 → Create or S03 → Customize | Create and tune a theme | Keyboard preview, preset selector, color controls, opacity, radius, height, spacing, font size, key shape, import/export | Default, custom, unsaved, saved, invalid HEX, import/export success/error |
 | S05 | Languages | S01 → Languages | Choose installed languages | Language/native name, layout label, active marker, edit/settings affordance, add language | English, Arabic, German basic-layout state, loading, unavailable |
@@ -62,7 +62,7 @@ Open YORY Studio → find a setting or theme → make a change → save it local
 | S20 | Help & Feedback | S01 → Help & Feedback | Troubleshooting and help | Setup steps, common problems, feedback entry | Offline/help available, feedback unavailable |
 | S21 | About | S01 → About YORY KEYS | Product/version details | App name, version, legal links | Current build, update available |
 
-The theme detail, theme editor, setup and toolbar-customizer screens are inferred from visible entry points and public help documentation where no supplied screenshot showed every state. Mark those details as medium-confidence until the real reference flow is inspected manually.
+The dedicated theme detail, setup and toolbar-customizer screens are inferred from visible entry points and public help documentation; the theme detail route remains unimplemented in YORY. The theme gallery/editor are now partially implemented natively. Manual reference tap counts and physical-device validation remain outstanding.
 
 ## Flows
 
@@ -73,8 +73,9 @@ F01 Enable and test YORY KEYS
     Edge: permission denied, user exits Settings, keyboard disabled, host app blocks third-party keyboards.
 
 F02 Browse and apply a theme
-    S01 -> S02 -> S03 -> Apply -> S15
+    S01 -> S02 -> Apply local preset/custom theme -> S15
     Edge: offline, empty category, preset already selected, apply while keyboard extension is not running.
+    Remaining: a dedicated S03 theme detail/preview route is not yet built.
 
 F03 Create a custom theme
     S01 -> S02 -> S04 -> preview English/Arabic -> save -> S15

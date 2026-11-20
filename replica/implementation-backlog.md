@@ -14,11 +14,13 @@
 - [ ] Implement edge-to-edge and IME insets without double padding.
 
 ## Phase 2 — Themes
-- [ ] Build category filters and local theme gallery.
-- [ ] Build theme detail/preview and apply state.
-- [ ] Upgrade theme editor with grouped controls and unsaved changes.
-- [ ] Add duplicate/favorite/delete/reset lifecycle for local themes.
-- [ ] Keep preview renderer and live IME renderer in parity.
+- [x] Build native category filters and local theme gallery on Android and iOS.
+- [x] Add local Apply state and active-theme indicator for presets/custom saved themes.
+- [x] Add named local custom-theme saving into My Themes (Android SharedPreferences store; iOS App Group UserDefaults).
+- [ ] Build a dedicated theme detail/preview screen separate from the gallery card.
+- [ ] Upgrade theme editor with grouped controls and an unsaved-change/discard flow.
+- [ ] Add gallery UI for duplicate/favorite/delete/reset (store delete API alone is not a finished UI).
+- [ ] Make the gallery preview use the same renderer/component as the live keyboard.
 
 ## Phase 3 — Languages and layout
 - [ ] Distinguish keyboard layout availability from language-model availability.
