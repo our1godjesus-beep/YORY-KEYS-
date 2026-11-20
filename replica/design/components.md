@@ -155,3 +155,13 @@ The source of truth for values is design/tokens.json. Use native components in J
 - Reduce Motion and reduced-effects theme option.
 - No text conveyed by color alone; visible focus/selected state; minimum 1-line title and 2-line subtitle support.
 - Verify Arabic screen reader order and focus direction.
+
+
+## Runtime keyboard sizing and gestures
+
+See `design/keyboard-measurements.md` for the dimension table and breakpoint rules. The runtime baseline targets:
+- Toolbar: 38–42dp/pt; suggestion bar: 30–34dp/pt, compact 22–25, collapsed 18–20.
+- Standard key height: 44–48dp/pt; compact Arabic rows use tighter 1.5–2.5dp/pt gaps and 8–9sp/pt secondary digit legends.
+- Spacebar: 36–40% of the bottom row, preserving tap-to-space while horizontal swipes switch only among Added layouts.
+- More panel: four columns, 64–72dp/pt tiles; use capability-based contents and do not advertise unavailable services.
+- Dense 12-key Arabic rows are sized from available width; utility controls retain larger hit targets. Test Arabic accuracy on physical devices rather than assuming screenshot geometry proves it.
