@@ -9,8 +9,12 @@ struct ContentView: View {
     @State private var key = Color(red: 0.92, green: 0.94, blue: 0.98)
     @State private var text = Color(red: 0.09, green: 0.10, blue: 0.14)
     @State private var accent = Color(red: 0.47, green: 0.72, blue: 0.97)
+    @State private var pressedKey = Color(red: 0.47, green: 0.72, blue: 0.97)
     @State private var opacity = 0.92
     @State private var cornerRadius = 13.0
+    @State private var keySpacing = 4.0
+    @State private var fontSize = 18.0
+    @State private var keyShape = "rounded"
     @State private var soundEnabled = true
     @State private var hapticsEnabled = true
     @State private var selectedLanguage = "English"
@@ -61,10 +65,20 @@ struct ContentView: View {
                     colorPickerRow("Key surface", selection: $key)
                     colorPickerRow("Key labels", selection: $text)
                     colorPickerRow("Accent", selection: $accent)
+                    colorPickerRow("Pressed key", selection: $pressedKey)
 
                     sectionTitle("GLASS & GEOMETRY")
                     valueSlider("Glass opacity", value: $opacity, range: 0.35...1.0, suffix: "%", multiplier: 100)
                     valueSlider("Key corner radius", value: $cornerRadius, range: 4...28, suffix: " pt")
+                    valueSlider("Key spacing", value: $keySpacing, range: 0...12, suffix: " pt")
+                    valueSlider("Letter size", value: $fontSize, range: 12...26, suffix: " pt")
+                    Picker("Key shape", selection: $keyShape) {
+                        Text("Rounded").tag("rounded")
+                        Text("Squircle").tag("squircle")
+                        Text("Pill").tag("pill")
+                        Text("Rect").tag("rect")
+                    }
+                    .pickerStyle(.segmented)
 
                     sectionTitle("SENSORY EXPERIENCE")
                     Toggle("Keyboard sounds", isOn: $soundEnabled).tint(accent).foregroundStyle(.white)
@@ -103,8 +117,12 @@ struct ContentView: View {
         .onChange(of: key) { _ in persistTheme() }
         .onChange(of: text) { _ in persistTheme() }
         .onChange(of: accent) { _ in persistTheme() }
+        .onChange(of: pressedKey) { _ in persistTheme() }
         .onChange(of: opacity) { _ in persistTheme() }
         .onChange(of: cornerRadius) { _ in persistTheme() }
+        .onChange(of: keySpacing) { _ in persistTheme() }
+        .onChange(of: fontSize) { _ in persistTheme() }
+        .onChange(of: keyShape) { _ in persistTheme() }
         .onChange(of: soundEnabled) { _ in persistTheme() }
         .onChange(of: hapticsEnabled) { _ in persistTheme() }
         .onChange(of: selectedLanguage) { _ in persistTheme() }
@@ -142,25 +160,25 @@ struct ContentView: View {
     }
 
     private var keyboardPreview: some View {
-        VStack(spacing: 7) {
+        VStack(spacing: keySpacing) {
             HStack {
                 ForEach(["☺", "✦", "文", "⚙", "•••"], id: \.self) {
                     Text($0).foregroundStyle(accent).frame(maxWidth: .infinity)
                 }
             }
             ForEach(["qwertyuiop", "asdfghjkl", "⇧zxcvbnm⌫"], id: \.self) { row in
-                HStack(spacing: 4) {
+                HStack(spacing: keySpacing) {
                     ForEach(Array(row), id: \.self) { character in
                         Text(String(character))
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.system(size: fontSize, weight: .medium))
                             .foregroundStyle(text)
                             .frame(maxWidth: .infinity)
                             .frame(height: 35)
-                            .background(key, in: RoundedRectangle(cornerRadius: cornerRadius))
+                            .background(key, in: keyShapeView)
                     }
                 }
             }
-            HStack(spacing: 5) {
+            HStack(spacing: keySpacing) {
                 previewKey("!#1")
                 previewKey("◎")
                 previewKey("English")
@@ -179,7 +197,16 @@ struct ContentView: View {
             .foregroundStyle(text)
             .frame(maxWidth: label == "English" ? .infinity : 42)
             .frame(height: 34)
-            .background(key, in: RoundedRectangle(cornerRadius: cornerRadius))
+            .background(label == "↵" ? pressedKey : key, in: keyShapeView)
+    }
+
+    private var keyShapeView: RoundedRectangle {
+        let radius = keyShape == "pill" || keyShape == "circle"
+            ? 18
+            : keyShape == "squircle" ? cornerRadius * 1.3
+            : keyShape == "rect" ? 3
+            : cornerRadius
+        return RoundedRectangle(cornerRadius: radius)
     }
 
     private func sectionTitle(_ title: String) -> some View {
@@ -191,6 +218,7 @@ struct ContentView: View {
             background = Color(hex: bg)
             self.key = Color(hex: key)
             self.accent = Color(hex: accent)
+            self.pressedKey = Color(hex: accent)
             persistTheme()
         } label: {
             Text(name).font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -225,8 +253,12 @@ struct ContentView: View {
         key = Color(hex: defaults.string(forKey: "keyHex") ?? "#F1F3FA")
         text = Color(hex: defaults.string(forKey: "textHex") ?? "#171923")
         accent = Color(hex: defaults.string(forKey: "accentHex") ?? "#78B8F8")
+        pressedKey = Color(hex: defaults.string(forKey: "keyPressedHex") ?? "#78B8F8")
         opacity = defaults.object(forKey: "opacity") == nil ? 0.92 : defaults.double(forKey: "opacity")
         cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
+        keySpacing = defaults.object(forKey: "keySpacing") == nil ? 4 : defaults.double(forKey: "keySpacing")
+        fontSize = defaults.object(forKey: "fontSize") == nil ? 18 : defaults.double(forKey: "fontSize")
+        keyShape = defaults.string(forKey: "keyShape") ?? "rounded"
         soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
         hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
     }
@@ -239,17 +271,18 @@ struct ContentView: View {
             "appearance": [
                 "background": background.hexString,
                 "key": key.hexString,
-                "keyPressed": accent.hexString,
+                "keyPressed": pressedKey.hexString,
                 "text": text.hexString,
                 "accent": accent.hexString
             ],
             "glass": ["enabled": true, "opacity": opacity],
             "geometry": [
-                "keyShape": "rounded",
+                "keyShape": keyShape,
                 "cornerRadius": cornerRadius,
-                "keySpacing": 4,
+                "keySpacing": keySpacing,
                 "keyHeight": 46
             ],
+            "typography": ["fontSize": fontSize],
             "sound": ["enabled": soundEnabled],
             "haptics": ["enabled": hapticsEnabled],
             "emoji": ["displayScale": 1.0, "recentFirst": true]
@@ -279,8 +312,10 @@ struct ContentView: View {
         let importedKey = try color("key", fallback: key)
         let importedText = try color("text", fallback: text)
         let importedAccent = try color("accent", fallback: accent)
+        let importedPressed = try color("keyPressed", fallback: importedAccent)
         let importedGlass = document["glass"] as? [String: Any] ?? [:]
         let importedGeometry = document["geometry"] as? [String: Any] ?? [:]
+        let importedTypography = document["typography"] as? [String: Any] ?? [:]
         let importedSound = document["sound"] as? [String: Any] ?? [:]
         let importedHaptics = document["haptics"] as? [String: Any] ?? [:]
 
@@ -288,8 +323,13 @@ struct ContentView: View {
         key = importedKey
         text = importedText
         accent = importedAccent
+        pressedKey = importedPressed
         opacity = min(1.0, max(0.35, (importedGlass["opacity"] as? NSNumber)?.doubleValue ?? opacity))
         cornerRadius = min(28.0, max(4.0, (importedGeometry["cornerRadius"] as? NSNumber)?.doubleValue ?? cornerRadius))
+        keySpacing = min(12.0, max(0.0, (importedGeometry["keySpacing"] as? NSNumber)?.doubleValue ?? keySpacing))
+        fontSize = min(26.0, max(12.0, (importedTypography["fontSize"] as? NSNumber)?.doubleValue ?? fontSize))
+        let importedShape = importedGeometry["keyShape"] as? String ?? keyShape
+        keyShape = ["rounded", "squircle", "pill", "rect"].contains(importedShape) ? importedShape : "rounded"
         soundEnabled = importedSound["enabled"] as? Bool ?? soundEnabled
         hapticsEnabled = importedHaptics["enabled"] as? Bool ?? hapticsEnabled
         themeName = String((document["name"] as? String ?? "Imported Theme").prefix(48))
@@ -301,8 +341,12 @@ struct ContentView: View {
         defaults.set(key.hexString, forKey: "keyHex")
         defaults.set(text.hexString, forKey: "textHex")
         defaults.set(accent.hexString, forKey: "accentHex")
+        defaults.set(pressedKey.hexString, forKey: "keyPressedHex")
         defaults.set(opacity, forKey: "opacity")
         defaults.set(cornerRadius, forKey: "cornerRadius")
+        defaults.set(keySpacing, forKey: "keySpacing")
+        defaults.set(fontSize, forKey: "fontSize")
+        defaults.set(keyShape, forKey: "keyShape")
         defaults.set(soundEnabled, forKey: "soundEnabled")
         defaults.set(hapticsEnabled, forKey: "hapticsEnabled")
         defaults.set(selectedLanguage, forKey: "language")
