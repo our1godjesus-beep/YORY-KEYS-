@@ -20,7 +20,13 @@ object YoryThemeStore {
             keyHeightDp = prefs.getFloat("height", fallback.keyHeightDp).coerceIn(36f, 60f),
             soundEnabled = prefs.getBoolean("sound_enabled", fallback.soundEnabled),
             hapticsEnabled = prefs.getBoolean("haptics_enabled", fallback.hapticsEnabled),
-            clipboardEnabled = prefs.getBoolean("clipboard_enabled", fallback.clipboardEnabled)
+            clipboardEnabled = prefs.getBoolean("clipboard_enabled", fallback.clipboardEnabled),
+            keyPressedArgb = prefs.getInt("key_pressed", fallback.keyPressedArgb),
+            keySpacingDp = prefs.getFloat("key_spacing", fallback.keySpacingDp).coerceIn(0f, 12f),
+            keyShape = prefs.getString("key_shape", fallback.keyShape)?.takeIf {
+                it in setOf("rounded", "squircle", "pill", "circle", "rect")
+            } ?: fallback.keyShape,
+            fontSizeSp = prefs.getFloat("font_size", fallback.fontSizeSp).coerceIn(12f, 26f)
         )
     }
 
@@ -37,6 +43,12 @@ object YoryThemeStore {
             .putBoolean("sound_enabled", theme.soundEnabled)
             .putBoolean("haptics_enabled", theme.hapticsEnabled)
             .putBoolean("clipboard_enabled", theme.clipboardEnabled)
+            .putInt("key_pressed", theme.keyPressedArgb)
+            .putFloat("key_spacing", theme.keySpacingDp.coerceIn(0f, 12f))
+            .putString("key_shape", theme.keyShape.takeIf {
+                it in setOf("rounded", "squircle", "pill", "circle", "rect")
+            } ?: "rounded")
+            .putFloat("font_size", theme.fontSizeSp.coerceIn(12f, 26f))
             .apply()
     }
 }
