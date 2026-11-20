@@ -36,6 +36,9 @@ class YoryInputMethodService : InputMethodService() {
     private var emojiMode = false
     private var clipboardMode = false
     private var sensitiveField = false
+    private var numericField = false
+    private var emailField = false
+    private var urlField = false
     private var keyboardRoot: LinearLayout? = null
     private var suggestionRow: LinearLayout? = null
     private var clipboardRow: LinearLayout? = null
@@ -120,6 +123,15 @@ class YoryInputMethodService : InputMethodService() {
         super.onStartInputView(info, restarting)
         theme = YoryThemeStore.load(applicationContext)
         sensitiveField = isSensitive(info)
+        val inputClass = info.inputType and InputType.TYPE_MASK_CLASS
+        val variation = info.inputType and InputType.TYPE_MASK_VARIATION
+        numericField = inputClass == InputType.TYPE_CLASS_NUMBER ||
+            inputClass == InputType.TYPE_CLASS_PHONE
+        emailField = inputClass == InputType.TYPE_CLASS_TEXT &&
+            (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+                variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS)
+        urlField = inputClass == InputType.TYPE_CLASS_TEXT &&
+            variation == InputType.TYPE_TEXT_VARIATION_URI
         clipboardMode = false
         refreshKeyboard()
         updateSuggestions()
@@ -142,11 +154,19 @@ class YoryInputMethodService : InputMethodService() {
         val container = keysContainer ?: return
         theme = YoryThemeStore.load(applicationContext)
         keyboardRoot?.background = panelBackground()
+        val direction = if (languageTag.startsWith("ar") && !numericField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        keyboardRoot?.layoutDirection = direction
+        container.layoutDirection = direction
         container.removeAllViews()
 
         emojiRow?.visibility = if (emojiMode) View.VISIBLE else View.GONE
-        suggestionRow?.visibility = if (sensitiveField || emojiMode || clipboardMode) View.GONE else View.VISIBLE
-        clipboardRow?.visibility = if (theme.clipboardEnabled && clipboardMode && !sensitiveField) View.VISIBLE else View.GONE
+        suggestionRow?.visibility = if (sensitiveField || numericField || emojiMode || clipboardMode) View.GONE else View.VISIBLE
+        clipboardRow?.visibility = if (theme.clipboardEnabled && clipboardMode && !sensitiveField && !numericField) View.VISIBLE else View.GONE
+
+        if (numericField) {
+            addNumericLayout(container)
+            return
+        }
 
         if (symbolMode) {
             addKeyRow(container, "1234567890")
@@ -158,6 +178,36 @@ class YoryInputMethodService : InputMethodService() {
             addSpecialLetterRow(container)
         }
         addBottomRow(container)
+    }
+
+    private fun addNumericLayout(parent: LinearLayout) {
+        addKeyRow(parent, "123")
+        addKeyRow(parent, "456")
+        addKeyRow(parent, "789")
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        addKey(bottom, "-", 1f) { currentInputConnection?.commitText("-", 1) }
+        addKey(bottom, "0", 1.2f) { currentInputConnection?.commitText("0", 1) }
+        addKey(bottom, if (emailField) "@" else if (urlField) "/" else ".", 1f) {
+            currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ".", 1)
+        }
+        addKey(bottom, "⌫", 1f) { handleKey("⌫") }
+        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        addKey(actions, "🌐", 1f) {
+            languageTag = if (languageTag.startsWith("ar")) "en-US" else "ar"
+            refreshKeyboard()
+        }
+        addKey(actions, "↵", 1f) {
+            val handled = sendDefaultEditorAction(true)
+            if (!handled) currentInputConnection?.commitText("\\n", 1)
+        }
+        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
     }
 
     private fun addKeyRow(parent: LinearLayout, letters: String) {
@@ -202,8 +252,15 @@ class YoryInputMethodService : InputMethodService() {
             refreshKeyboard()
             updateSuggestions()
         }
-        addKey(row, ",", 0.8f) { currentInputConnection?.commitText(",", 1); updateSuggestions() }
-        addKey(row, "space", 3.8f) { currentInputConnection?.commitText(" ", 1); shifted = true; updateSuggestions() }
+        addKey(row, if (emailField) "@" else if (urlField) "/", 0.8f) {
+            currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
+            updateSuggestions()
+        }
+        addKey(row, if (languageTag.startsWith("ar")) "العربية" else "English", 3.8f) {
+            currentInputConnection?.commitText(" ", 1)
+            shifted = true
+            updateSuggestions()
+        }
         addKey(row, ".", 0.8f) { currentInputConnection?.commitText(".", 1); updateSuggestions() }
         addKey(row, "↵", 1.15f) {
             val handled = sendDefaultEditorAction(true)
@@ -217,7 +274,7 @@ class YoryInputMethodService : InputMethodService() {
         val view = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            textSize = if (label == "space") 12f else 18f
+            textSize = if (label == "space" || label == "English" || label == "العربية") 12f else 18f
             setTextColor(theme.textArgb)
             background = keyBackground(label)
             isClickable = true
@@ -226,7 +283,7 @@ class YoryInputMethodService : InputMethodService() {
             contentDescription = when (label) {
                 "⌫" -> "Delete"
                 "↵" -> "Return"
-                "space" -> "Space"
+                "space", "English", "العربية" -> "Space"
                 "⇧" -> "Shift"
                 else -> label
             }
@@ -275,7 +332,7 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun refreshClipboardListener() {
         val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        val shouldListen = theme.clipboardEnabled && !sensitiveField
+        val shouldListen = theme.clipboardEnabled && !sensitiveField && !numericField
         if (shouldListen && !clipboardListenerRegistered) {
             manager.addPrimaryClipChangedListener(clipboardListener)
             clipboardListenerRegistered = true
@@ -286,7 +343,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun captureClipboard() {
-        if (sensitiveField || !theme.clipboardEnabled) return
+        if (sensitiveField || numericField || !theme.clipboardEnabled) return
         val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val clip = manager.primaryClip ?: return
         if (clip.itemCount < 1) return
@@ -343,7 +400,7 @@ class YoryInputMethodService : InputMethodService() {
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
         row.removeAllViews()
-        if (sensitiveField || emojiMode || clipboardMode) {
+        if (sensitiveField || numericField || emojiMode || clipboardMode) {
             row.visibility = View.GONE
             return
         }
