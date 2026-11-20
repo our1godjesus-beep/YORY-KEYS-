@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "product": "YORY KEYS",
+  "billingStatus": "not_implemented",
+  "purchasesEnabled": false,
+  "pricingStatus": "not_set",
+  "tiers": [
+    {
+      "id": "free",
+      "name": "YORY Free",
+      "status": "active",
+      "principles": [
+        "Core typing is never paywalled.",
+        "Offline use does not require an account.",
+        "Arabic and English basic typing remain free.",
+        "Incognito and privacy controls remain free."
+      ],
+      "included": [
+        "Native keyboard input",
+        "Current installed keyboard layouts",
+        "Language switching and basic number/symbol pages",
+        "Basic theme selection and existing local customization",
+        "Local suggestions and optional local personal learning",
+        "Incognito and privacy controls"
+      ],
+      "limitations_disclosed": [
+        "Only seven basic layouts are currently present.",
+        "Bundled starter dictionaries are currently available only for Arabic and English.",
+        "Current suggestions are local prefix completion, not neural prediction or production autocorrect."
+      ]
+    },
+    {
+      "id": "studio-plus",
+      "name": "YORY Studio Plus",
+      "status": "planned",
+      "purchaseType": "one_time_theme_packs_or_feature_unlocks",
+      "price": null,
+      "plannedBenefits": [
+        "Original premium theme collections",
+        "Expanded saved-theme library and organization",
+        "Advanced visual customization when implemented and tested",
+        "Licensed sound and haptic packs when implemented"
+      ],
+      "releaseGate": [
+        "Each paid benefit must already work on the purchasing platform.",
+        "Show accurate preview, platform compatibility, one-time price and refund/support details.",
+        "Built-in free themes and core typing must remain available."
+      ]
+    },
+    {
+      "id": "yory-plus",
+      "name": "YORY Plus",
+      "status": "planned",
+      "purchaseType": "subscription",
+      "price": null,
+      "plannedBenefits": [
+        "Quality-tested downloadable dictionaries and autocorrect packs",
+        "Optional encrypted settings and theme synchronization",
+        "Regularly released premium theme collections",
+        "Explicit user-invoked writing tools with privacy disclosure, if shipped"
+      ],
+      "releaseGate": [
+        "Only launch while there is ongoing value for subscribers.",
+        "Language packs require license provenance, quality evaluation, signature verification and rollback.",
+        "Cloud sync requires explicit opt-in, encryption where appropriate, RLS and account deletion.",
+        "Typing must remain useful offline if subscription verification or network access fails."
+      ]
+    },
+    {
+      "id": "creator-marketplace",
+      "name": "YORY Creator Themes",
+      "status": "future",
+      "purchaseType": "individual_creator_packs",
+      "price": null,
+      "plannedBenefits": [
+        "Original theme packs from approved creators",
+        "Creator pages and compatibility information",
+        "Ratings, reporting and moderation"
+      ],
+      "releaseGate": [
+        "Creator rights and licensing must be checked.",
+        "Moderation, reporting, refunds, tax and payout workflows must exist before sales.",
+        "Do not accept copied brand assets or unlicensed artwork."
+      ]
+    }
+  ],
+  "commercialRules": {
+    "keyboardCoreTypingPaywall": false,
+    "keyboardExtensionAdvertising": false,
+    "typedTextUsedForAdvertising": false,
+    "clipboardContentUsedForAdvertising": false,
+    "keyboardExtensionPurchaseUi": false,
+    "purchasesEnabled": false,
+    "pricesPublished": false,
+    "restorePurchasesRequiredBeforeLaunch": true,
+    "supportAndRefundFlowRequiredBeforeLaunch": true,
+    "accountDeletionAndPrivacyDisclosuresRequiredBeforeCloudSales": true
+  },
+  "platformBilling": {
+    "android": {
+      "provider": "Google Play Billing",
+      "status": "not_implemented",
+      "note": "Use Google Play Billing for Play-distributed digital features unless a documented program exception applies."
+    },
+    "ios": {
+      "provider": "StoreKit / App Store In-App Purchase",
+      "status": "not_implemented",
+      "note": "Sell digital app features in the host app. Do not put purchase offers inside the custom keyboard extension."
+    }
+  },
+  "businessReadiness": {
+    "adultAccountOwnerAndGuardianReviewRequired": true,
+    "note": "Developer store accounts, payment contracts, taxes, payouts and legal terms must be handled by an eligible adult account owner with appropriate guardian involvement. Do not bypass age, identity or platform requirements."
+  }
+}
