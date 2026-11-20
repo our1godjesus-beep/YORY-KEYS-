@@ -12,7 +12,7 @@ private struct YorySettingsItem: Identifiable {
 struct ContentView: View {
     let onSignOut: () -> Void
     private let items = [
-        YorySettingsItem(title: "Account", subtitle: "Sign in to manage your YORY profile", symbol: "person.crop.circle"),
+        YorySettingsItem(title: "Account", subtitle: "Optional account for cloud sync and online features", symbol: "person.crop.circle"),
         YorySettingsItem(title: "YORY Rewards", subtitle: "Discover keyboard milestones", symbol: "medal"),
         YorySettingsItem(title: "Languages", subtitle: "English (US), العربية", symbol: "globe"),
         YorySettingsItem(title: "Themes", subtitle: "Glass themes and customization", symbol: "paintpalette"),
@@ -191,8 +191,8 @@ private struct YorySettingsDetailView: View {
                         settingsInfo("Permissions", "The keyboard does not request camera, contacts or location access.")
                     }
                 case "Account":
-                    settingsInfo("YORY account", "Your account is used by YORY Studio. The keyboard itself remains available offline and does not require the settings app to stay open.")
-                    Button("Sign out", role: .destructive, action: onSignOut)
+                    settingsInfo("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
+                    Button("Connect account / sign out", action: onSignOut)
                         .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                 case "YORY Rewards", "Achievements":
                     settingsInfo("Coming to YORY", "This section is included in the settings structure. Rewards and achievement tracking are not connected in this preview.")

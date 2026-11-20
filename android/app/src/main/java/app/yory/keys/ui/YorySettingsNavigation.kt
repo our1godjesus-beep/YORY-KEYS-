@@ -32,7 +32,7 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
     val context = LocalContext.current
     var page by remember { mutableStateOf<String?>(null) }
     val items = listOf(
-        SettingsItem("◉", "Account", "Sign in to manage your YORY profile"),
+        SettingsItem("◉", "Account", "Optional account for cloud sync and online features"),
         SettingsItem("✧", "YORY Rewards", "Discover keyboard milestones"),
         SettingsItem("◎", "Languages", "English (US), العربية"),
         SettingsItem("◈", "Themes", "Glass themes and customization"),
@@ -236,8 +236,8 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     InfoCard("Permissions", "The keyboard does not request camera, contacts or location access.")
                 }
                 "Account" -> {
-                    InfoCard("YORY account", "Manage the account used by YORY Studio. The keyboard itself remains usable offline and does not require the settings app to stay open.")
-                    Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) { Text("Sign out") }
+                    InfoCard("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
+                    Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) { Text("Connect account / sign out") }
                 }
                 "YORY Rewards", "Achievements" -> InfoCard("Coming to YORY", "This section is part of the settings structure. Rewards and achievement tracking are not connected in this preview.")
                 "Help & Feedback" -> {
