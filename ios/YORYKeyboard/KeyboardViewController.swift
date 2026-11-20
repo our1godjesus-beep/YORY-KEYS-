@@ -169,9 +169,25 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    @objc private func deleteBackward() { textDocumentProxy.deleteBackward() }
-    @objc private func insertSpace() { textDocumentProxy.insertText(" ") }
-    @objc private func insertReturn() { textDocumentProxy.insertText("\n") }
+    private func playKeyClick() {
+        guard YoryThemeReader.soundEnabled else { return }
+        UIDevice.current.playInputClick()
+    }
+
+    @objc private func deleteBackward() {
+        playKeyClick()
+        textDocumentProxy.deleteBackward()
+    }
+
+    @objc private func insertSpace() {
+        playKeyClick()
+        textDocumentProxy.insertText(" ")
+    }
+
+    @objc private func insertReturn() {
+        playKeyClick()
+        textDocumentProxy.insertText("\n")
+    }
 
     @objc private func toggleShift() {
         playKeyClick()
@@ -193,6 +209,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func toggleEmoji() {
+        playKeyClick()
         emojiMode.toggle()
         emojiRow.isHidden = !emojiMode
     }
