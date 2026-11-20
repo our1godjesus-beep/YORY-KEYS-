@@ -111,7 +111,7 @@ fun YoryStudioScreen() {
     }
 
     MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0D1019)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0A0D16)) {
             Column(
                 modifier = Modifier.fillMaxSize()
                     .background(Brush.verticalGradient(listOf(Color(0xFF101725), Color(0xFF080B12), Color(0xFF151A28))))
@@ -135,7 +135,7 @@ fun YoryStudioScreen() {
                         Box(
                             modifier = Modifier.weight(1f).height(42.dp)
                                 .clip(RoundedCornerShape(13.dp))
-                                .background(Color(preset.keyArgb).copy(alpha = 0.42f))
+                                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.18f), Color(preset.keyArgb).copy(alpha = 0.30f))))
                                 .border(
                                     if (theme.name == preset.name) 2.dp else 1.dp,
                                     if (theme.name == preset.name) Color(preset.accentArgb) else Color.White.copy(alpha = 0.14f),
@@ -154,7 +154,7 @@ fun YoryStudioScreen() {
                     listOf(0xFF78B8F8, 0xFF9B8CFF, 0xFF51E5DC, 0xFFDE7297, 0xFFFFC66D, 0xFF8ED6A6).forEach { raw ->
                         val colorInt = raw.toInt()
                         Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(colorInt))
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.55f), Color(colorInt))))
                                 .border(if (theme.accentArgb == colorInt) 3.dp else 1.dp, Color.White.copy(alpha = 0.9f), CircleShape)
                                 .clickable { applyTheme(theme.copy(accentArgb = colorInt)) }
                         )
@@ -269,8 +269,8 @@ private fun KeyboardPreview(theme: YoryTheme) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(theme.backgroundArgb).copy(alpha = (theme.opacity * 0.58f).coerceIn(0.25f, 0.72f))),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFB9D8FF).copy(alpha = 0.075f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
@@ -283,8 +283,8 @@ private fun KeyboardPreview(theme: YoryTheme) {
                     row.forEach { char ->
                         Box(
                             modifier = Modifier.weight(1f).height((theme.keyHeightDp * 0.68f).dp)
-                                .clip(themeShape(theme))
-                                .background(if (char == '⌫') Color(theme.keyPressedArgb).copy(alpha = 0.58f) else Color(theme.keyArgb).copy(alpha = 0.34f))
+                                 .clip(themeShape(theme))
+                                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color(theme.keyArgb).copy(alpha = 0.28f))))
                                 .border(0.7.dp, Color.White.copy(alpha = 0.2f), themeShape(theme)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -297,7 +297,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
                 listOf("!#1", "◎", "English", "↵").forEach { label ->
                     Box(
                         modifier = Modifier.weight(if (label == "English") 3f else 1f).height(32.dp)
-                            .clip(themeShape(theme)).background(Color(theme.keyArgb).copy(alpha = 0.34f)).border(0.7.dp, Color.White.copy(alpha = 0.22f), themeShape(theme)),
+                            .clip(themeShape(theme)).background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color(theme.keyArgb).copy(alpha = 0.26f)))).border(0.7.dp, Color.White.copy(alpha = 0.28f), themeShape(theme)),
                         contentAlignment = Alignment.Center
                     ) { Text(label, color = Color(theme.textArgb), fontSize = 10.sp) }
                 }
@@ -314,7 +314,7 @@ private fun SliderSetting(
     valueLabel: String,
     onChange: (Float) -> Unit
 ) {
-    Column {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.055f)).border(0.7.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp)).padding(horizontal = 13.dp, vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
             Text(valueLabel, color = Color(0xFF9CA7BD), fontSize = 12.sp)
@@ -331,7 +331,7 @@ private fun HexColorInput(
     onValueChange: (String) -> Unit,
     onApply: () -> Unit
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.055f)).border(0.7.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -347,7 +347,7 @@ private fun HexColorInput(
 @Composable
 private fun SwitchSetting(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.055f)).border(0.7.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(16.dp)).padding(horizontal = 13.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
