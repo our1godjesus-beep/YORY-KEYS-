@@ -245,7 +245,10 @@ final class KeyboardViewController: UIInputViewController {
     private func keyButton(_ title: String, action: Selector? = #selector(insertKey(_:))) -> UIButton {
         let button = UIButton(type: .system)
         button.setTitle(title, for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize, weight: .medium)
+        button.titleLabel?.font = keyboardFont(
+            size: title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize,
+            weight: .medium
+        )
         button.setTitleColor(YoryThemeReader.textColor, for: .normal)
         button.backgroundColor = UIColor.white.withAlphaComponent(0.055)
         button.layer.cornerRadius = {
@@ -284,6 +287,19 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func keyTouchUp(_ sender: UIButton) {
         sender.backgroundColor = UIColor.white.withAlphaComponent(0.055)
+    }
+
+    private func keyboardFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        switch YoryThemeReader.fontFamily {
+        case "rounded":
+            return UIFont.systemFont(ofSize: size, weight: weight).withDesign(.rounded) ?? .systemFont(ofSize: size, weight: weight)
+        case "serif":
+            return UIFont.systemFont(ofSize: size, weight: weight).withDesign(.serif) ?? .systemFont(ofSize: size, weight: weight)
+        case "mono":
+            return UIFont.monospacedSystemFont(ofSize: size, weight: weight)
+        default:
+            return .systemFont(ofSize: size, weight: weight)
+        }
     }
 
     private func toolButton(_ title: String, action: Selector) -> UIButton {
