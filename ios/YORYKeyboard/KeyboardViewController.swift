@@ -33,12 +33,14 @@ final class KeyboardViewController: UIInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateInputTraits()
+        refreshAutomaticShift()
         applyCurrentTheme()
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         updateInputTraits()
+        refreshAutomaticShift()
         updateSuggestions()
     }
 
@@ -49,6 +51,26 @@ final class KeyboardViewController: UIInputViewController {
         numericInput = nextType == .numberPad || nextType == .decimalPad || nextType == .phonePad
         rebuildKeys()
         updateSuggestions()
+    }
+
+    private func refreshAutomaticShift() {
+        switch textDocumentProxy.autocapitalizationType {
+        case .none:
+            isShifted = false
+        case .allCharacters:
+            isShifted = true
+        case .words:
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            isShifted = before.isEmpty || before.last.map {
+                $0.isWhitespace || $0.isPunctuation
+            } == true
+        case .sentences:
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            let trimmed = before.trimmingCharacters(in: .whitespacesAndNewlines)
+            isShifted = trimmed.isEmpty || [".", "!", "?", "…"].contains(String(trimmed.suffix(1)))
+        @unknown default:
+            isShifted = false
+        }
     }
 
     private var returnKeyTitle: String {
@@ -253,10 +275,8 @@ final class KeyboardViewController: UIInputViewController {
         guard let title = sender.title(for: .normal) else { return }
         playKeyClick()
         textDocumentProxy.insertText(isShifted ? title.uppercased() : title)
-        if isShifted {
-            isShifted = false
-            rebuildKeys()
-        }
+        refreshAutomaticShift()
+        rebuildKeys()
         updateSuggestions()
     }
 
@@ -274,18 +294,24 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func deleteBackward() {
         playKeyClick()
         textDocumentProxy.deleteBackward()
+        refreshAutomaticShift()
+        rebuildKeys()
         updateSuggestions()
     }
 
     @objc private func insertSpace() {
         playKeyClick()
         textDocumentProxy.insertText(" ")
+        refreshAutomaticShift()
+        rebuildKeys()
         updateSuggestions()
     }
 
     @objc private func insertReturn() {
         playKeyClick()
         textDocumentProxy.insertText("\n")
+        refreshAutomaticShift()
+        rebuildKeys()
         updateSuggestions()
     }
 
