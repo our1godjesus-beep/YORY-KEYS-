@@ -249,6 +249,240 @@
         "ios"
       ],
       "notes": "Versioned schema v1, validation, local file import/export in both host apps; cross-platform round-trip needs device QA."
+    },
+    {
+      "id": "input-traits",
+      "name": "Input-aware layouts and editor actions",
+      "status": "partial_implementation",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "rtl-bidi-editing",
+      "name": "Arabic RTL and mixed-script editing",
+      "status": "partial_implementation",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "long-press-alternates",
+      "name": "Long-press alternate characters",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "gradient-theme-editor",
+      "name": "Gradient and per-token color editor",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "image-theme-backgrounds",
+      "name": "User-selected theme image backgrounds",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "theme-library-management",
+      "name": "Named themes, duplicate, favorite and reset",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "theme-preview-parity",
+      "name": "Shared live preview and keyboard renderer",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "custom-sound-packs",
+      "name": "User-selectable and per-action sound packs",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "per-action-haptics",
+      "name": "Per-action haptic tuning",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "emoji-search",
+      "name": "Localized searchable emoji picker",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "emoji-skin-tones",
+      "name": "Unicode-supported emoji skin tone variants",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "clipboard-pin-expiry-search",
+      "name": "Pinned, searchable and expiring local clipboard items",
+      "status": "partial_implementation",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "sticker-image-editor",
+      "name": "Sticker crop, text, outline and export editor",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "writing-assistant",
+      "name": "Explicit translation and rewrite tools",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "personal-dictionary",
+      "name": "Local editable personal dictionary and learning controls",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "local-autocorrect",
+      "name": "Local language-aware autocorrect",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "language-pack-signatures",
+      "name": "Signed downloadable language-pack verification",
+      "status": "schema_scaffold",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "offline-sync-outbox",
+      "name": "Retryable offline cloud sync queue",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "privacy-dashboard",
+      "name": "User-facing data, permissions and deletion controls",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "marketplace-moderation",
+      "name": "Theme reporting, review and moderation tools",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "ios-dynamic-layout",
+      "name": "iOS compact, landscape and iPad keyboard adaptation",
+      "status": "partial_implementation",
+      "platforms": [
+        "ios"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "ios-secure-field-fallback",
+      "name": "Respect iOS secure/phone keyboard system fallbacks",
+      "status": "partial_implementation",
+      "platforms": [
+        "ios"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "ios-open-access-mode",
+      "name": "Optional Open Access with offline restricted mode",
+      "status": "implemented_unverified",
+      "platforms": [
+        "ios"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "ios-accessibility",
+      "name": "VoiceOver, contrast, Reduce Motion and scalable UI",
+      "status": "planned",
+      "platforms": [
+        "ios"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "sticker-pack-sharing",
+      "name": "Local sticker packs and optional public sharing",
+      "status": "not_implemented",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+    },
+    {
+      "id": "account-data-export-delete",
+      "name": "Cloud data export and account deletion",
+      "status": "planned",
+      "platforms": [
+        "android"
+      ],
+      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
     }
   ]
 }
