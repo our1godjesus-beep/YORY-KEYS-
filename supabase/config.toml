@@ -1,0 +1,4 @@
+project_id = "yory-keys-local"
+
+[functions.publish-theme]
+verify_jwt = true
