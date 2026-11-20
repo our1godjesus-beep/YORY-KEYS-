@@ -4,91 +4,64 @@
 
 YORY KEYS is a native keyboard product for Android and iOS, designed around the Tinted Glass aesthetic, deep personalization, on-device typing intelligence, and privacy-first offline operation.
 
-> Repository status: active engineering foundation. The feature matrix is the authority for what is implemented, partial, planned, or not yet shipped. Do not treat the roadmap as a list of completed features.
+> Repository status: active engineering foundation. The feature matrix is the authority for what is implemented, partial, planned, or not yet shipped.
 
 ## Product promise
 
-- **Real system keyboard:** Android `InputMethodService`; iOS `UIInputViewController` custom keyboard extension.
-- **YORY Studio:** a keyboard design studio with theme presets and granular controls.
-- **Local-first typing:** no live keystrokes, passwords, prediction context, or clipboard payloads are uploaded.
-- **Optional cloud:** Supabase for accounts, public themes, preference sync, encrypted dictionary backup, and signed language-pack delivery.
-- **Honest language support:** 120 languages are listed as a target catalogue. Each model and layout must pass its own quality gates before being marked as supported.
+- Real system keyboard: Android InputMethodService; iOS UIInputViewController custom keyboard extension.
+- YORY Studio: a keyboard design studio with theme presets and granular controls.
+- Local-first typing: no live keystrokes, passwords, prediction context, or clipboard payloads are uploaded.
+- Optional cloud: Supabase for accounts, public themes, preference sync, encrypted dictionary backup, and signed language-pack delivery.
+- Honest language support: 120 languages are a target catalogue, not 120 completed production layouts.
 
-## Current implementation slices
+## Build
 
-| Area | Current state |
-|---|---|
-| Android | Native IME source, basic English/Arabic layouts, key actions, local theme store, YORY Studio, starter prefix suggestions |
-| iOS | SwiftUI host-app source, UIKit keyboard extension, XcodeGen project definition, App Group theme sharing, basic EN/AR layout |
-| Themes | Shared versioned JSON schema, platform-local theme controls and presets |
-| Languages | 120-entry prioritized target catalogue; only a starter local dictionary prototype exists |
-| Backend | Supabase migrations, RLS policies, Storage bucket rules, theme publishing function source |
-| QA | Android unit tests and Android/iOS CI workflows added; platform builds and device QA still required |
+Android: use JDK 17, Android SDK platform 35, Gradle 8.9:
+    cd android
+    gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
 
-See [implementation status](docs/IMPLEMENTATION_STATUS.md), [feature catalogue](shared/specs/feature-catalog.json), and [roadmap](docs/ROADMAP.md).
+iOS: use macOS, Xcode and XcodeGen:
+    cd ios
+    brew install xcodegen
+    cp YORYKeys/SupabaseConfig.plist.example YORYKeys/SupabaseConfig.plist
+    xcodegen generate
+    open YORYKeys.xcodeproj
 
-## Android build
+## Supabase and GitHub Actions
 
-Requirements: Android Studio or JDK 17 with Android SDK platform 35 and Gradle 8.9.
+The confirmed YORY KEYS development project is configured through GitHub Actions secrets. Supabase is optional for typing: the keyboard must remain useful offline.
 
-```bash
-cd android
-gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest
-```
+Add these two repository Actions secrets:
+- SUPABASE_URL
+- SUPABASE_PUBLISHABLE_KEY
 
-Install the resulting APK on a test phone, open YORY KEYS, enable it in system keyboard settings, then choose it from the input-method picker. Test first in a normal text field and separately verify a secure/password field.
+In GitHub, open repository Settings → Secrets and variables → Actions → New repository secret. Enter the Supabase project URL and its publishable key. Android and iOS workflows generate their ignored local configuration files from these secrets during each CI build. If the secrets are absent, the app still compiles, but account sign-in and cloud features remain unconfigured.
 
-## iOS project generation
-
-Requirements: macOS, Xcode, XcodeGen, and an Apple Developer signing team for physical-device installation.
-
-```bash
-cd ios
-brew install xcodegen
-xcodegen generate
-open YORYKeys.xcodeproj
-```
-
-Configure the same App Group `group.app.yory.keys` on the host app and keyboard extension, configure signing for both targets, then build and test on a real iPhone. The first extension configuration deliberately does not request Open Access.
-
-## Supabase
-
-Supabase is not required for typing. The connected Supabase project discovered during the initial setup was inactive and was intentionally not modified.
-
-Apply migrations only to a confirmed YORY project, preferably after local testing. Follow [supabase/README.md](supabase/README.md). Never place service-role or secret keys in mobile apps or this public repository.
+Never put a service_role key, sb_secret key, database password, or other privileged credential in a mobile app or repository file. A privileged key, if ever needed by a server-only job, must be stored separately as a GitHub Actions secret and never shipped in an app.
 
 ## Repository map
 
-- `android/` — Kotlin app, InputMethodService, theme editor, local completion prototype.
-- `ios/` — SwiftUI host app, UIKit keyboard extension, XcodeGen project.
-- `shared/specs/` — theme schema, feature status, 120-language catalogue.
-- `supabase/` — migrations and Edge Functions.
-- `docs/` — product, privacy, architecture, QA, iOS limitations and roadmap.
-- `.github/workflows/` — Android and iOS CI workflows.
+- android/ — Kotlin app, InputMethodService, theme editor, local completion prototype.
+- ios/ — SwiftUI host app, UIKit keyboard extension, XcodeGen project.
+- shared/specs/ — theme schema, feature status, 120-language catalogue.
+- supabase/ — migrations and Edge Functions.
+- docs/ — product, privacy, architecture, QA, iOS limitations and roadmap.
+- .github/workflows/ — Android and iOS CI workflows.
 
-## Non-negotiable privacy rules
+## Privacy rules
 
-Never upload:
-- Live typed text or surrounding context.
-- Passwords, OTPs, payment information, or secure-field content.
-- Clipboard contents, screenshots, or personal dictionary plaintext.
+Never upload live typed text, editor context, passwords, OTPs, payment information, secure-field content, clipboard contents, screenshots, or plaintext personal dictionaries. Optional sync must be explicit, authenticated, scoped, and protected by RLS. Typing must remain offline-capable.
 
-Any optional sync must be explicit, authenticated, scoped, and protected by RLS. The keyboard must remain useful offline and with iOS Open Access disabled.
+## Specifications
 
-
-## Product and engineering specifications
-
-- [Master product specification](docs/MASTER_PRODUCT_SPEC.md)
-- [iPhone-first experience standard](docs/IOS_EXPERIENCE_STANDARD.md)
-- [Language quality program](docs/LANGUAGE_QUALITY_PROGRAM.md)
-- [Feature implementation map](docs/FEATURE_IMPLEMENTATION_MAP.md)
-- [Cross-platform test plan](docs/TEST_PLAN.md)
-- [Security threat model](docs/SECURITY_THREAT_MODEL.md)
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
-- [Supabase deployment runbook](docs/SUPABASE_DEPLOYMENT.md)
+- docs/MASTER_PRODUCT_SPEC.md
+- docs/IOS_EXPERIENCE_STANDARD.md
+- docs/LANGUAGE_QUALITY_PROGRAM.md
+- docs/FEATURE_IMPLEMENTATION_MAP.md
+- docs/TEST_PLAN.md
+- docs/SECURITY_THREAT_MODEL.md
+- docs/IMPLEMENTATION_STATUS.md
+- docs/SUPABASE_DEPLOYMENT.md
 
 Run repository contract checks locally with:
-
-```bash
-python tools/validate_repository.py
-```
+    python tools/validate_repository.py
