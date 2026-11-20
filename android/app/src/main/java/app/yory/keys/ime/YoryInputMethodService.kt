@@ -689,7 +689,7 @@ class YoryInputMethodService : InputMethodService() {
         }
         addKey(
             row,
-            YoryLanguageLayouts.forTag(languageTag).shortLabel,
+            "‹  ${YoryLanguageLayouts.forTag(languageTag).shortLabel}  ›",
             3.8f,
             {
                 learnCurrentWord()
