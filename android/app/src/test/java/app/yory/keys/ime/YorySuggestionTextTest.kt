@@ -33,7 +33,7 @@ class YorySuggestionTextTest {
             listOf("أحتاج", "الآن", "ازيك", "إعداد"),
             "ا"
         )
-        assertEquals(listOf("ازيك", "الآن", "أحتاج", "إعداد"), ranked)
+        assertEquals(listOf("الآن", "ازيك", "أحتاج", "إعداد"), ranked)
     }
 
     @Test
