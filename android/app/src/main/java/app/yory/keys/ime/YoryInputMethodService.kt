@@ -493,13 +493,22 @@ class YoryInputMethodService : InputMethodService() {
         startActivity(intent)
     }
 
+    /**
+     * Premium dark glass surface. Keep the keyboard geometry and key order untouched;
+     * only the material treatment changes.
+     */
     private fun panelBackground(): GradientDrawable {
         val raw = theme.backgroundArgb
-        val alpha = (Color.alpha(raw) * theme.opacity).toInt().coerceIn(30, 255)
-        return GradientDrawable().apply {
-            setColor(Color.argb(alpha, Color.red(raw), Color.green(raw), Color.blue(raw)))
+        val alpha = (Color.alpha(raw) * theme.opacity * 0.78f).toInt().coerceIn(90, 220)
+        return GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                Color.argb((alpha * 1.08f).toInt().coerceAtMost(235), Color.red(raw), Color.green(raw), Color.blue(raw)),
+                Color.argb((alpha * 0.82f).toInt().coerceAtLeast(75), Color.red(raw), Color.green(raw), Color.blue(raw))
+            )
+        ).apply {
             cornerRadius = dp(22).toFloat()
-            setStroke(dp(1), Color.argb(65, 255, 255, 255))
+            setStroke(dp(1), Color.argb(105, 255, 255, 255))
         }
     }
 
@@ -510,9 +519,15 @@ class YoryInputMethodService : InputMethodService() {
             special -> theme.accentArgb
             else -> theme.keyArgb
         }
-        val fill = if (special && !pressed) {
-            Color.argb(48, Color.red(raw), Color.green(raw), Color.blue(raw))
-        } else raw
+        val baseAlpha = when {
+            pressed -> 176
+            special -> 82
+            else -> 92
+        }
+        val fill = Color.argb(
+            (Color.alpha(raw) * (baseAlpha / 255f) * theme.opacity).toInt().coerceIn(42, 190),
+            Color.red(raw), Color.green(raw), Color.blue(raw)
+        )
         val keyHeight = dp(theme.keyHeightDp).toFloat()
         val radius = when (theme.keyShape) {
             "pill", "circle" -> keyHeight / 2f
@@ -520,10 +535,15 @@ class YoryInputMethodService : InputMethodService() {
             "rect" -> dp(3).toFloat()
             else -> dp(theme.cornerRadiusDp).toFloat()
         }
-        return GradientDrawable().apply {
-            setColor(fill)
+        return GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                Color.argb((Color.alpha(fill) * 1.18f).toInt().coerceAtMost(205), Color.red(fill), Color.green(fill), Color.blue(fill)),
+                fill
+            )
+        ).apply {
             cornerRadius = radius
-            setStroke(dp(1), Color.argb(42, 255, 255, 255))
+            setStroke(dp(1), if (pressed) Color.argb(190, 255, 255, 255) else Color.argb(88, 255, 255, 255))
         }
     }
 
