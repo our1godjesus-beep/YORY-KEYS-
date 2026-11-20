@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -112,7 +113,9 @@ fun YoryStudioScreen() {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0D1019)) {
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+                modifier = Modifier.fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color(0xFF101725), Color(0xFF080B12), Color(0xFF151A28))))
+                    .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +135,7 @@ fun YoryStudioScreen() {
                         Box(
                             modifier = Modifier.weight(1f).height(42.dp)
                                 .clip(RoundedCornerShape(13.dp))
-                                .background(Color(preset.keyArgb))
+                                .background(Color(preset.keyArgb).copy(alpha = 0.42f))
                                 .border(
                                     if (theme.name == preset.name) 2.dp else 1.dp,
                                     if (theme.name == preset.name) Color(preset.accentArgb) else Color.White.copy(alpha = 0.14f),
@@ -266,7 +269,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(theme.backgroundArgb).copy(alpha = theme.opacity)),
+        colors = CardDefaults.cardColors(containerColor = Color(theme.backgroundArgb).copy(alpha = (theme.opacity * 0.58f).coerceIn(0.25f, 0.72f))),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -281,7 +284,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
                         Box(
                             modifier = Modifier.weight(1f).height((theme.keyHeightDp * 0.68f).dp)
                                 .clip(themeShape(theme))
-                                .background(if (char == '⌫') Color(theme.keyPressedArgb) else Color(theme.keyArgb))
+                                .background(if (char == '⌫') Color(theme.keyPressedArgb).copy(alpha = 0.58f) else Color(theme.keyArgb).copy(alpha = 0.34f))
                                 .border(0.7.dp, Color.White.copy(alpha = 0.2f), themeShape(theme)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -294,7 +297,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
                 listOf("!#1", "◎", "English", "↵").forEach { label ->
                     Box(
                         modifier = Modifier.weight(if (label == "English") 3f else 1f).height(32.dp)
-                            .clip(themeShape(theme)).background(Color(theme.keyArgb)),
+                            .clip(themeShape(theme)).background(Color(theme.keyArgb).copy(alpha = 0.34f)).border(0.7.dp, Color.White.copy(alpha = 0.22f), themeShape(theme)),
                         contentAlignment = Alignment.Center
                     ) { Text(label, color = Color(theme.textArgb), fontSize = 10.sp) }
                 }
