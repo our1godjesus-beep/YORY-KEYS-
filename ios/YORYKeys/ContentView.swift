@@ -105,7 +105,7 @@ struct ContentView: View {
                         Text("ACTIVATE YORY").font(.caption.weight(.bold)).tracking(1.5).foregroundStyle(accent)
                         Text("Settings → General → Keyboard → Keyboards → Add New Keyboard → YORY KEYS")
                             .font(.footnote).foregroundStyle(.white.opacity(0.7))
-                        Text("Typing works without Open Access. The extension does not send keystrokes or text to a server.")
+                        Text("Basic typing works without Full Access. Optional iOS keyboard click sounds may require Allow Full Access in Settings. YORY never sends keystrokes, passwords, or clipboard contents to a server.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.55))
                     }
                 }
@@ -378,7 +378,11 @@ private extension Color {
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
-        uiColor.getRed(&red, green: &green, blue: &blue, alpha: nil)
-        return String(format: "#%02X%02X%02X", Int(red * 255), Int(green * 255), Int(blue * 255))
+        var alpha: CGFloat = 1
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        return String(
+            format: "#%02X%02X%02X%02X",
+            Int(red * 255), Int(green * 255), Int(blue * 255), Int(alpha * 255)
+        )
     }
 }
