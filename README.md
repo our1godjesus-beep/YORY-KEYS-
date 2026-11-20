@@ -74,3 +74,21 @@ Never upload:
 - Clipboard contents, screenshots, or personal dictionary plaintext.
 
 Any optional sync must be explicit, authenticated, scoped, and protected by RLS. The keyboard must remain useful offline and with iOS Open Access disabled.
+
+
+## Product and engineering specifications
+
+- [Master product specification](docs/MASTER_PRODUCT_SPEC.md)
+- [iPhone-first experience standard](docs/IOS_EXPERIENCE_STANDARD.md)
+- [Language quality program](docs/LANGUAGE_QUALITY_PROGRAM.md)
+- [Feature implementation map](docs/FEATURE_IMPLEMENTATION_MAP.md)
+- [Cross-platform test plan](docs/TEST_PLAN.md)
+- [Security threat model](docs/SECURITY_THREAT_MODEL.md)
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
+- [Supabase deployment runbook](docs/SUPABASE_DEPLOYMENT.md)
+
+Run repository contract checks locally with:
+
+```bash
+python tools/validate_repository.py
+```
