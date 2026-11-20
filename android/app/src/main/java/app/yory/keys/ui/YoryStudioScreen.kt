@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +36,7 @@ fun YoryStudioScreen() {
     var keyHex by remember { mutableStateOf(theme.keyArgb.toHexArgb()) }
     var textHex by remember { mutableStateOf(theme.textArgb.toHexArgb()) }
     var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
+    var fileMessage by remember { mutableStateOf("Themes stay on this device unless you export them.") }
 
     fun applyTheme(next: YoryTheme) {
         theme = next
@@ -41,6 +45,36 @@ fun YoryStudioScreen() {
         textHex = next.textArgb.toHexArgb()
         accentHex = next.accentArgb.toHexArgb()
         YoryThemeStore.save(context, next)
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use {
+                    it.write(app.yory.keys.theme.YoryThemeFile.encode(theme))
+                } ?: error("Could not open the selected destination.")
+            }.onSuccess { fileMessage = "Theme exported successfully." }
+                .onFailure { fileMessage = "Export failed: " + (it.message ?: "unknown error") }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            runCatching {
+                val raw = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                    ?: error("Could not read the selected file.")
+                app.yory.keys.theme.YoryThemeFile.decode(raw)
+            }.onSuccess {
+                applyTheme(it)
+                fileMessage = "Theme imported and applied."
+            }.onFailure {
+                fileMessage = "Import failed: " + (it.message ?: "invalid theme")
+            }
+        }
     }
 
     fun parseHexArgb(value: String): Int? {
@@ -125,6 +159,19 @@ fun YoryStudioScreen() {
                 SliderSetting("Key height", theme.keyHeightDp, 36f..60f, theme.keyHeightDp.toInt().toString() + " dp") {
                     applyTheme(theme.copy(keyHeightDp = it))
                 }
+
+                Text("THEME FILES", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { exportLauncher.launch("YORY-" + theme.name.replace(Regex("[^A-Za-z0-9]+"), "-") + ".yorytheme") },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Export .yorytheme") }
+                    OutlinedButton(
+                        onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Import theme") }
+                }
+                Text(fileMessage, color = Color(0xFF8994AA), fontSize = 11.sp)
 
                 Text("SOUND & TOUCH", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 SwitchSetting("Key click sound", theme.soundEnabled) {
