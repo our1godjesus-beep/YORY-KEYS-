@@ -172,7 +172,7 @@ fun YoryStudioScreen() {
                 }
                 Text("KEY SHAPE", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    listOf("rounded", "squircle", "pill", "rect").forEach { shape ->
+                    listOf("rounded", "squircle", "pill", "circle", "rect").forEach { shape ->
                         FilterChip(
                             selected = theme.keyShape == shape,
                             onClick = { applyTheme(theme.copy(keyShape = shape)) },
@@ -248,7 +248,7 @@ private fun KeyboardPreview(theme: YoryTheme) {
                         Box(
                             modifier = Modifier.weight(1f).height((theme.keyHeightDp * 0.68f).dp)
                                 .clip(themeShape(theme))
-                                .background(Color(theme.keyArgb))
+                                .background(if (char == '⌫') Color(theme.keyPressedArgb) else Color(theme.keyArgb))
                                 .border(0.7.dp, Color.White.copy(alpha = 0.2f), themeShape(theme)),
                             contentAlignment = Alignment.Center
                         ) {
