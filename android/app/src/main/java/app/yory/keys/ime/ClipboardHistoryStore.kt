@@ -136,7 +136,7 @@ object ClipboardHistoryStore {
             buildList {
                 for (index in 0 until array.length()) {
                     val item = array.optJSONObject(index) ?: continue
-                    val text = item.optString("text").takeIf { isSafeToStore(it) } ?: continue
+                    val text = item.optString("text").takeIf { ClipboardHistoryPolicy.isSafeToStore(it) } ?: continue
                     val copiedAt = item.optLong("copiedAt", now)
                     add(
                         YoryClipboardEntry(
