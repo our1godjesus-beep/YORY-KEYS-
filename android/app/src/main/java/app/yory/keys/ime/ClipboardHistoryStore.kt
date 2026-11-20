@@ -32,24 +32,21 @@ object ClipboardHistoryStore {
     private const val KEY_ALIAS = "yory_clipboard_aes_v1"
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
-    private const val MAX_ITEMS = 50
-    private const val MAX_TEXT_LENGTH = 2000
-    private const val EXPIRY_MS = 24L * 60L * 60L * 1000L
     private val lock = Any()
 
     fun entries(context: Context): List<YoryClipboardEntry> = synchronized(lock) {
         runCatching {
             val now = System.currentTimeMillis()
             val all = readAll(context)
-            val valid = all.filter { it.isPinned || it.expiresAt > now }
+            val valid = ClipboardHistoryPolicy.retainActive(all, now)
             if (valid.size != all.size) writeAll(context, valid)
-            valid.sortedWith(compareByDescending<YoryClipboardEntry> { it.isPinned }.thenByDescending { it.copiedAt })
+            valid
         }.getOrDefault(emptyList())
     }
 
     fun add(context: Context, rawText: String): Boolean = synchronized(lock) {
         val text = rawText.trim()
-        if (!isSafeToStore(text)) return false
+        if (!ClipboardHistoryPolicy.isSafeToStore(text)) return false
         runCatching {
             val now = System.currentTimeMillis()
             val current = entries(context).filterNot { it.text == text }
@@ -59,10 +56,10 @@ object ClipboardHistoryStore {
                     text = text,
                     copiedAt = now,
                     isPinned = false,
-                    expiresAt = now + EXPIRY_MS
+                    expiresAt = now + ClipboardHistoryPolicy.EXPIRY_MS
                 )
             ) + current
-            writeAll(context, updated.take(MAX_ITEMS))
+            writeAll(context, updated.take(ClipboardHistoryPolicy.MAX_ITEMS))
         }.isSuccess
     }
 
@@ -71,7 +68,7 @@ object ClipboardHistoryStore {
             val now = System.currentTimeMillis()
             val updated = entries(context).map { entry ->
                 if (entry.id == id) {
-                    entry.copy(isPinned = pinned, expiresAt = if (pinned) Long.MAX_VALUE else now + EXPIRY_MS)
+                    ClipboardHistoryPolicy.setPinned(entry, pinned, now)
                 } else entry
             }
             writeAll(context, updated)
@@ -89,7 +86,7 @@ object ClipboardHistoryStore {
     fun restore(context: Context, entry: YoryClipboardEntry) = synchronized(lock) {
         runCatching {
             val current = entries(context).filterNot { it.id == entry.id || it.text == entry.text }
-            writeAll(context, (listOf(entry) + current).take(MAX_ITEMS))
+            writeAll(context, (listOf(entry) + current).take(ClipboardHistoryPolicy.MAX_ITEMS))
         }
     }
 
@@ -112,7 +109,7 @@ object ClipboardHistoryStore {
             buildList {
                 for (index in 0 until array.length()) {
                     val item = array.optJSONObject(index) ?: continue
-                    val text = item.optString("text").takeIf { it.isNotBlank() } ?: continue
+                    val text = item.optString("text").takeIf { ClipboardHistoryPolicy.isSafeToStore(it) } ?: continue
                     add(
                         YoryClipboardEntry(
                             id = item.optString("id").ifBlank { UUID.randomUUID().toString() },
@@ -147,12 +144,12 @@ object ClipboardHistoryStore {
                             text = text,
                             copiedAt = copiedAt,
                             isPinned = false,
-                            expiresAt = now + EXPIRY_MS
+                            expiresAt = now + ClipboardHistoryPolicy.EXPIRY_MS
                         )
                     )
                 }
             }
-        }.getOrDefault(emptyList()).take(MAX_ITEMS)
+        }.getOrDefault(emptyList()).take(ClipboardHistoryPolicy.MAX_ITEMS)
         if (migrated.isNotEmpty()) runCatching { writeAll(context, migrated) }
         prefs.edit().remove(LEGACY_KEY).apply()
         return migrated
@@ -160,7 +157,7 @@ object ClipboardHistoryStore {
 
     private fun writeAll(context: Context, entries: List<YoryClipboardEntry>) {
         val array = JSONArray()
-        entries.take(MAX_ITEMS).forEach { entry ->
+        entries.take(ClipboardHistoryPolicy.MAX_ITEMS).forEach { entry ->
             array.put(
                 JSONObject()
                     .put("id", entry.id)
@@ -205,13 +202,4 @@ object ClipboardHistoryStore {
         return generator.generateKey()
     }
 
-    private fun isSafeToStore(text: String): Boolean {
-        if (text.isBlank() || text.length > MAX_TEXT_LENGTH) return false
-        val compact = text.filterNot { it.isWhitespace() || it in "-()." }
-        if (compact.matches(Regex("\\d{4,10}"))) return false
-        if (compact.matches(Regex("\\d{12,19}"))) return false
-        if (Regex("(?i)otp|one[- ]time|verification code|رمز التحقق|كود التحقق").containsMatchIn(text)) return false
-        if (Regex("(?i)(password|passcode|secret|token)\\s*[:=]").containsMatchIn(text)) return false
-        return true
-    }
 }

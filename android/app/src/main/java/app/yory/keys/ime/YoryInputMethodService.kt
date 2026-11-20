@@ -261,17 +261,14 @@ class YoryInputMethodService : InputMethodService() {
         val picker = emojiRow ?: return
         picker.removeAllViews()
 
-        val categories = listOf(
-            "Recent" to "◷", "Favorites" to "★", "Smile" to "☺", "People" to "👥",
-            "Nature" to "🌿", "Food" to "🍕", "Travel" to "✈", "Symbols" to "♡"
-        )
+        val categories = YoryEmojiCatalog.categories
         val categoryBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        categories.forEach { (name, icon) ->
-            addEmojiCategoryButton(categoryBar, icon, name) {
-                emojiCategory = name
+        categories.forEach { category ->
+            addEmojiCategoryButton(categoryBar, category.icon, category.id) {
+                emojiCategory = category.id
                 refreshEmojiPicker()
             }
         }
@@ -296,22 +293,10 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
         }
-        val recent = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-            .getString("emoji_recent_v1", "")
-            .orEmpty()
-            .split("\n")
-            .filter { it.isNotBlank() }
-        val choices = when (emojiCategory) {
-            "Recent" -> recent.ifEmpty { listOf("😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥") }
-            "Favorites" -> getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-                .getString("emoji_favorites_v1", "").orEmpty().split("\n").filter { it.isNotBlank() }
-            "Smile" -> listOf("😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰")
-            "People" -> listOf("👋", "👌", "✌", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝", "👍", "👎")
-            "Nature" -> listOf("🐶", "🐱", "🐻", "🦊", "🐼", "🐸", "🦋", "🌸", "🌹", "🌻", "🌈", "🌙", "⭐", "🌍")
-            "Food" -> listOf("🍎", "🍓", "🍉", "🍕", "🍔", "🍟", "🍿", "🍩", "🍪", "🎂", "☕", "🧋", "🥗", "🍣")
-            "Travel" -> listOf("🚗", "🚕", "🚌", "🚆", "✈️", "🚀", "🚲", "⛵", "🏝️", "🏖️", "🏙️", "🗽", "🏰", "🌋")
-            else -> listOf("❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "💕", "💞", "💯", "✅", "✨")
-        }.take(14)
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val recent = YoryEmojiCatalog.parseStored(prefs.getString("emoji_recent_v1", ""))
+        val favorites = YoryEmojiCatalog.parseStored(prefs.getString("emoji_favorites_v1", ""))
+        val choices = YoryEmojiCatalog.values(emojiCategory, recent, favorites).take(14)
 
         if (choices.isEmpty()) {
             val emptyState = TextView(this).apply {
@@ -331,7 +316,7 @@ class YoryInputMethodService : InputMethodService() {
                 }
                 group.forEach { rawEmoji ->
                     val outputEmoji = if (emojiCategory == "People" && emojiSkinTone.isNotEmpty()) {
-                        applyEmojiSkinTone(rawEmoji, emojiSkinTone)
+                        YoryEmojiCatalog.applySkinTone(rawEmoji, emojiSkinTone)
                     } else rawEmoji
                     addEmojiPickerButton(row, outputEmoji) { insertEmoji(outputEmoji) }
                 }
@@ -386,30 +371,19 @@ class YoryInputMethodService : InputMethodService() {
     private fun toggleFavoriteEmoji(emoji: String) {
         if (emoji.isBlank()) return
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val wasFavorite = prefs.getString("emoji_favorites_v1", "").orEmpty()
-            .split("\n").any { it == emoji }
-        val favorites = prefs.getString("emoji_favorites_v1", "").orEmpty()
-            .split("\n").filter { it.isNotBlank() && it != emoji }.toMutableList()
-        if (!wasFavorite) favorites.add(0, emoji)
-        prefs.edit().putString("emoji_favorites_v1", favorites.take(80).joinToString("\n")).apply()
+        val current = YoryEmojiCatalog.parseStored(prefs.getString("emoji_favorites_v1", ""))
+        val favorites = YoryEmojiCatalog.toggleFavorite(current, emoji)
+        prefs.edit().putString("emoji_favorites_v1", YoryEmojiCatalog.encodeStored(favorites, 80)).apply()
         refreshEmojiPicker()
-    }
-
-    private fun applyEmojiSkinTone(emoji: String, tone: String): String {
-        if (emoji.isBlank() || tone.isBlank()) return emoji
-        val firstCodePoint = emoji.codePointAt(0)
-        val firstLength = Character.charCount(firstCodePoint)
-        return emoji.substring(0, firstLength) + tone + emoji.substring(firstLength)
     }
 
     private fun insertEmoji(emoji: String) {
         if (emoji.isBlank()) return
         currentInputConnection?.commitText(emoji, 1)
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val old = prefs.getString("emoji_recent_v1", "").orEmpty()
-            .split("\n")
-            .filter { it.isNotBlank() && it != emoji }
-        prefs.edit().putString("emoji_recent_v1", (listOf(emoji) + old).take(24).joinToString("\n")).apply()
+        val old = YoryEmojiCatalog.parseStored(prefs.getString("emoji_recent_v1", ""))
+        val recent = YoryEmojiCatalog.addRecent(old, emoji)
+        prefs.edit().putString("emoji_recent_v1", YoryEmojiCatalog.encodeStored(recent, 24)).apply()
         if (emojiCategory == "Recent") refreshEmojiPicker()
     }
 

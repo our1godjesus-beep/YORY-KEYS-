@@ -97,3 +97,12 @@ Status: **source implemented on Android and iOS; automated builds pending**.
 - Emoji recent history remains local; it is not synced or backed up.
 - Emoji text search, favorites and complete Unicode compound sequence coverage remain unimplemented.
 - Automated build/contract results are being run on the new source commit; no manual device QA is claimed.
+
+
+## Milestone U1 — Pure logic tests for emoji and clipboard (2026-11-20)
+
+- Extracted Android emoji category data, recent/favorites list transformations, storage parsing and skin-tone insertion into a pure Kotlin catalog.
+- Added JVM unit tests for category uniqueness, bounded recent history, favorite toggling, list serialization and skin-tone insertion.
+- Extracted Android clipboard expiry, pinning, size cap and heuristic sensitive-pattern checks into a pure Kotlin policy object.
+- Added JVM unit tests for common sensitive patterns, unpinned expiry, pinned retention, unpinning expiry and the 50-entry cap.
+- These tests run as part of Android `:app:testDebugUnitTest`; final CI status is pending for the new commit.

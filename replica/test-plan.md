@@ -69,3 +69,6 @@ Environment: Android emulator/device and iOS simulator/device. No test in this d
 | E01-E2 | Empty Favorites category | edge | Open Favorites without any saved emoji | Helpful empty state explains how to add an emoji; no blank or broken panel | UI test on both platforms | Not run |
 
 | F07-N3 | Hide clipboard UI for restricted fields | privacy | Switch between normal text, password, numeric PIN, email and URL fields while the keyboard is open | Clipboard shortcut and saved clips are hidden for restricted fields; capture listener is detached and does not collect copied content | Android manual security QA | Not run |
+
+| U01-H1 | Emoji data helpers | unit | Run YoryEmojiCatalogTest | Categories are unique; recent/favorites ordering and bounds are correct; storage parsing deduplicates; skin-tone modifier placement is stable | JVM unit test | Pending CI |
+| U02-H1 | Clipboard privacy policy | unit | Run ClipboardHistoryPolicyTest | Common OTP/PIN/payment card patterns are filtered; unpinned expiry, pinning window and 50-entry cap are deterministic | JVM unit test | Pending CI |
