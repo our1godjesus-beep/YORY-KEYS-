@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import app.yory.keys.ime.PersonalDictionaryStore
 import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
+import app.yory.keys.theme.YoryThemeLibraryStore
 
 @Composable
 internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
