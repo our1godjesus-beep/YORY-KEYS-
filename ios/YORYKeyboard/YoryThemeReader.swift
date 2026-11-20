@@ -29,6 +29,30 @@ enum YoryThemeReader {
         let value = settings?.string(forKey: "fontFamily") ?? "system"
         return ["system", "rounded", "serif", "mono"].contains(value) ? value : "system"
     }
+    static var keyHeight: CGFloat {
+        CGFloat(settings?.double(forKey: "keyHeight") ?? 44).clamped(to: 32...60)
+    }
+    static var longPressDuration: TimeInterval {
+        (settings?.double(forKey: "yory.layout.longPressDuration") ?? 0.45).clamped(to: 0.2...0.9)
+    }
+    static var longPressSymbolsEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.longPressSymbols") ?? true
+    }
+    static var accentedCharactersEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.accentedCharacters") ?? true
+    }
+    static var arrowKeysEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.arrowKeys") ?? false
+    }
+    static var keyPopupsEnabled: Bool {
+        settings?.bool(forKey: "yory.layout.keyPopups") ?? true
+    }
+    static var numberPosition: String {
+        settings?.string(forKey: "yory.layout.numberPosition") == "bottom" ? "bottom" : "top"
+    }
+    static var hapticIntensity: CGFloat {
+        CGFloat(settings?.double(forKey: "yory.haptics.intensity") ?? 0.45).clamped(to: 0...1)
+    }
     static var keyShape: String {
         let value = settings?.string(forKey: "keyShape") ?? "rounded"
         return ["rounded", "squircle", "pill", "circle", "rect"].contains(value) ? value : "rounded"
