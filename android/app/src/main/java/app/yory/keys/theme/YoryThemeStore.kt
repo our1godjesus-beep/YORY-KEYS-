@@ -19,7 +19,8 @@ object YoryThemeStore {
             cornerRadiusDp = prefs.getFloat("radius", fallback.cornerRadiusDp).coerceIn(4f, 28f),
             keyHeightDp = prefs.getFloat("height", fallback.keyHeightDp).coerceIn(36f, 60f),
             soundEnabled = prefs.getBoolean("sound_enabled", fallback.soundEnabled),
-            hapticsEnabled = prefs.getBoolean("haptics_enabled", fallback.hapticsEnabled)
+            hapticsEnabled = prefs.getBoolean("haptics_enabled", fallback.hapticsEnabled),
+            clipboardEnabled = prefs.getBoolean("clipboard_enabled", fallback.clipboardEnabled)
         )
     }
 
@@ -35,6 +36,7 @@ object YoryThemeStore {
             .putFloat("height", theme.keyHeightDp.coerceIn(36f, 60f))
             .putBoolean("sound_enabled", theme.soundEnabled)
             .putBoolean("haptics_enabled", theme.hapticsEnabled)
+            .putBoolean("clipboard_enabled", theme.clipboardEnabled)
             .apply()
     }
 }
