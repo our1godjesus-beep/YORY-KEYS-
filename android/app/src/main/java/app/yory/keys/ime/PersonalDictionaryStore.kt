@@ -25,6 +25,7 @@ object PersonalDictionaryStore {
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val MAX_WORDS_PER_LANGUAGE = 1500
     private const val MAX_COUNT = 100
+    @Volatile private var cachedDocument: JSONObject? = null
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
@@ -76,6 +77,7 @@ object PersonalDictionaryStore {
 
     @Synchronized
     fun clear(context: Context) {
+        cachedDocument = null
         runCatching { dataFile(context).delete() }
         runCatching {
             val store = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -87,9 +89,10 @@ object PersonalDictionaryStore {
         AtomicFile(File(context.noBackupFilesDir, "yory_personal_dictionary.enc"))
 
     private fun readDocument(context: Context): JSONObject {
+        cachedDocument?.let { return it }
         val file = dataFile(context)
-        if (!file.baseFile.exists()) return JSONObject()
-        return runCatching {
+        if (!file.baseFile.exists()) return JSONObject().also { cachedDocument = it }
+        val document = runCatching {
             val encrypted = file.openRead().use { it.readBytes() }
             require(encrypted.size > 12) { "Personal dictionary file is incomplete." }
             val iv = encrypted.copyOfRange(0, 12)
@@ -102,6 +105,8 @@ object PersonalDictionaryStore {
             runCatching { file.delete() }
             JSONObject()
         }
+        cachedDocument = document
+        return document
     }
 
     private fun writeDocument(context: Context, document: JSONObject) {
@@ -113,6 +118,7 @@ object PersonalDictionaryStore {
         try {
             stream.write(encrypted)
             file.finishWrite(stream)
+            cachedDocument = document
         } catch (error: Throwable) {
             file.failWrite(stream)
             throw error
