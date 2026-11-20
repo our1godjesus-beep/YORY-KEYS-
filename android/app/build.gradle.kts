@@ -6,9 +6,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Keep SDK configuration in local.properties and Supabase app credentials in
+// the separate, git-ignored supabase.local.properties file.
 val localSupabaseConfig = Properties().apply {
-    val configFile = rootProject.file("local.properties")
-    if (configFile.exists()) configFile.inputStream().use { load(it) }
+    listOf(
+        rootProject.file("local.properties"),
+        rootProject.file("supabase.local.properties")
+    ).filter { it.exists() }.forEach { file ->
+        file.inputStream().use { load(it) }
+    }
 }
 val supabaseUrlValue = localSupabaseConfig.getProperty("SUPABASE_URL", "")
 val supabasePublishableKeyValue = localSupabaseConfig.getProperty("SUPABASE_PUBLISHABLE_KEY", "")
