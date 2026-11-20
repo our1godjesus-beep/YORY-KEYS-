@@ -649,8 +649,7 @@ struct YoryThemeGalleryView: View {
                                     onDetails: {
                                         detailPreset = preset
                                         showDetail = true
-                                    },
-                                    isFavorite: favoriteNames.contains(preset.name.lowercased())
+                                    }
                                 )
                             }
                         }

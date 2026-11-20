@@ -105,16 +105,16 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         switch textDocumentProxy.autocapitalizationType {
-        case .none:
+        case UITextAutocapitalizationType.none:
             isShifted = false
-        case .allCharacters:
+        case UITextAutocapitalizationType.allCharacters:
             isShifted = true
-        case .words:
+        case UITextAutocapitalizationType.words:
             let before = textDocumentProxy.documentContextBeforeInput ?? ""
             isShifted = before.isEmpty || before.last.map {
                 $0.isWhitespace || $0.isPunctuation
             } == true
-        case .sentences:
+        case UITextAutocapitalizationType.sentences:
             let before = textDocumentProxy.documentContextBeforeInput ?? ""
             let trimmed = before.trimmingCharacters(in: .whitespacesAndNewlines)
             isShifted = trimmed.isEmpty || [".", "!", "?", "…"].contains(String(trimmed.suffix(1)))
