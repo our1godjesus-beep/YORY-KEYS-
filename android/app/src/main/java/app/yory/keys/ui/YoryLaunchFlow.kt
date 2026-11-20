@@ -50,9 +50,8 @@ fun YoryAppFlow() {
     var authenticated by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    SideEffect { YoryAuthRepository.initialize(context) }
-
     LaunchedEffect(Unit) {
+        YoryAuthRepository.initialize(context)
         authenticated = runCatching { YoryAuthRepository.restoreSession() }.getOrDefault(false)
         authReady = true
     }
