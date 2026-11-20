@@ -68,6 +68,26 @@ struct ContentView: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                HStack {
+                    Spacer()
+                    NavigationLink(value: "Keyboard Setup") {
+                        Image(systemName: "keyboard.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color(hex: "#101725"))
+                            .frame(width: 52, height: 52)
+                            .background(Color(hex: "#A7C7FF"), in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.42), lineWidth: 0.8))
+                            .shadow(color: Color.black.opacity(0.24), radius: 12, y: 5)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Set up YORY KEYS")
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+                .background(.clear)
+            }
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
@@ -168,6 +188,15 @@ private struct YorySettingsDetailView: View {
                         Text("Key click sound volume follows the iOS keyboard/system sound settings.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.6))
                             .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    }
+                case "Keyboard Setup":
+                    Section("ADD YORY KEYS") {
+                        settingsInfo("Step 1", "Open Settings > General > Keyboard > Keyboards.")
+                        settingsInfo("Step 2", "Choose Add New Keyboard, then select YORY KEYS.")
+                        settingsInfo("Step 3", "Select YORY KEYS from the globe key in a text field.")
+                    }
+                    Section("OPTIONAL ACCESS") {
+                        settingsInfo("Full Access", "Basic typing works without Full Access. Enable it only if a specific optional keyboard feature requires it and you choose to use that feature.")
                     }
                 case "Rich input":
                     Section {

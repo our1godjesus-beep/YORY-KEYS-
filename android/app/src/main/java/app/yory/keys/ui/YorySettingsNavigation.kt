@@ -80,22 +80,24 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
                         page = item.title
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                GlassPanel(Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Try YORY KEYS", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            Text("Open the keyboard picker", color = GlassMuted, fontSize = 12.sp)
-                        }
-                        GlassAction("⌨") {
-                            val manager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                            manager.showInputMethodPicker()
-                        }
-                    }
-                }
+                Spacer(Modifier.height(84.dp))
             }
         } else {
             SettingsDetailPage(page = page!!, onBack = { page = null }, onSignOut = onSignOut)
+        }
+        FloatingActionButton(
+            onClick = {
+                val manager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                manager.showInputMethodPicker()
+            },
+            modifier = Modifier.align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 18.dp, bottom = 14.dp),
+            containerColor = GlassAccent,
+            contentColor = Color(0xFF101725),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("⌨", fontSize = 23.sp)
         }
     }
 }
