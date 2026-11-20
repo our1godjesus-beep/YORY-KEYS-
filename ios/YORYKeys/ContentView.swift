@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 private let yoryGroup = UserDefaults(suiteName: "group.app.yory.keys")
 
-struct ContentView: View {
+struct YoryThemeStudioView: View {
     @State private var background = Color(red: 0.10, green: 0.11, blue: 0.16)
     @State private var key = Color(red: 0.92, green: 0.94, blue: 0.98)
     @State private var text = Color(red: 0.09, green: 0.10, blue: 0.14)
