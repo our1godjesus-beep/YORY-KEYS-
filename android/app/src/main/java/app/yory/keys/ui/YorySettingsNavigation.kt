@@ -107,7 +107,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     var refresh by remember { mutableIntStateOf(0) }
     var activeLanguage by remember { mutableStateOf(prefs.getString("active_language", "en-US") ?: "en-US") }
     var personalLearning by remember { mutableStateOf(PersonalDictionaryStore.isEnabled(context)) }
-    var keyHeight by remember { mutableFloatStateOf(YoryThemeStore.load(context).keyHeightDp) }
+    var showResizeEditor by remember { mutableStateOf(false) }
     var longPressDuration by remember { mutableFloatStateOf(prefs.getFloat("long_press_duration", 450f)) }
     var keypressVolume by remember { mutableFloatStateOf(prefs.getFloat("keypress_volume", 0.35f)) }
     var vibrationDuration by remember { mutableFloatStateOf(prefs.getFloat("vibration_duration", 12f)) }
@@ -125,6 +125,11 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
     fun chooseLanguage(tag: String) {
         activeLanguage = tag
         prefs.edit().putString("active_language", tag).apply()
+    }
+
+    if (page == "Layout & keys" && showResizeEditor) {
+        YoryKeyboardResizeScreen(onBack = { showResizeEditor = false })
+        return
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -185,13 +190,16 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                         longPressDuration = it
                         prefs.edit().putFloat("long_press_duration", it).apply()
                     }
-                    Text("RESIZE", color = GlassMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                    PreferenceSlider("Keyboard height", keyHeight, 36f..60f, "${keyHeight.toInt()} dp") {
-                        keyHeight = it
-                        val theme = YoryThemeStore.load(context).copy(keyHeightDp = it)
-                        YoryThemeStore.save(context, theme)
+                    GlassPanel(Modifier.fillMaxWidth().clickable { showResizeEditor = true }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Resize keyboard", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text("Preview key height, choose a size or fine-tune it.", color = GlassMuted, fontSize = 12.sp)
+                            }
+                            Text("›", color = GlassAccent, fontSize = 28.sp)
+                        }
                     }
-                    InfoCard("More sizing controls", "Change key spacing, corner radius and letter font in Themes.")
+                    InfoCard("More appearance controls", "Change key spacing, corner radius and lettering in Themes.")
                 }
                 "Sound & vibration" -> {
                     val theme = remember { mutableStateOf(YoryThemeStore.load(context)) }
