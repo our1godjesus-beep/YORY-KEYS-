@@ -27,7 +27,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.04, green: 0.05, blue: 0.09).ignoresSafeArea()
+            LinearGradient(colors: [Color(red: 0.10, green: 0.14, blue: 0.22), Color(red: 0.025, green: 0.035, blue: 0.065), Color(red: 0.10, green: 0.09, blue: 0.17)], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -59,7 +59,10 @@ struct ContentView: View {
                     .font(.caption.weight(.semibold))
                     Text(fileMessage)
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .padding(12)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.16), lineWidth: 0.7))
 
                     sectionTitle("COLORS")
                     colorPickerRow("Background", selection: $background)
@@ -81,6 +84,9 @@ struct ContentView: View {
                         Text("Circle").tag("circle")
                     }
                     .pickerStyle(.segmented)
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.18), lineWidth: 0.7))
 
                     sectionTitle("SENSORY EXPERIENCE")
                     Toggle("Keyboard sounds", isOn: $soundEnabled).tint(accent).foregroundStyle(.white)
@@ -104,7 +110,9 @@ struct ContentView: View {
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
-                            .background(accent, in: RoundedRectangle(cornerRadius: 16))
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                            .background(accent.opacity(0.55), in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.35), lineWidth: 0.8))
                             .foregroundStyle(.black)
                     }
 
@@ -183,7 +191,9 @@ struct ContentView: View {
                             .foregroundStyle(text)
                             .frame(maxWidth: .infinity)
                             .frame(height: 35)
-                            .background(key, in: keyShapeView)
+                            .background(.ultraThinMaterial, in: keyShapeView)
+                            .background(key.opacity(0.28), in: keyShapeView)
+                            .overlay(keyShapeView.stroke(.white.opacity(0.25), lineWidth: 0.7))
                     }
                 }
             }
@@ -196,8 +206,10 @@ struct ContentView: View {
             }
         }
         .padding(12)
-        .background(background.opacity(opacity), in: RoundedRectangle(cornerRadius: 23))
-        .overlay(RoundedRectangle(cornerRadius: 23).stroke(.white.opacity(0.18), lineWidth: 1))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 23))
+        .background(background.opacity(opacity * 0.30), in: RoundedRectangle(cornerRadius: 23))
+        .overlay(RoundedRectangle(cornerRadius: 23).stroke(.white.opacity(0.30), lineWidth: 1))
+        .shadow(color: accent.opacity(0.12), radius: 18, y: 8)
     }
 
     private func previewKey(_ label: String) -> some View {
@@ -206,7 +218,9 @@ struct ContentView: View {
             .foregroundStyle(text)
             .frame(maxWidth: label == "English" ? .infinity : 42)
             .frame(height: 34)
-            .background(label == "↵" ? pressedKey : key, in: keyShapeView)
+            .background(.ultraThinMaterial, in: keyShapeView)
+            .background((label == "↵" ? pressedKey : key).opacity(0.32), in: keyShapeView)
+            .overlay(keyShapeView.stroke(.white.opacity(0.25), lineWidth: 0.7))
     }
 
     private var keyShapeView: RoundedRectangle {
@@ -231,7 +245,9 @@ struct ContentView: View {
             persistTheme()
         } label: {
             Text(name).font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(Color(hex: key), in: RoundedRectangle(cornerRadius: 12))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .background(Color(hex: key).opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.25), lineWidth: 0.7))
                 .foregroundStyle(Color(hex: "#202432"))
         }
         .buttonStyle(.plain)
