@@ -219,6 +219,7 @@ private struct YorySettingsDetailView: View {
                     }
                 case "Privacy":
                     Section {
+                        settingsInfo("Incognito mode", "Use the eye icon on the keyboard toolbar to pause local word learning and suggestions for the current typing session.")
                         settingsInfo("Private by design", "YORY does not send typed text, passwords or keystrokes to a server.")
                         settingsInfo("On-device storage", "Personal dictionary and optional clipboard history remain on this device.")
                         settingsInfo("Sensitive fields", "Learning and clipboard capture are disabled for sensitive fields.")

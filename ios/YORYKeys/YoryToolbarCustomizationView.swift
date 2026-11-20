@@ -26,7 +26,7 @@ struct YoryToolbarCustomizationView: View {
         return valid + base.filter { !valid.contains($0) }
     }()
     @State private var visible: Set<String> = {
-        let base = ["emoji", "language", "symbols", "switch", "tools"]
+        let base = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
         let stored = UserDefaults(suiteName: "group.app.yory.keys")?.stringArray(forKey: "yory.toolbar.visible") ?? base
         return Set(stored.filter { base.contains($0) } + ["switch"])
     }()

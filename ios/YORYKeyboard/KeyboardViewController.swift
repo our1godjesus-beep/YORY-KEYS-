@@ -601,7 +601,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func learnCurrentWord() {
-        guard YoryThemeReader.personalLearningEnabled,
+        guard !incognitoMode,
+              YoryThemeReader.personalLearningEnabled,
               !numericInput,
               currentKeyboardType != .emailAddress,
               currentKeyboardType != .URL else { return }
