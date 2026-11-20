@@ -23,6 +23,7 @@ The Android navigation bar/gesture region and iOS home indicator are operating-s
 - architecture.md — native implementation plan and local/cloud boundaries
 - test-plan.md — test cases and device QA requirements
 - implementation-backlog.md — build order and acceptance criteria
+- keyboard-reference-audit.md — detailed comparison of the three supplied keyboard screenshots against current Android/iOS source, platform gaps and prioritized parity plan
 
 ## Clean-room rule
 Rebuild the function and UX pattern using original code, copy, colors, icon assets and theme art. Never copy Microsoft source, private APIs, branding, illustrations or proprietary theme assets. Do not claim a feature is finished until it works and passes QA.
