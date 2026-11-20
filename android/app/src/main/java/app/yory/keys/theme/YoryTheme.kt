@@ -10,7 +10,8 @@ data class YoryTheme(
     val cornerRadiusDp: Float = 13f,
     val keyHeightDp: Float = 46f,
     val soundEnabled: Boolean = true,
-    val hapticsEnabled: Boolean = true
+    val hapticsEnabled: Boolean = true,
+    val clipboardEnabled: Boolean = false
 ) {
     companion object {
         val presets = listOf(
