@@ -25,6 +25,6 @@ The generated project contains:
 
 ## Privacy behavior
 
-The extension declares `RequestsOpenAccess = false`. It does not request network access or Full Access in this first milestone. The host app writes theme settings to the App Group; the keyboard extension reads the settings available to it. Typing remains local. Any future cloud synchronization must be a separate, opt-in host-app feature and must never transmit live keystrokes.
+The extension declares `RequestsOpenAccess = true`, which makes the iOS “Allow Full Access” option available in Settings; it does not grant access automatically and the user may leave it off. Basic key input, deleting, space, return, layouts and bundled suggestions must remain usable without Full Access. In the current implementation, optional personal-word learning, clearing the App Group dictionary from the keyboard, shared preference writes and keyboard click audio require the user to enable Full Access. The keyboard does not send keystrokes or prediction context to a server. Explain these optional dependencies before asking users to enable Full Access. Any future cloud feature must be separately disclosed and opt-in.
 
 The source is an initial functional slice, not a signed release. Build and test on a real iPhone; simulator success alone does not establish real-world keyboard behavior.
