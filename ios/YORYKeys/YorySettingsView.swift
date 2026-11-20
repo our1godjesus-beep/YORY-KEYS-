@@ -62,7 +62,7 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.large)
                 .navigationDestination(for: String.self) { title in
                     if title == "Themes" {
-                        YoryThemeStudioView()
+                        YoryThemeGalleryView()
                     } else {
                         YorySettingsDetailView(title: title, onSignOut: onSignOut)
                     }

@@ -31,6 +31,7 @@ private data class SettingsItem(val icon: String, val title: String, val subtitl
 fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
     val context = LocalContext.current
     var page by remember { mutableStateOf<String?>(null) }
+    var editingThemes by remember { mutableStateOf(false) }
     val items = listOf(
         SettingsItem("◉", "Account", "Optional account for cloud sync and online features"),
         SettingsItem("✧", "YORY Rewards", "Discover keyboard milestones"),
@@ -47,7 +48,15 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
         SettingsItem("ⓘ", "About YORY KEYS", "Version and product information")
     )
     if (page == "Themes") {
-        YoryThemesEditorScreen(onBack = { page = null })
+        if (editingThemes) {
+            YoryThemesEditorScreen(onBack = { editingThemes = false })
+        } else {
+            YoryThemeGalleryScreen(
+                onBack = { page = null },
+                onCreate = { editingThemes = true },
+                onCustomize = { editingThemes = true }
+            )
+        }
         return
     }
 
@@ -65,7 +74,12 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
                     Text("✦", color = GlassAccent, fontSize = 30.sp)
                 }
                 Spacer(Modifier.height(5.dp))
-                items.forEach { item -> GlassSettingsRow(item) { page = item.title } }
+                items.forEach { item ->
+                    GlassSettingsRow(item) {
+                        if (item.title == "Themes") editingThemes = false
+                        page = item.title
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 GlassPanel(Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

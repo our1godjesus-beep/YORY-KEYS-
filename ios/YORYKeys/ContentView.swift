@@ -263,6 +263,7 @@ struct YoryThemeStudioView: View {
 
     private func preset(_ name: String, bg: String, key: String, accent: String) -> some View {
         Button {
+            themeName = name
             background = Color(hex: bg)
             self.key = Color(hex: key)
             self.accent = Color(hex: accent)
@@ -299,6 +300,7 @@ struct YoryThemeStudioView: View {
 
     private func loadTheme() {
         guard let defaults = yoryGroup else { return }
+        themeName = defaults.string(forKey: "themeName") ?? "Tinted Glass"
         background = Color(hex: defaults.string(forKey: "backgroundHex") ?? "#1A1D2B")
         key = Color(hex: defaults.string(forKey: "keyHex") ?? "#F1F3FA")
         text = Color(hex: defaults.string(forKey: "textHex") ?? "#171923")
@@ -399,6 +401,7 @@ struct YoryThemeStudioView: View {
 
     private func persistTheme() {
         guard let defaults = yoryGroup else { return }
+        defaults.set(themeName, forKey: "themeName")
         defaults.set(background.hexString, forKey: "backgroundHex")
         defaults.set(key.hexString, forKey: "keyHex")
         defaults.set(text.hexString, forKey: "textHex")
@@ -417,6 +420,234 @@ struct YoryThemeStudioView: View {
         defaults.set(selectedLanguage, forKey: "language")
         let languageTag = selectedLanguage == "العربية" ? "ar" : (selectedLanguage == "Deutsch" ? "de" : "en-US")
         defaults.set(languageTag, forKey: "yory.active.language")
+    }
+}
+
+
+private struct YoryGalleryPreset: Identifiable {
+    let name: String
+    let category: String
+    let background: String
+    let key: String
+    let text: String
+    let accent: String
+    let pressed: String
+    let opacity: Double
+    let radius: Double
+    let keyHeight: Double
+    var id: String { name }
+
+    static let all: [YoryGalleryPreset] = [
+        .init(name: "Tinted Glass", category: "Dark", background: "#1A1D2B", key: "#E8F1F3", text: "#171923", accent: "#78B8F8", pressed: "#78B8F8", opacity: 0.92, radius: 14, keyHeight: 44),
+        .init(name: "Midnight", category: "Dark", background: "#10121B", key: "#292D3B", text: "#F6F7FC", accent: "#9B8CFF", pressed: "#9B8CFF", opacity: 0.98, radius: 12, keyHeight: 46),
+        .init(name: "Arctic", category: "Light", background: "#DDE7F5", key: "#FFFFFF", text: "#202432", accent: "#5598DB", pressed: "#5598DB", opacity: 0.88, radius: 16, keyHeight: 46),
+        .init(name: "Neon", category: "Colorful", background: "#171928", key: "#252B3B", text: "#F7F8FF", accent: "#51E5DC", pressed: "#51E5DC", opacity: 0.95, radius: 11, keyHeight: 46),
+        .init(name: "Rose", category: "Colorful", background: "#F3DDE5", key: "#FFFFFF", text: "#32212B", accent: "#DE7297", pressed: "#DE7297", opacity: 0.90, radius: 18, keyHeight: 46)
+    ]
+}
+
+struct YoryThemeGalleryView: View {
+    @State private var category = "All"
+    @State private var appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
+    @State private var statusMessage = ""
+    private let categories = ["All", "Yours", "Dark", "Light", "Colorful"]
+
+    private var visiblePresets: [YoryGalleryPreset] {
+        switch category {
+        case "Yours": return YoryGalleryPreset.all.filter { $0.name == appliedTheme }
+        case "All": return YoryGalleryPreset.all
+        default: return YoryGalleryPreset.all.filter { $0.category == category }
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            yoryGlassBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("YORY KEYS").font(.caption.weight(.bold)).tracking(2.2).foregroundStyle(Color(hex: "#A7C7FF"))
+                        Text("Themes").font(.system(size: 30, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                        Text("Choose a look for your keyboard. Your selection stays on this device.")
+                            .font(.footnote).foregroundStyle(.white.opacity(0.64))
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(categories, id: \.self) { item in
+                                Button {
+                                    category = item
+                                } label: {
+                                    Text(item).font(.subheadline.weight(.medium))
+                                        .padding(.horizontal, 15).padding(.vertical, 9)
+                                        .background(category == item ? Color(hex: "#A7C7FF").opacity(0.22) : Color.white.opacity(0.055), in: Capsule())
+                                        .overlay(Capsule().stroke(category == item ? Color(hex: "#A7C7FF").opacity(0.72) : Color.white.opacity(0.15), lineWidth: 0.8))
+                                        .foregroundStyle(.white)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+
+                    if category == "All" || category == "Yours" {
+                        Text("YOURS").font(.caption.weight(.bold)).tracking(1.6).foregroundStyle(.white.opacity(0.62))
+                    }
+
+                    if visiblePresets.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("No themes in this category yet").foregroundStyle(.white.weight(.semibold))
+                            Text("Choose another category or customize your current look.")
+                                .font(.footnote).foregroundStyle(.white.opacity(0.62))
+                        }
+                        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                    } else {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 14) {
+                            ForEach(visiblePresets) { preset in
+                                YoryGalleryThemeCard(preset: preset, isApplied: appliedTheme == preset.name) {
+                                    apply(preset)
+                                }
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("Make it yours").font(.headline).foregroundStyle(.white)
+                        Text("Adjust key colors, glass opacity, spacing, shape and lettering in the theme editor.")
+                            .font(.footnote).foregroundStyle(.white.opacity(0.64))
+                        NavigationLink {
+                            YoryThemeStudioView()
+                        } label: {
+                            Label("Customize current theme", systemImage: "slider.horizontal.3")
+                                .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.24), lineWidth: 0.8))
+                        }
+                        .buttonStyle(.plain).foregroundStyle(Color(hex: "#A7C7FF"))
+                    }
+                    .padding(16)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 19))
+                    .overlay(RoundedRectangle(cornerRadius: 19).stroke(.white.opacity(0.16), lineWidth: 0.8))
+
+                    if !statusMessage.isEmpty {
+                        Text(statusMessage).font(.footnote).foregroundStyle(Color(hex: "#A7C7FF"))
+                    }
+                }
+                .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 22)
+            }
+        }
+        .navigationTitle("Themes")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    YoryThemeStudioView()
+                } label: {
+                    Text("Create").fontWeight(.semibold).foregroundStyle(Color(hex: "#A7C7FF"))
+                }
+            }
+        }
+        .onAppear {
+            appliedTheme = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "themeName") ?? "Tinted Glass"
+        }
+    }
+
+    private func apply(_ preset: YoryGalleryPreset) {
+        guard let defaults = UserDefaults(suiteName: "group.app.yory.keys") else {
+            statusMessage = "Could not access local keyboard settings."
+            return
+        }
+        defaults.set(preset.name, forKey: "themeName")
+        defaults.set(preset.background, forKey: "backgroundHex")
+        defaults.set(preset.key, forKey: "keyHex")
+        defaults.set(preset.text, forKey: "textHex")
+        defaults.set(preset.accent, forKey: "accentHex")
+        defaults.set(preset.pressed, forKey: "keyPressedHex")
+        defaults.set(preset.opacity, forKey: "opacity")
+        defaults.set(preset.radius, forKey: "cornerRadius")
+        defaults.set(preset.keyHeight, forKey: "keyHeight")
+        defaults.set(4.0, forKey: "keySpacing")
+        defaults.set(18.0, forKey: "fontSize")
+        appliedTheme = preset.name
+        statusMessage = "\(preset.name) is now active."
+    }
+}
+
+private struct YoryGalleryThemeCard: View {
+    let preset: YoryGalleryPreset
+    let isApplied: Bool
+    let onApply: () -> Void
+    private let rows = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            VStack(spacing: 4) {
+                HStack {
+                    ForEach(["☺", "✦", "文", "⚙", "•••"], id: \.self) {
+                        Text($0).font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color(hex: preset.accent)).frame(maxWidth: .infinity)
+                    }
+                }
+                ForEach(rows, id: \.self) { row in
+                    HStack(spacing: 2) {
+                        ForEach(Array(row).indices, id: \.self) { index in
+                            Text(String(Array(row)[index])).font(.system(size: 8, weight: .medium))
+                                .foregroundStyle(Color(hex: preset.text)).frame(maxWidth: .infinity)
+                                .frame(height: 22)
+                                .background(Color(hex: preset.key).opacity(0.88), in: RoundedRectangle(cornerRadius: CGFloat(min(preset.radius, 7))))
+                        }
+                    }
+                }
+                HStack(spacing: 2) {
+                    galleryKey("!#1", wide: false)
+                    galleryKey("◎", wide: false)
+                    galleryKey("English", wide: true)
+                    galleryKey("↵", wide: false)
+                }
+            }
+            .padding(9)
+            .background(Color(hex: preset.background).opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.18), lineWidth: 0.7))
+
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(preset.name).font(.subheadline.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
+                    Text(isApplied ? "Currently applied" : "On this device")
+                        .font(.caption2).foregroundStyle(isApplied ? Color(hex: "#A7C7FF") : .white.opacity(0.58))
+                }
+                Spacer(minLength: 0)
+                if isApplied {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color(hex: "#A7C7FF"))
+                }
+            }
+
+            Button(action: onApply) {
+                Text(isApplied ? "Applied" : "Apply theme")
+                    .font(.caption.weight(.semibold)).frame(maxWidth: .infinity).padding(.vertical, 9)
+                    .background(isApplied ? Color(hex: "#A7C7FF").opacity(0.18) : Color(hex: "#A7C7FF"), in: RoundedRectangle(cornerRadius: 11))
+                    .foregroundStyle(isApplied ? .white : Color(hex: "#101725"))
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                YoryThemeStudioView()
+            } label: {
+                Text("Customize").font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
+                    .foregroundStyle(Color(hex: "#A7C7FF"))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(isApplied ? Color(hex: "#A7C7FF") : Color.white.opacity(0.16), lineWidth: isApplied ? 1.2 : 0.7))
+    }
+
+    private func galleryKey(_ title: String, wide: Bool) -> some View {
+        Text(title).font(.system(size: 7, weight: .medium)).foregroundStyle(Color(hex: preset.text))
+            .frame(maxWidth: wide ? .infinity : 34).frame(height: 22)
+            .background(Color(hex: preset.key).opacity(0.92), in: RoundedRectangle(cornerRadius: CGFloat(min(preset.radius, 7))))
     }
 }
 
