@@ -1,6 +1,7 @@
 package app.yory.keys.ime
 
 import android.content.Intent
+import android.content.ClipboardManager
 import android.media.AudioManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -33,12 +34,16 @@ class YoryInputMethodService : InputMethodService() {
     private var shifted = false
     private var symbolMode = false
     private var emojiMode = false
+    private var clipboardMode = false
     private var sensitiveField = false
     private var keyboardRoot: LinearLayout? = null
     private var suggestionRow: LinearLayout? = null
+    private var clipboardRow: LinearLayout? = null
     private var emojiRow: LinearLayout? = null
     private var keysContainer: LinearLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
+    private var clipboardListenerRegistered = false
+    private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener { captureClipboard() }
 
     override fun onCreateInputView(): View {
         wordSuggestions = LocalWordSuggestions(applicationContext)
@@ -70,7 +75,11 @@ class YoryInputMethodService : InputMethodService() {
             refreshKeyboard()
         }
         addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
-        addToolbarButton(toolbar, "⋯", 1f) { openStudio() }
+        addToolbarButton(toolbar, "▣", 1f) {
+            clipboardMode = !clipboardMode
+            refreshKeyboard()
+            refreshClipboardRow()
+        }
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(38)))
 
         suggestionRow = LinearLayout(this).apply {
@@ -79,6 +88,12 @@ class YoryInputMethodService : InputMethodService() {
             setPadding(0, dp(2), 0, dp(2))
         }
         root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(34)))
+
+        clipboardRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        root.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
 
         emojiRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -97,6 +112,7 @@ class YoryInputMethodService : InputMethodService() {
 
         refreshKeyboard()
         updateSuggestions()
+        refreshClipboardListener()
         return root
     }
 
@@ -104,8 +120,10 @@ class YoryInputMethodService : InputMethodService() {
         super.onStartInputView(info, restarting)
         theme = YoryThemeStore.load(applicationContext)
         sensitiveField = isSensitive(info)
+        clipboardMode = false
         refreshKeyboard()
         updateSuggestions()
+        refreshClipboardListener()
     }
 
     private fun isSensitive(info: EditorInfo?): Boolean {
@@ -127,15 +145,16 @@ class YoryInputMethodService : InputMethodService() {
         container.removeAllViews()
 
         emojiRow?.visibility = if (emojiMode) View.VISIBLE else View.GONE
-        suggestionRow?.visibility = if (sensitiveField || emojiMode) View.GONE else View.VISIBLE
+        suggestionRow?.visibility = if (sensitiveField || emojiMode || clipboardMode) View.GONE else View.VISIBLE
+        clipboardRow?.visibility = if (theme.clipboardEnabled && clipboardMode && !sensitiveField) View.VISIBLE else View.GONE
 
         if (symbolMode) {
             addKeyRow(container, "1234567890")
             addKeyRow(container, "@#$%&-*+=")
             addKeyRow(container, "()[]{}⌫")
         } else {
-            addKeyRow(container, if (languageTag.startsWith("ar")) "ضصثقفغعهخحجد" else "qwertyuiop")
-            addKeyRow(container, if (languageTag.startsWith("ar")) "شسيبلاتنمك" else "asdfghjkl")
+            addKeyRow(container, if (languageTag.startsWith("ar")) "ضصثقفغعهخح" else "qwertyuiop")
+            addKeyRow(container, if (languageTag.startsWith("ar")) "شسيبلاتنم" else "asdfghjkl")
             addSpecialLetterRow(container)
         }
         addBottomRow(container)
@@ -147,7 +166,7 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
         }
         letters.forEach { char ->
-            val label = char.toString()
+            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
             addKey(row, label, 1f) { handleKey(label) }
         }
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
@@ -159,9 +178,9 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
         }
         addKey(row, "⇧", 1.25f) { shifted = !shifted; refreshKeyboard() }
-        val letters = if (languageTag.startsWith("ar")) "ئءؤرىةوزظذ" else "zxcvbnm"
+        val letters = if (languageTag.startsWith("ar")) "ئءؤرىةوز" else "zxcvbnm"
         letters.forEach { char ->
-            val label = char.toString()
+            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
             addKey(row, label, 1f) { handleKey(label) }
         }
         addKey(row, "⌫", 1.25f) { handleKey("⌫") }
@@ -254,10 +273,77 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
+    private fun refreshClipboardListener() {
+        val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        val shouldListen = theme.clipboardEnabled && !sensitiveField
+        if (shouldListen && !clipboardListenerRegistered) {
+            manager.addPrimaryClipChangedListener(clipboardListener)
+            clipboardListenerRegistered = true
+        } else if (!shouldListen && clipboardListenerRegistered) {
+            manager.removePrimaryClipChangedListener(clipboardListener)
+            clipboardListenerRegistered = false
+        }
+    }
+
+    private fun captureClipboard() {
+        if (sensitiveField || !theme.clipboardEnabled) return
+        val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = manager.primaryClip ?: return
+        if (clip.itemCount < 1) return
+        val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return
+        ClipboardHistoryStore.add(applicationContext, text)
+        refreshClipboardRow()
+    }
+
+    private fun refreshClipboardRow() {
+        val row = clipboardRow ?: return
+        row.removeAllViews()
+        if (!theme.clipboardEnabled || sensitiveField || !clipboardMode) {
+            row.visibility = View.GONE
+            return
+        }
+        row.visibility = View.VISIBLE
+        val entries = ClipboardHistoryStore.entries(applicationContext)
+        if (entries.isEmpty()) {
+            addToolbarButton(row, "No saved clips", 1f) { }
+        } else {
+            entries.take(3).forEach { entry ->
+                val label = entry.text.replace('\\n', ' ').take(18)
+                addToolbarButton(row, label, 1f) {
+                    currentInputConnection?.commitText(entry.text, 1)
+                    clipboardMode = false
+                    refreshKeyboard()
+                }
+            }
+            addToolbarButton(row, "Clear", 0.7f) {
+                ClipboardHistoryStore.clear(applicationContext)
+                refreshClipboardRow()
+            }
+        }
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        refreshClipboardListenerOff()
+        super.onFinishInputView(finishingInput)
+    }
+
+    override fun onDestroy() {
+        refreshClipboardListenerOff()
+        super.onDestroy()
+    }
+
+    private fun refreshClipboardListenerOff() {
+        if (clipboardListenerRegistered) {
+            val manager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            manager.removePrimaryClipChangedListener(clipboardListener)
+            clipboardListenerRegistered = false
+        }
+    }
+
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
         row.removeAllViews()
-        if (sensitiveField || emojiMode) {
+        if (sensitiveField || emojiMode || clipboardMode) {
             row.visibility = View.GONE
             return
         }
