@@ -1,0 +1,5 @@
+# YORY KEYS — local development Supabase settings
+# This contains only a PUBLIC publishable key for the confirmed DEV project.
+# Copy to android/supabase.local.properties. Do not put secret/service-role keys here.
+SUPABASE_URL=https://qyiipvwjwojrikokwjgz.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_xkNc4eIFMmbRuOvlOEkIAA_AF2dFp5T
