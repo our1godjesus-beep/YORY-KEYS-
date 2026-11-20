@@ -292,9 +292,13 @@ final class KeyboardViewController: UIInputViewController {
     private func keyboardFont(size: CGFloat, weight: UIFont.Weight) -> UIFont {
         switch YoryThemeReader.fontFamily {
         case "rounded":
-            return UIFont.systemFont(ofSize: size, weight: weight).withDesign(.rounded) ?? .systemFont(ofSize: size, weight: weight)
+            let base = UIFont.systemFont(ofSize: size, weight: weight)
+            let descriptor = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
+            return UIFont(descriptor: descriptor, size: size)
         case "serif":
-            return UIFont.systemFont(ofSize: size, weight: weight).withDesign(.serif) ?? .systemFont(ofSize: size, weight: weight)
+            let base = UIFont.systemFont(ofSize: size, weight: weight)
+            let descriptor = base.fontDescriptor.withDesign(.serif) ?? base.fontDescriptor
+            return UIFont(descriptor: descriptor, size: size)
         case "mono":
             return UIFont.monospacedSystemFont(ofSize: size, weight: weight)
         default:
