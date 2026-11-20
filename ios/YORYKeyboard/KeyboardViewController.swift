@@ -24,7 +24,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = YoryThemeReader.backgroundColor.withAlphaComponent(YoryThemeReader.opacity)
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.94)
         isArabic = UserDefaults.standard.object(forKey: "yory.keyboard.arabic") as? Bool ?? YoryThemeReader.isArabic
         primaryLanguage = isArabic ? "ar" : "en-US"
         applyCurrentTheme()
@@ -86,7 +86,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyCurrentTheme() {
-        view.backgroundColor = YoryThemeReader.backgroundColor.withAlphaComponent(YoryThemeReader.opacity)
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.94)
         if isViewLoaded {
             rebuildKeys()
         }
@@ -235,7 +235,7 @@ final class KeyboardViewController: UIInputViewController {
         button.setTitle(title, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize, weight: .medium)
         button.setTitleColor(YoryThemeReader.textColor, for: .normal)
-        button.backgroundColor = YoryThemeReader.keyColor
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.055)
         button.layer.cornerRadius = {
             switch YoryThemeReader.keyShape {
             case "pill", "circle": return 18.0
@@ -244,8 +244,20 @@ final class KeyboardViewController: UIInputViewController {
             default: return YoryThemeReader.cornerRadius
             }
         }()
-        button.layer.borderWidth = 0.5
-        button.layer.borderColor = UIColor.white.withAlphaComponent(0.24).cgColor
+        button.clipsToBounds = true
+        let glass = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
+        glass.isUserInteractionEnabled = false
+        glass.frame = button.bounds
+        glass.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        glass.layer.cornerRadius = button.layer.cornerRadius
+        glass.clipsToBounds = true
+        button.insertSubview(glass, at: 0)
+        button.layer.borderWidth = 0.7
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.28).cgColor
+        button.layer.shadowColor = UIColor.white.cgColor
+        button.layer.shadowOpacity = 0.10
+        button.layer.shadowRadius = 5
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
         button.accessibilityLabel = title
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
@@ -255,11 +267,11 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func keyTouchDown(_ sender: UIButton) {
-        sender.backgroundColor = YoryThemeReader.keyPressedColor
+        sender.backgroundColor = YoryThemeReader.keyPressedColor.withAlphaComponent(0.58)
     }
 
     @objc private func keyTouchUp(_ sender: UIButton) {
-        sender.backgroundColor = YoryThemeReader.keyColor
+        sender.backgroundColor = UIColor.white.withAlphaComponent(0.055)
     }
 
     private func toolButton(_ title: String, action: Selector) -> UIButton {
@@ -267,6 +279,10 @@ final class KeyboardViewController: UIInputViewController {
         button.setTitle(title, for: .normal)
         button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.045)
+        button.layer.cornerRadius = 10
+        button.layer.borderWidth = 0.5
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
         button.addTarget(self, action: action, for: .touchUpInside)
         button.heightAnchor.constraint(equalToConstant: 30).isActive = true
         return button
