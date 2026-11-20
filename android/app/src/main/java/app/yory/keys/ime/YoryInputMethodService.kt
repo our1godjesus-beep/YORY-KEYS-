@@ -187,7 +187,7 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                     updateSuggestions()
                 }
-                "symbols" -> addToolbarButton(toolbar, if (symbolMode) "⇄" else "123", 1f) {
+                "symbols" -> addToolbarButton(toolbar, if (symbolMode) if (symbolPage == 0) "2/2" else "1/2" else "123", 1f) {
                     if (symbolMode) {
                         symbolPage = (symbolPage + 1) % 2
                     } else {
