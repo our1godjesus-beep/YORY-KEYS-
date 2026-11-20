@@ -121,7 +121,7 @@ enum YoryLocalWordSuggestions {
             }
             switch value {
             case 0x0623, 0x0625, 0x0622, 0x0671: normalized.append(UnicodeScalar(0x0627)!)
-            case 0x0649, 0x06CC: normalized.append(UnicodeScalar(0x064A)!)
+            case 0x06CC: normalized.append(UnicodeScalar(0x064A)!)
             case 0x06A9: normalized.append(UnicodeScalar(0x0643)!)
             default: normalized.append(scalar)
             }
