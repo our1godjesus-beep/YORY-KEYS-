@@ -200,3 +200,8 @@ The following code work supersedes older "not implemented" bullets above where n
 - Both keyboard extensions now have a Favorites category.
 - Long-press an emoji to add/remove it. Up to 80 favorite entries are stored locally on-device.
 - Favorite actions use a native long-press menu on iOS and an Android long-press handler. Physical-device touch and accessibility verification remains open.
+
+
+### Clipboard search addendum — 2026-11-20
+- Android Clipboard manager now includes case-insensitive search across stored clip text, with an empty-results state and a clear-search action.
+- Search normalization and filtering are covered by JVM unit tests; Android UI validation remains in CI/manual QA.

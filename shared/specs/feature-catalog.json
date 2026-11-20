@@ -125,7 +125,7 @@
       "platforms": [
         "android"
       ],
-      "notes": "Android-only, opt-in text history. Entries are encrypted with AES-GCM under an Android Keystore key, capped at 50, unpinned items expire after 24 hours, and the local manager supports pin/unpin, re-copy, delete, undo and clear. OTP/PIN/payment-number filters are heuristic and not a guarantee; iOS background clipboard history is not provided."
+      "notes": "Android-only, opt-in text history. Entries are encrypted with AES-GCM under an Android Keystore key, capped at 50, unpinned items expire after 24 hours, and the manager supports search, pin/unpin, re-copy, delete, undo and clear. OTP/PIN/payment-number filters are heuristic, not a guarantee; iOS background clipboard history is not provided."
     },
     {
       "id": "screenshot-import",
@@ -358,7 +358,7 @@
       "platforms": [
         "android"
       ],
-      "notes": "Android clipboard manager supports pin/unpin, 24-hour expiry for unpinned clips, copy again, delete, undo last deletion and clear all. Full-text search/filter is not implemented; sensitive-value detection is heuristic."
+      "notes": "Android clipboard manager supports pin/unpin, 24-hour expiry for unpinned clips, search, copy again, delete, undo last deletion and clear all. Sensitive-value detection is heuristic; this feature is Android-only."
     },
     {
       "id": "sticker-image-editor",

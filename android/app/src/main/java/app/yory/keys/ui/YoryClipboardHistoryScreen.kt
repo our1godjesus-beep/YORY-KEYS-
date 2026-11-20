@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.yory.keys.ime.ClipboardHistoryStore
+import app.yory.keys.ime.ClipboardHistoryPolicy
 import app.yory.keys.ime.YoryClipboardEntry
 
 @Composable
