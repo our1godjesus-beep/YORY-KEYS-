@@ -215,7 +215,7 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
         }
         addKey(actions, "🌐", 1f) {
-            languageTag = if (languageTag.startsWith("ar")) "en-US" else "ar"
+            cycleLanguage()
             refreshKeyboard()
         }
         addKey(actions, "↵", 1f) {
