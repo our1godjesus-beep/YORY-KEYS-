@@ -255,16 +255,23 @@ class YoryInputMethodService : InputMethodService() {
             updateSuggestions()
         }
         addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.8f) {
+            learnCurrentWord()
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
             updateSuggestions()
         }
         addKey(row, if (languageTag.startsWith("ar")) "العربية" else "English", 3.8f) {
+            learnCurrentWord()
             currentInputConnection?.commitText(" ", 1)
             refreshAutomaticShift()
             updateSuggestions()
         }
-        addKey(row, ".", 0.8f) { currentInputConnection?.commitText(".", 1); updateSuggestions() }
+        addKey(row, ".", 0.8f) {
+            learnCurrentWord()
+            currentInputConnection?.commitText(".", 1)
+            updateSuggestions()
+        }
         addKey(row, "↵", 1.15f) {
+            learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
@@ -423,6 +430,14 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
+    private fun learnCurrentWord() {
+        if (sensitiveField || numericField || emailField || urlField ||
+            !PersonalDictionaryStore.isEnabled(applicationContext)) return
+        val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+        val word = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value ?: return
+        PersonalDictionaryStore.learn(applicationContext, word, languageTag)
+    }
+
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
         row.removeAllViews()
@@ -433,7 +448,9 @@ class YoryInputMethodService : InputMethodService() {
         row.visibility = View.VISIBLE
         val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
         val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
-        val suggestions = wordSuggestions?.suggest(prefix, languageTag).orEmpty()
+        val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
+        val bundled = wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
+        val suggestions = (personal + bundled).distinct().take(3)
         if (suggestions.isEmpty()) {
             addToolbarButton(row, if (languageTag.startsWith("ar")) "العربية" else "English", 1f) { }
         } else {
