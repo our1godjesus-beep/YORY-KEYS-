@@ -213,3 +213,13 @@ The following code work supersedes older "not implemented" bullets above where n
 - Arabic alone among the current set uses right-to-left keyboard direction.
 - Bundled starter prefix dictionaries currently exist only for English and Arabic. Other layouts are usable for typing, but do not ship a prediction dictionary; opt-in personal learning is stored by language tag.
 - The 120-language catalogue remains a target list. Only seven layouts are available in this build.
+
+
+## Arabic-first typing quality and monetization foundations (2026-11-21)
+
+- Android and iOS local prefix suggestions now normalize Arabic alef/hamza variants, tashkeel, tatweel, selected Persian yeh/kaf code points for search matching only. Candidate words are inserted with their original spelling; distinct ta marbuta/ha forms are not folded together.
+- The Arabic starter dictionary now includes a curated seed of Egyptian conversational terms on both platforms. It is a small hand-curated vocabulary list, not a complete Egyptian Arabic corpus or a validated dialect model.
+- Android JVM tests cover normalized prefix matching, direct-prefix ordering, distinct-letter preservation and original candidate spelling. iOS source mirrors the normalization logic and is covered by the iOS compile workflow; a dedicated XCTest target is not configured yet.
+- iOS App Group writes for personal learning, active language and the keyboard-side clear action are now gated on the user's optional Full Access choice. Basic keyboard typing remains available without it; no keystroke upload is implemented.
+- `shared/specs/monetization-catalog.json` defines Free, planned Studio Plus, planned YORY Plus and a future creator-theme marketplace. Purchases are explicitly disabled; prices are unset and no billing SDK or paywall has been added.
+- The next commercial release gate is Arabic/English device QA, measured correction/prediction quality, and launch privacy/store-readiness. Payment accounts, taxes and payouts require an eligible adult account owner and appropriate guardian involvement.
