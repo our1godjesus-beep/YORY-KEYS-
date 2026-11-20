@@ -101,12 +101,12 @@
     {
       "id": "emoji-picker",
       "name": "Emoji picker",
-      "status": "basic_scaffold",
+      "status": "partial_implementation",
       "platforms": [
         "android",
         "ios"
       ],
-      "notes": "Starter emoji row; searchable categories and skin-tone support are not implemented."
+      "notes": "Native Android and iOS keyboard emoji panels include curated categories, up to 24 recent choices stored locally, direct insertion and selectable skin-tone modifiers for supported people/hand emoji. Text search, full Unicode catalogue, favorites and comprehensive localized labels remain open."
     },
     {
       "id": "emoji-art-packs",
@@ -340,16 +340,16 @@
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "A searchable, localized emoji catalogue is not implemented. The keyboard currently provides category browsing and local recents without text search."
     },
     {
       "id": "emoji-skin-tones",
       "name": "Unicode-supported emoji skin tone variants",
-      "status": "not_implemented",
+      "status": "partial_implementation",
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "A user-selectable tone selector is available for the starter people/hand emoji set on Android and iOS. Coverage for the complete Unicode emoji set and compound ZWJ sequences is not yet implemented."
     },
     {
       "id": "clipboard-pin-expiry-search",

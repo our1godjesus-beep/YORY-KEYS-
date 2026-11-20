@@ -16,6 +16,10 @@ final class KeyboardViewController: UIInputViewController {
     private let root = UIStackView()
     private var toolbarRow: UIStackView?
     private let emojiRow = UIStackView()
+    private let emojiCategoryRow = UIStackView()
+    private let emojiGrid = UIStackView()
+    private var emojiCategory = "Recent"
+    private var emojiSkinTone = ""
     private let suggestionRow = UIStackView()
     private var toolsMode = false
     private let keysStack = UIStackView()
@@ -41,7 +45,10 @@ final class KeyboardViewController: UIInputViewController {
         updateInputTraits()
         refreshAutomaticShift()
         applyCurrentTheme()
+        emojiMode = false
+        emojiRow.isHidden = true
         incognitoMode = false
+        updateKeyboardHeight()
         refreshToolbarItems()
         updateSuggestions()
     }
@@ -199,14 +206,37 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRowHeightConstraint = suggestionHeight
         suggestionHeight.isActive = true
 
-        emojiRow.axis = .horizontal
-        emojiRow.distribution = .fillEqually
-        emojiRow.spacing = 4
-        for emoji in ["😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥"] {
-            emojiRow.addArrangedSubview(keyButton(emoji))
+        emojiRow.axis = .vertical
+        emojiRow.spacing = 3
+        emojiCategoryRow.axis = .horizontal
+        emojiCategoryRow.distribution = .fillEqually
+        emojiCategoryRow.spacing = 3
+        for (category, title) in [
+            ("Recent", "◷"), ("Smile", "☺"), ("People", "👥"),
+            ("Nature", "🌿"), ("Food", "🍕"), ("Travel", "✈"), ("Symbols", "♡")
+        ] {
+            let button = UIButton(type: .system)
+            button.setTitle(title, for: .normal)
+            button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+            button.backgroundColor = UIColor.white.withAlphaComponent(0.055)
+            button.layer.cornerRadius = 8
+            button.accessibilityLabel = category
+            button.accessibilityHint = "Show \(category.lowercased()) emoji"
+            button.heightAnchor.constraint(equalToConstant: 29).isActive = true
+            button.addAction(UIAction { [weak self] _ in
+                self?.emojiCategory = category
+                self?.refreshEmojiPicker()
+            }, for: .touchUpInside)
+            emojiCategoryRow.addArrangedSubview(button)
         }
+        emojiRow.addArrangedSubview(emojiCategoryRow)
+        emojiGrid.axis = .vertical
+        emojiGrid.spacing = 3
+        emojiRow.addArrangedSubview(emojiGrid)
         emojiRow.isHidden = true
         root.addArrangedSubview(emojiRow)
+        refreshEmojiPicker()
 
         keysStack.axis = .vertical
         keysStack.spacing = 6
@@ -325,7 +355,8 @@ final class KeyboardViewController: UIInputViewController {
             rowCount = CGFloat(4 + (YoryThemeReader.numberRowEnabled ? 1 : 0) + (YoryThemeReader.arrowKeysEnabled ? 1 : 0))
         }
         let innerGaps = max(0, rowCount - 1) * 6
-        let required = 84 + rowCount * YoryThemeReader.keyHeight + innerGaps
+        let emojiPanelHeight: CGFloat = emojiMode ? (emojiCategory == "People" ? 126 : 98) : 0
+        let required = 84 + rowCount * YoryThemeReader.keyHeight + innerGaps + emojiPanelHeight
         keyboardHeightConstraint?.constant = min(430, max(240, required))
     }
 
@@ -644,8 +675,103 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func toggleEmoji() {
         playKeyClick()
         emojiMode.toggle()
+        if emojiMode { refreshEmojiPicker() }
         emojiRow.isHidden = !emojiMode
+        updateKeyboardHeight()
         updateSuggestions()
+    }
+
+    private func refreshEmojiPicker() {
+        emojiGrid.arrangedSubviews.forEach { item in
+            emojiGrid.removeArrangedSubview(item)
+            item.removeFromSuperview()
+        }
+
+        if emojiCategory == "People" {
+            let toneRow = UIStackView()
+            toneRow.axis = .horizontal
+            toneRow.distribution = .fillEqually
+            toneRow.spacing = 3
+            let tones = [("", "○", "Default skin tone"), ("🏻", "🏻", "Light skin tone"), ("🏼", "🏼", "Medium-light skin tone"), ("🏽", "🏽", "Medium skin tone"), ("🏾", "🏾", "Medium-dark skin tone"), ("🏿", "🏿", "Dark skin tone")]
+            for (tone, title, description) in tones {
+                let button = makeEmojiButton(title, small: true) { [weak self] in
+                    self?.emojiSkinTone = tone
+                    self?.refreshEmojiPicker()
+                }
+                button.accessibilityLabel = description
+                toneRow.addArrangedSubview(button)
+            }
+            emojiGrid.addArrangedSubview(toneRow)
+        }
+
+        let recent = UserDefaults.standard.stringArray(forKey: "yory.emoji.recent.v1") ?? []
+        let choices: [String]
+        switch emojiCategory {
+        case "Recent":
+            choices = recent.isEmpty ? ["😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥"] : recent
+        case "Smile":
+            choices = ["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰"]
+        case "People":
+            choices = ["👋", "👌", "✌", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝", "👍", "👎"]
+        case "Nature":
+            choices = ["🐶", "🐱", "🐻", "🦊", "🐼", "🐸", "🦋", "🌸", "🌹", "🌻", "🌈", "🌙", "⭐", "🌍"]
+        case "Food":
+            choices = ["🍎", "🍓", "🍉", "🍕", "🍔", "🍟", "🍿", "🍩", "🍪", "🎂", "☕", "🧋", "🥗", "🍣"]
+        case "Travel":
+            choices = ["🚗", "🚕", "🚌", "🚆", "✈️", "🚀", "🚲", "⛵", "🏝️", "🏖️", "🏙️", "🗽", "🏰", "🌋"]
+        default:
+            choices = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "💕", "💞", "💯", "✅", "✨"]
+        }
+
+        let visible = Array(choices.prefix(14))
+        for start in stride(from: 0, to: visible.count, by: 7) {
+            let end = min(start + 7, visible.count)
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.distribution = .fillEqually
+            row.spacing = 3
+            for rawEmoji in visible[start..<end] {
+                let emoji = emojiCategory == "People" ? emojiWithSkinTone(rawEmoji) : rawEmoji
+                row.addArrangedSubview(makeEmojiButton(emoji) { [weak self] in
+                    self?.insertEmoji(emoji)
+                })
+            }
+            while row.arrangedSubviews.count < 7 {
+                row.addArrangedSubview(UIView())
+            }
+            emojiGrid.addArrangedSubview(row)
+        }
+        updateKeyboardHeight()
+    }
+
+    private func makeEmojiButton(_ title: String, small: Bool = false, action: @escaping () -> Void) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: small ? 17 : 22, weight: .medium)
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.055)
+        button.layer.cornerRadius = 8
+        button.layer.borderWidth = 0.5
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.15).cgColor
+        button.heightAnchor.constraint(equalToConstant: small ? 25 : 31).isActive = true
+        button.accessibilityLabel = title
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return button
+    }
+
+    private func emojiWithSkinTone(_ emoji: String) -> String {
+        guard !emojiSkinTone.isEmpty, let first = emoji.unicodeScalars.first else { return emoji }
+        return String(first) + emojiSkinTone
+    }
+
+    private func insertEmoji(_ emoji: String) {
+        playKeyClick()
+        textDocumentProxy.insertText(emoji)
+        var recent = UserDefaults.standard.stringArray(forKey: "yory.emoji.recent.v1") ?? []
+        recent.removeAll { $0 == emoji }
+        recent.insert(emoji, at: 0)
+        UserDefaults.standard.set(Array(recent.prefix(24)), forKey: "yory.emoji.recent.v1")
+        if emojiCategory == "Recent" { refreshEmojiPicker() }
     }
 
     private func updateSuggestions() {

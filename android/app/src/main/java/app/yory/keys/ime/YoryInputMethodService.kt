@@ -55,6 +55,8 @@ class YoryInputMethodService : InputMethodService() {
     private var suggestionRow: LinearLayout? = null
     private var clipboardRow: LinearLayout? = null
     private var emojiRow: LinearLayout? = null
+    private var emojiCategory = "Recent"
+    private var emojiSkinTone = ""
     private var keysContainer: LinearLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
     private val learningExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
@@ -98,14 +100,12 @@ class YoryInputMethodService : InputMethodService() {
         root.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
 
         emojiRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             visibility = View.GONE
         }
-        listOf("😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥").forEach { emoji ->
-            addToolbarButton(emojiRow!!, emoji, 1f) { currentInputConnection?.commitText(emoji, 1) }
-        }
-        root.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(42)))
+        refreshEmojiPicker()
+        root.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(104)))
 
         keysContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -134,6 +134,7 @@ class YoryInputMethodService : InputMethodService() {
         urlField = inputClass == InputType.TYPE_CLASS_TEXT &&
             variation == InputType.TYPE_TEXT_VARIATION_URI
         clipboardMode = false
+        emojiMode = false
         incognitoMode = false
         refreshAutomaticShift()
         refreshToolbar()
@@ -161,6 +162,7 @@ class YoryInputMethodService : InputMethodService() {
                 "emoji" -> if (prefs.getBoolean("emoji_key", true)) {
                     addToolbarButton(toolbar, "☺", 1f) {
                         emojiMode = !emojiMode
+                        if (emojiMode) refreshEmojiPicker()
                         refreshKeyboard()
                     }
                 }
@@ -249,6 +251,97 @@ class YoryInputMethodService : InputMethodService() {
         addBottomRow(container)
         if (showNumberRow && numberPosition == "bottom") addKeyRow(container, "1234567890")
         if (layoutPrefs.getBoolean("arrow_keys", false)) addCursorArrowRow(container)
+    }
+
+    private fun refreshEmojiPicker() {
+        val picker = emojiRow ?: return
+        picker.removeAllViews()
+
+        val categories = listOf(
+            "Recent" to "◷", "Smile" to "☺", "People" to "👥",
+            "Nature" to "🌿", "Food" to "🍕", "Travel" to "✈", "Symbols" to "♡"
+        )
+        val categoryBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        categories.forEach { (name, icon) ->
+            addToolbarButton(categoryBar, icon, 1f) {
+                emojiCategory = name
+                refreshEmojiPicker()
+            }
+        }
+        picker.addView(categoryBar, LinearLayout.LayoutParams(-1, dp(31)))
+
+        if (emojiCategory == "People") {
+            val toneBar = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+            }
+            val tones = listOf("" to "○", "🏻" to "Light", "🏼" to "Light medium", "🏽" to "Medium", "🏾" to "Dark medium", "🏿" to "Dark")
+            tones.forEach { (tone, _) ->
+                addToolbarButton(toneBar, if (tone.isEmpty()) "○" else tone, 1f) {
+                    emojiSkinTone = tone
+                    refreshEmojiPicker()
+                }
+            }
+            picker.addView(toneBar, LinearLayout.LayoutParams(-1, dp(28)))
+        }
+
+        val emojiGrid = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+        val recent = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+            .getString("emoji_recent_v1", "")
+            .orEmpty()
+            .split("\n")
+            .filter { it.isNotBlank() }
+        val choices = when (emojiCategory) {
+            "Recent" -> recent.ifEmpty { listOf("😀", "😂", "🥰", "❤️", "✨", "🙏", "👍", "🔥") }
+            "Smile" -> listOf("😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰")
+            "People" -> listOf("👋", "👌", "✌", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝", "👍", "👎")
+            "Nature" -> listOf("🐶", "🐱", "🐻", "🦊", "🐼", "🐸", "🦋", "🌸", "🌹", "🌻", "🌈", "🌙", "⭐", "🌍")
+            "Food" -> listOf("🍎", "🍓", "🍉", "🍕", "🍔", "🍟", "🍿", "🍩", "🍪", "🎂", "☕", "🧋", "🥗", "🍣")
+            "Travel" -> listOf("🚗", "🚕", "🚌", "🚆", "✈️", "🚀", "🚲", "⛵", "🏝️", "🏖️", "🏙️", "🗽", "🏰", "🌋")
+            else -> listOf("❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "💔", "💕", "💞", "💯", "✅", "✨")
+        }.take(14)
+
+        choices.chunked(7).forEach { group ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+            }
+            group.forEach { rawEmoji ->
+                val outputEmoji = if (emojiCategory == "People" && emojiSkinTone.isNotEmpty()) {
+                    applyEmojiSkinTone(rawEmoji, emojiSkinTone)
+                } else rawEmoji
+                addToolbarButton(row, outputEmoji, 1f) { insertEmoji(outputEmoji) }
+            }
+            repeat(7 - group.size) { addToolbarButton(row, "", 1f) {} }
+            emojiGrid.addView(row, LinearLayout.LayoutParams(-1, dp(34)))
+        }
+        picker.addView(emojiGrid, LinearLayout.LayoutParams(-1, dp(68)))
+        picker.layoutParams?.height = dp(31 + 68 + if (emojiCategory == "People") 28 else 0)
+        picker.requestLayout()
+    }
+
+    private fun applyEmojiSkinTone(emoji: String, tone: String): String {
+        if (emoji.isBlank() || tone.isBlank()) return emoji
+        val firstCodePoint = emoji.codePointAt(0)
+        val firstLength = Character.charCount(firstCodePoint)
+        return emoji.substring(0, firstLength) + tone + emoji.substring(firstLength)
+    }
+
+    private fun insertEmoji(emoji: String) {
+        if (emoji.isBlank()) return
+        currentInputConnection?.commitText(emoji, 1)
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val old = prefs.getString("emoji_recent_v1", "").orEmpty()
+            .split("\n")
+            .filter { it.isNotBlank() && it != emoji }
+        prefs.edit().putString("emoji_recent_v1", (listOf(emoji) + old).take(24).joinToString("\n")).apply()
+        if (emojiCategory == "Recent") refreshEmojiPicker()
     }
 
     private fun addCursorArrowRow(parent: LinearLayout) {

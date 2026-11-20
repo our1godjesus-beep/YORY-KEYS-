@@ -186,3 +186,11 @@ The following code work supersedes older "not implemented" bullets above where n
 - Android resize is key-height adjustment, not drag-to-resize width or floating position.
 - Voice typing, swipe typing, context-aware autocorrect, neural prediction, emoji search/skin tones, sticker creation and iOS clipboard history remain unimplemented.
 - Supabase auth and marketplace code need separate integration/security/release verification; app-store signing and release artifacts are not complete.
+
+
+### Emoji picker source addendum — 2026-11-20
+- Android and iOS keyboard extensions now render category-based emoji panels for Recent, Smile, People, Nature, Food, Travel and Symbols.
+- Up to 24 recent selections are stored locally on-device and inserted through the active input connection.
+- The People category includes user-selectable skin-tone modifiers for its starter hand/person set.
+- Searchable emoji, favorites, full Unicode/ZWJ variant coverage and localization remain unfinished; these are not marked as complete.
+- The emoji panel resets to the normal keyboard view when a new input session begins.

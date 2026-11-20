@@ -87,3 +87,13 @@ Status: **source implemented on Android and iOS; automated builds pending**.
 - Latest iOS privacy-default/incognito guard commit bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a is pending CI confirmation at the time of this log update.
 - Android CI passed on df746dd31bf38e73542141dbc09e2076d7b98102; repository contracts passed on bf442dc8e7f4966dc1ca1a949856c7a8d6f2e10a.
 - Device QA, visual screenshot-diff, iOS clipboard history, voice typing, swipe typing, neural prediction and autocorrect remain open.
+
+
+## Milestone E1 — Categorized emoji picker (2026-11-20)
+
+- Replaced the fixed eight-emoji strip on Android and iOS with category-based panels: Recent, Smile, People, Nature, Food, Travel and Symbols.
+- The most recent 24 chosen emoji are stored in local preferences and inserted into the active text field.
+- Added a skin-tone selector for the starter set of simple person/hand emoji.
+- Emoji recent history remains local; it is not synced or backed up.
+- Emoji text search, favorites and complete Unicode compound sequence coverage remain unimplemented.
+- Automated build/contract results are being run on the new source commit; no manual device QA is claimed.
