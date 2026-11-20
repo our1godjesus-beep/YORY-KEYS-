@@ -8,16 +8,17 @@ object YoryThemeFile {
 
     fun encode(theme: YoryTheme): String {
         val appearance = JSONObject()
-            .put("background", theme.backgroundArgb.toHex())
-            .put("key", theme.keyArgb.toHex())
-            .put("text", theme.textArgb.toHex())
-            .put("accent", theme.accentArgb.toHex())
+            .put("background", theme.backgroundArgb.toRgbHex())
+            .put("key", theme.keyArgb.toRgbHex())
+            .put("keyPressed", theme.accentArgb.toRgbHex())
+            .put("text", theme.textArgb.toRgbHex())
+            .put("accent", theme.accentArgb.toRgbHex())
         val geometry = JSONObject()
-            .put("cornerRadiusDp", theme.cornerRadiusDp)
-            .put("keyHeightDp", theme.keyHeightDp)
-        val sensory = JSONObject()
-            .put("soundEnabled", theme.soundEnabled)
-            .put("hapticsEnabled", theme.hapticsEnabled)
+            .put("keyShape", "rounded")
+            .put("cornerRadius", theme.cornerRadiusDp)
+            .put("keyHeight", theme.keyHeightDp)
+        val sensory = JSONObject().put("enabled", theme.soundEnabled)
+        val haptics = JSONObject().put("enabled", theme.hapticsEnabled)
         val safeId = theme.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").take(32)
         return JSONObject()
             .put("schemaVersion", 1)
@@ -27,6 +28,7 @@ object YoryThemeFile {
             .put("glass", JSONObject().put("opacity", theme.opacity))
             .put("geometry", geometry)
             .put("sound", sensory)
+            .put("haptics", haptics)
             .toString(2)
     }
 
@@ -42,6 +44,7 @@ object YoryThemeFile {
         val glass = root.optJSONObject("glass") ?: JSONObject()
         val geometry = root.optJSONObject("geometry") ?: JSONObject()
         val sensory = root.optJSONObject("sound") ?: JSONObject()
+        val haptics = root.optJSONObject("haptics") ?: JSONObject()
 
         return YoryTheme(
             name = name,
@@ -50,18 +53,23 @@ object YoryThemeFile {
             textArgb = parseColor(appearance.optString("text", "#FF171923")),
             accentArgb = parseColor(appearance.optString("accent", "#FF78B8F8")),
             opacity = glass.optDouble("opacity", 0.92).toFloat().coerceIn(0.35f, 1f),
-            cornerRadiusDp = geometry.optDouble("cornerRadiusDp", 14.0).toFloat().coerceIn(4f, 28f),
-            keyHeightDp = geometry.optDouble("keyHeightDp", 46.0).toFloat().coerceIn(36f, 60f),
-            soundEnabled = sensory.optBoolean("soundEnabled", true),
-            hapticsEnabled = sensory.optBoolean("hapticsEnabled", true)
+            cornerRadiusDp = geometry.optDouble("cornerRadius", geometry.optDouble("cornerRadiusDp", 14.0)).toFloat().coerceIn(4f, 28f),
+            keyHeightDp = geometry.optDouble("keyHeight", geometry.optDouble("keyHeightDp", 46.0)).toFloat().coerceIn(36f, 60f),
+            soundEnabled = sensory.optBoolean("enabled", true),
+            hapticsEnabled = haptics.optBoolean("enabled", true)
         )
     }
 
     private fun parseColor(raw: String): Int {
-        val normalized = if (raw.startsWith("#") && raw.length == 7) "#FF" + raw.drop(1) else raw
-        require(normalized.matches(Regex("^#[A-Fa-f0-9]{8}$"))) { "Invalid theme color." }
-        return Color.parseColor(normalized)
+        require(raw.matches(Regex("^#[A-Fa-f0-9]{6}([A-Fa-f0-9]{2})?$"))) { "Invalid theme color." }
+        val hex = raw.drop(1)
+        val argb = if (hex.length == 8) {
+            "#" + hex.substring(6, 8) + hex.substring(0, 6)
+        } else {
+            "#FF" + hex
+        }
+        return Color.parseColor(argb)
     }
 
-    private fun Int.toHex(): String = "#%08X".format(this)
+    private fun Int.toRgbHex(): String = "#%06X".format(this and 0x00FFFFFF)
 }
