@@ -24,6 +24,7 @@ class YorySuggestionTextTest {
     @Test
     fun distinctArabicLettersAreNotFoldedTogether() {
         assertFalse(YorySuggestionText.matchesPrefix("مدرسة", "مدرسه"))
+        assertFalse(YorySuggestionText.matchesPrefix("على", "علي"))
         assertFalse(YorySuggestionText.matchesPrefix("بداية", "م"))
     }
 
