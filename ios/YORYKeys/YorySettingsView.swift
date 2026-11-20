@@ -10,6 +10,7 @@ private struct YorySettingsItem: Identifiable {
 }
 
 struct ContentView: View {
+    let onSignOut: () -> Void
     private let items = [
         YorySettingsItem(title: "Account", subtitle: "Sign in to manage your YORY profile", symbol: "person.crop.circle"),
         YorySettingsItem(title: "YORY Rewards", subtitle: "Discover keyboard milestones", symbol: "medal"),
@@ -63,7 +64,7 @@ struct ContentView: View {
                     if title == "Themes" {
                         YoryThemeStudioView()
                     } else {
-                        YorySettingsDetailView(title: title)
+                        YorySettingsDetailView(title: title, onSignOut: onSignOut)
                     }
                 }
             }
@@ -76,6 +77,7 @@ struct ContentView: View {
 
 private struct YorySettingsDetailView: View {
     let title: String
+    let onSignOut: () -> Void
 
     @AppStorage("yory.active.language", store: yorySettingsStore) private var activeLanguage = "en-US"
     @AppStorage("yory.emoji.predictions", store: yorySettingsStore) private var emojiPredictions = true
@@ -157,7 +159,9 @@ private struct YorySettingsDetailView: View {
                         settingsInfo("Permissions", "The keyboard does not request camera, contacts or location access.")
                     }
                 case "Account":
-                    settingsInfo("YORY account", "Sign-in and cloud sync are not connected in this preview. Core local keyboard functions work without an account.")
+                    settingsInfo("YORY account", "Your account is used by YORY Studio. The keyboard itself remains available offline and does not require the settings app to stay open.")
+                    Button("Sign out", role: .destructive, action: onSignOut)
+                        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                 case "YORY Rewards", "Achievements":
                     settingsInfo("Coming to YORY", "This section is included in the settings structure. Rewards and achievement tracking are not connected in this preview.")
                 case "Help & Feedback":
