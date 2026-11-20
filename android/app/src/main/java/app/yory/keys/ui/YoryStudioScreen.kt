@@ -27,10 +27,28 @@ import app.yory.keys.theme.YoryThemeStore
 fun YoryStudioScreen() {
     val context = LocalContext.current
     var theme by remember { mutableStateOf(YoryThemeStore.load(context)) }
+    var backgroundHex by remember { mutableStateOf(theme.backgroundArgb.toHexArgb()) }
+    var keyHex by remember { mutableStateOf(theme.keyArgb.toHexArgb()) }
+    var textHex by remember { mutableStateOf(theme.textArgb.toHexArgb()) }
+    var accentHex by remember { mutableStateOf(theme.accentArgb.toHexArgb()) }
 
     fun applyTheme(next: YoryTheme) {
         theme = next
+        backgroundHex = next.backgroundArgb.toHexArgb()
+        keyHex = next.keyArgb.toHexArgb()
+        textHex = next.textArgb.toHexArgb()
+        accentHex = next.accentArgb.toHexArgb()
         YoryThemeStore.save(context, next)
+    }
+
+    fun parseHexArgb(value: String): Int? {
+        val clean = value.trim().removePrefix("#")
+        val normalized = when (clean.length) {
+            6 -> "FF$clean"
+            8 -> clean
+            else -> return null
+        }
+        return normalized.toLongOrNull(16)?.toInt()
     }
 
     MaterialTheme {
@@ -82,6 +100,20 @@ fun YoryStudioScreen() {
                     }
                 }
 
+                Text("CUSTOM COLORS (HEX / ARGB)", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                HexColorInput("Background", backgroundHex, { backgroundHex = it }) {
+                    parseHexArgb(backgroundHex)?.let { color -> applyTheme(theme.copy(backgroundArgb = color, name = "Custom")) }
+                }
+                HexColorInput("Key surface", keyHex, { keyHex = it }) {
+                    parseHexArgb(keyHex)?.let { color -> applyTheme(theme.copy(keyArgb = color, name = "Custom")) }
+                }
+                HexColorInput("Key labels", textHex, { textHex = it }) {
+                    parseHexArgb(textHex)?.let { color -> applyTheme(theme.copy(textArgb = color, name = "Custom")) }
+                }
+                HexColorInput("Accent", accentHex, { accentHex = it }) {
+                    parseHexArgb(accentHex)?.let { color -> applyTheme(theme.copy(accentArgb = color, name = "Custom")) }
+                }
+
                 SliderSetting("Glass opacity", theme.opacity, 0.35f..1f, (theme.opacity * 100).toInt().toString() + "%") {
                     applyTheme(theme.copy(opacity = it))
                 }
@@ -90,6 +122,14 @@ fun YoryStudioScreen() {
                 }
                 SliderSetting("Key height", theme.keyHeightDp, 36f..60f, theme.keyHeightDp.toInt().toString() + " dp") {
                     applyTheme(theme.copy(keyHeightDp = it))
+                }
+
+                Text("SOUND & TOUCH", color = Color(0xFF9CA7BD), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                SwitchSetting("Key click sound", theme.soundEnabled) {
+                    applyTheme(theme.copy(soundEnabled = it))
+                }
+                SwitchSetting("Haptic feedback", theme.hapticsEnabled) {
+                    applyTheme(theme.copy(hapticsEnabled = it))
                 }
 
                 Spacer(Modifier.weight(1f))
@@ -170,3 +210,37 @@ private fun SliderSetting(
         Slider(value = value, onValueChange = onChange, valueRange = range)
     }
 }
+
+
+@Composable
+private fun HexColorInput(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onApply: () -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+            textStyle = MaterialTheme.typography.bodySmall
+        )
+        Button(onClick = onApply) { Text("Apply") }
+    }
+}
+
+@Composable
+private fun SwitchSetting(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+private fun Int.toHexArgb(): String = "#%08X".format(this)
