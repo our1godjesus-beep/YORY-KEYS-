@@ -994,6 +994,8 @@ class YoryInputMethodService : InputMethodService() {
                 "☺" -> "Emoji picker"
                 "⇄" -> "Switch language"
                 "123" -> "Show symbols"
+                "1/2" -> "Show symbol page one"
+                "2/2" -> "Show symbol page two"
                 "⚙" -> "Open YORY Studio"
                 "▣" -> "Clipboard history"
                 "◎" -> "Privacy mode"
