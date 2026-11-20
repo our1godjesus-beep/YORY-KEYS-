@@ -48,6 +48,10 @@ enum YoryThemeReader {
         settings?.object(forKey: "hapticsEnabled") as? Bool ?? true
     }
 
+    static var personalLearningEnabled: Bool {
+        settings?.object(forKey: "personalLearningEnabled") as? Bool ?? false
+    }
+
     private static func color(for key: String, fallback: String) -> UIColor {
         let value = settings?.string(forKey: key) ?? fallback
         let hex = value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
