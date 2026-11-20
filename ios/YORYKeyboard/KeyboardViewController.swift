@@ -716,6 +716,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func cycleLanguage(direction: Int) {
+        toolsMode = false
+        keysStack.isHidden = false
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
         let stored = defaults?.stringArray(forKey: "yory.added.languages.v1") ?? ["en-US", "ar"]
         let available = stored.filter { tag in
