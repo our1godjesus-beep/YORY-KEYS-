@@ -18,13 +18,15 @@ This is the source of truth for repository state. UI presence is not proof that 
 - The active theme is stored locally and consumed by the real keyboard renderer, including per-key pressed feedback, shape, spacing and font-size settings.
 - Android applies editor-aware automatic capitalization through the active \`InputConnection\`.
 - Android offers a small offline prefix-completion baseline from bundled English/Arabic word lists. It is not a trained next-word model or production autocorrect engine.
+- Android personal word learning is opt-in and stored in an AES-GCM encrypted file under no-backup app-private storage, with its key in Android Keystore. Learning occurs only when a word is completed in ordinary text fields; password, numeric, email and URL fields are excluded. YORY Studio can disable learning or clear the dictionary.
 - Optional Android clipboard text history stores up to 50 local entries and offers quick insert/clear. It does not ingest screenshot/image items. Filtering is heuristic and not guaranteed to identify every sensitive string.
 
 ### iOS
 - A SwiftUI host app and UIKit custom keyboard extension are generated through XcodeGen.
-- The iOS keyboard supports basic English/Arabic layouts, number/symbol modes, shift, delete, space, return, next-keyboard switching, an emoji strip, a small offline prefix-suggestion list, and input-trait-aware behavior.
+- The iOS keyboard supports basic English/Arabic layouts, number/symbol modes, shift, delete, space, return, next-keyboard switching, an emoji strip, a small offline prefix-suggestion list, optional personal word learning, and input-trait-aware behavior.
 - iOS Studio exposes presets, color pickers for background/key/text/accent/pressed key, glass opacity, corner radius, key spacing, letter size, key shape, sound/haptic toggles, language selection, and .yorytheme import/export.
 - The iOS keyboard renderer reads and applies theme colors, pressed-key color, shape, spacing, font size, corner radius, opacity, sounds and haptic preferences.
+- The iOS host app exposes a personal-learning opt-in through its App Group preferences; the keyboard extension stores learned terms in its own extension-private UserDefaults store. The keyboard's ••• tools row can clear the learned-word store.
 - Automatic capitalization respects the host text object's \`autocapitalizationType\`.
 - The extension declares \`RequestsOpenAccess = true\) so iOS can offer the system Allow Full Access option. This is user-controlled, not automatic. Basic typing remains available without Full Access; iOS keyboard click audio is only invoked when \`hasFullAccess\` is true.
 - No code in the keyboard typing path sends keystrokes, passwords, surrounding text, or clipboard payloads to a server.
@@ -47,7 +49,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 - No signed Android APK/AAB has been released. Android CI builds are development artifacts only.
 - No signed iOS archive, App Store submission, or physical-device installation has been completed.
 - Neither platform has passed physical-device QA for touch accuracy, layout geometry, battery, memory, accessibility, app compatibility, audio/haptics or extension lifecycle.
-- Current word suggestions are tiny bundled prefix lists. Neural next-word prediction, robust language-specific autocorrect, personal learning, multilingual language identification and swipe typing are not implemented.
+- Current word suggestions combine tiny bundled prefix lists with optional local personal learning. Neural next-word prediction, robust language-specific autocorrect, multilingual language identification and swipe typing are not implemented.
 - Only basic English and Arabic layouts exist. The other 118 language entries are catalogue-only; no production language packs are shipped.
 - Theme Studio does not yet include a production gradient editor, imported image backgrounds, full supported-font browser, multi-theme library management, marketplace client, or a fully validated live wallpaper blur/refraction renderer.
 - Glass currently uses tinted translucent surfaces and subtle borders. True live backdrop blur/refraction must be implemented and measured separately on each OS/device class.
@@ -56,7 +58,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 - Custom imported sound packs, per-key sound mapping, advanced haptic tuning, emoji search/categories/skin-tone picker and alternate emoji artwork packs are not complete.
 - Sticker creation, creator profiles, marketplace moderation, theme reporting and public theme discovery UI are not implemented.
 - Supabase migrations and Edge Function are source-only. They have not been applied to a verified YORY project. Storage policy deployment, service configuration, secret provisioning and live RLS verification remain pending.
-- Personal dictionary sync is not implemented. If added, the client must encrypt it before upload and the server must store ciphertext only.
+- Personal dictionary cloud backup/sync is not implemented. Any future backup must be explicitly opt-in, encrypted on-device before upload, and stored as ciphertext only.
 - Store listing metadata, privacy disclosures, terms, support contact, crash reporting and release signing remain to be completed.
 
 ## Verification status policy
@@ -75,7 +77,7 @@ This is the source of truth for repository state. UI presence is not proof that 
 2. Test the native keyboards on physical Android and iPhone devices.
 3. Complete keyboard input behavior, accessibility and layout geometry.
 4. Build the full theme editor and ensure preview/live rendering parity.
-5. Add personal dictionary and quality-evaluated offline prediction.
+5. Expand personal dictionary QA and add quality-evaluated offline prediction.
 6. Add emoji search, sticker creation, clipboard controls and writing tools within platform rules.
 7. Confirm the correct Supabase project, test migrations locally, run RLS/Storage tests, then deploy deliberately.
 8. Add signed language packs one language at a time after quality and licensing checks.
