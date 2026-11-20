@@ -82,3 +82,35 @@ Latest verified main commit: `7374e805ea6b7a1944dbe241cf68c62f96098624`.
 - [x] Repository contract validation completed successfully (run `44771343573`).
 - [x] Latest Android test job includes the clipboard policy and emoji catalog JVM test suites.
 - [ ] Physical-device QA and reference screenshot comparison remain release gates; CI success does not establish visual parity or real-device behavior.
+
+
+## Phase 7 — Keyboard reference parity (2026-11-20)
+
+Detailed evidence and per-platform findings: `keyboard-reference-audit.md`.
+
+### P0 — key inventory and input correctness
+- [ ] Define a complete shared Arabic alphabet profile for Android/iOS. Current source rows omit standard letters ج، د، ذ، ك، ط، ظ from the default rows; keep every existing key action reachable and provide extended hamza/alif/ta-marbuta/maqṣūra forms.
+- [ ] Add tests proving all standard Arabic letters and documented extended forms can be inserted from the base layout or a clearly discoverable long-press menu.
+- [ ] Add secondary number legends on Arabic keys without changing inserted text or accessibility labels.
+- [ ] Replace the one-page Android/iOS symbol layouts with one shared two-page symbol inventory, including Arabic punctuation, paired brackets/quotes, operators and ABC/123 transitions.
+- [ ] Verify Backspace, Shift, language switch, comma, space, period and editor-specific Enter remain present and functional on every page.
+
+### P1 — toolbar and suggestion experience
+- [ ] Build a real More-tools grid on Android and iOS from a shared capability registry. Current Android has no grid; current iOS More/tools view only offers Clear learned words and Done.
+- [ ] Use original YORY icons, labels, accessibility descriptions, stable tool IDs and persistent order/visibility. Never expose Microsoft Rewards, Microsoft account or proprietary branded assets as YORY features.
+- [ ] Add suggestion-row collapse/expand and a typed contextual-chip model while preserving Incognito, secure-field, numeric, email and URL privacy guards.
+- [ ] Add spacebar language/cursor affordances only after dedicated RTL, hit-target and editor-focus tests.
+
+### P2 — optional rich input (only with complete real integrations)
+- [ ] Speech-to-text via approved platform APIs, with a user-initiated permission explanation and cancellation/error handling.
+- [ ] Searchable local emoji/symbol catalogue with localization and accessibility.
+- [ ] Explicit image/screenshot insertion using supported user-driven content commit/paste behavior; no background image harvesting.
+- [ ] GIF/sticker browsing only after content source, licensing, moderation, privacy and offline/online behavior are defined.
+
+### Platform-specific release gates
+- [ ] Android: distinguish current key-height adjustment from future free resize/width/position controls; validate with gesture and 3-button navigation.
+- [ ] iOS: do not expose fake free-resize or background clipboard history; rely only on supported extension sizing and explicit host-pasteboard interactions.
+- [ ] Run Arabic, both symbol pages, More grid, suggestion collapse and contextual-chip screenshot comparisons at 320/360/390/430dp-equivalent widths on both platforms.
+- [ ] Complete TalkBack/VoiceOver, RTL/mixed-bidi, process recreation, keyboard-extension lifecycle and physical-device QA.
+
+No runtime keyboard source files were changed by this reference-audit pass; this phase records the verified gaps and acceptance criteria before the code changes.
