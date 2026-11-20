@@ -17,7 +17,9 @@ object YoryThemeStore {
             accentArgb = prefs.getInt("accent", fallback.accentArgb),
             opacity = prefs.getFloat("opacity", fallback.opacity).coerceIn(0.35f, 1f),
             cornerRadiusDp = prefs.getFloat("radius", fallback.cornerRadiusDp).coerceIn(4f, 28f),
-            keyHeightDp = prefs.getFloat("height", fallback.keyHeightDp).coerceIn(36f, 60f)
+            keyHeightDp = prefs.getFloat("height", fallback.keyHeightDp).coerceIn(36f, 60f),
+            soundEnabled = prefs.getBoolean("sound_enabled", fallback.soundEnabled),
+            hapticsEnabled = prefs.getBoolean("haptics_enabled", fallback.hapticsEnabled)
         )
     }
 
@@ -31,6 +33,8 @@ object YoryThemeStore {
             .putFloat("opacity", theme.opacity.coerceIn(0.35f, 1f))
             .putFloat("radius", theme.cornerRadiusDp.coerceIn(4f, 28f))
             .putFloat("height", theme.keyHeightDp.coerceIn(36f, 60f))
+            .putBoolean("sound_enabled", theme.soundEnabled)
+            .putBoolean("haptics_enabled", theme.hapticsEnabled)
             .apply()
     }
 }
