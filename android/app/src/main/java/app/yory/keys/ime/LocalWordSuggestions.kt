@@ -14,12 +14,14 @@ class LocalWordSuggestions(context: Context) {
         val clean = prefix.trim().lowercase(Locale.ROOT)
         if (clean.length < 2) return emptyList()
         val language = languageTag.substringBefore('-').lowercase(Locale.ROOT)
-        return dictionaries[language].orEmpty()
+        val personal = PersonalDictionaryStore.suggestions(context, clean, languageTag, limit)
+        val bundled = dictionaries[language].orEmpty()
             .asSequence()
             .filter { it.startsWith(clean) && !it.equals(clean, ignoreCase = true) }
             .distinct()
             .take(limit.coerceIn(1, 5))
             .toList()
+        return (personal + bundled).distinct().take(limit.coerceIn(1, 5))
     }
 
     private fun loadWords(context: Context, path: String): List<String> = runCatching {
