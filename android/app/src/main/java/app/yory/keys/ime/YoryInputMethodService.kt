@@ -10,6 +10,7 @@ import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.View
@@ -182,9 +183,10 @@ class YoryInputMethodService : InputMethodService() {
             return
         }
 
-        if (!symbolMode && getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("number_row", false)) {
-            addKeyRow(container, "1234567890")
-        }
+        val layoutPrefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val showNumberRow = !symbolMode && layoutPrefs.getBoolean("number_row", false)
+        val numberPosition = layoutPrefs.getString("number_position", "top") ?: "top"
+        if (showNumberRow && numberPosition == "top") addKeyRow(container, "1234567890")
 
         if (symbolMode) {
             addKeyRow(container, "1234567890")
@@ -200,6 +202,27 @@ class YoryInputMethodService : InputMethodService() {
             addSpecialLetterRow(container)
         }
         addBottomRow(container)
+        if (showNumberRow && numberPosition == "bottom") addKeyRow(container, "1234567890")
+        if (layoutPrefs.getBoolean("arrow_keys", false)) addCursorArrowRow(container)
+    }
+
+    private fun addCursorArrowRow(parent: LinearLayout) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        listOf(
+            "←" to KeyEvent.KEYCODE_DPAD_LEFT,
+            "↑" to KeyEvent.KEYCODE_DPAD_UP,
+            "↓" to KeyEvent.KEYCODE_DPAD_DOWN,
+            "→" to KeyEvent.KEYCODE_DPAD_RIGHT
+        ).forEach { (label, keyCode) ->
+            addKey(row, label, 1f) {
+                currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+                currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
+            }
+        }
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp * 0.72f)))
     }
 
     private fun addNumericLayout(parent: LinearLayout) {
@@ -312,9 +335,11 @@ class YoryInputMethodService : InputMethodService() {
         val view = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            textSize = if (label == "space" || label == "English" || label == "العربية" || label == "Deutsch") {
+            val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+            val baseSize = if (label == "space" || label == "English" || label == "العربية" || label == "Deutsch") {
                 (theme.fontSizeSp - 6f).coerceAtLeast(10f)
             } else theme.fontSizeSp
+            textSize = if (settings.getBoolean("large_key_text", true)) baseSize * 1.08f else baseSize
             setTextColor(theme.textArgb)
             typeface = when (theme.fontFamily) {
                 "rounded" -> Typeface.create("sans-serif-rounded", Typeface.NORMAL)
@@ -529,12 +554,29 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     private fun performKeyFeedback(target: View) {
+        val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
         if (theme.hapticsEnabled) {
-            target.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            if (settings.getBoolean("system_haptics", true)) {
+                target.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            } else {
+                val duration = settings.getFloat("vibration_duration", 12f).toLong().coerceIn(0L, 80L)
+                if (duration > 0L) {
+                    val vibrator = getSystemService(VIBRATOR_SERVICE) as android.os.Vibrator
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        vibrator.vibrate(android.os.VibrationEffect.createOneShot(duration, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(duration)
+                    }
+                }
+            }
         }
         if (theme.soundEnabled) {
-            val audio = getSystemService(AUDIO_SERVICE) as AudioManager
-            audio.playSoundEffect(SoundEffectConstants.CLICK)
+            val volume = settings.getFloat("keypress_volume", 0.35f).coerceIn(0f, 1f)
+            if (volume > 0f) {
+                val audio = getSystemService(AUDIO_SERVICE) as AudioManager
+                audio.playSoundEffect(SoundEffectConstants.CLICK, volume)
+            }
         }
     }
 
