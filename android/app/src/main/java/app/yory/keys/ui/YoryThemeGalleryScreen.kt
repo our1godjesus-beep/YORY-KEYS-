@@ -38,8 +38,64 @@ internal fun YoryThemeGalleryScreen(
     var activeTheme by remember { mutableStateOf(YoryThemeStore.load(context)) }
     var category by remember { mutableStateOf("All") }
     var feedback by remember { mutableStateOf("") }
+    var libraryRevision by remember { mutableIntStateOf(0) }
+    var detailTheme by remember { mutableStateOf<YoryTheme?>(null) }
+    val savedThemes = remember(libraryRevision) { YoryThemeLibraryStore.list(context) }
+    val favorites = remember(libraryRevision) { YoryThemeLibraryStore.favorites(context) }
 
-    val savedThemes = YoryThemeLibraryStore.list(context)
+    if (detailTheme != null) {
+        val current = detailTheme!!
+        val isSaved = savedThemes.any { it.name.equals(current.name, ignoreCase = true) }
+        YoryThemeDetailScreen(
+            theme = current,
+            isApplied = activeTheme.name == current.name,
+            isSaved = isSaved,
+            isFavorite = favorites.contains(current.name.lowercase()),
+            onBack = { detailTheme = null },
+            onApply = {
+                YoryThemeStore.save(context, current)
+                activeTheme = current
+                feedback = "${current.name} is now active."
+            },
+            onCustomize = {
+                YoryThemeStore.save(context, current)
+                activeTheme = current
+                onCustomize()
+            },
+            onFavorite = { enabled ->
+                YoryThemeLibraryStore.setFavorite(context, current.name, enabled)
+                libraryRevision++
+            },
+            onRename = { newName ->
+                val renamed = YoryThemeLibraryStore.rename(context, current.name, newName)
+                if (renamed) {
+                    if (activeTheme.name.equals(current.name, ignoreCase = true)) {
+                        activeTheme = activeTheme.copy(name = newName.trim().take(48))
+                        YoryThemeStore.save(context, activeTheme)
+                    }
+                    detailTheme = current.copy(name = newName.trim().take(48))
+                    libraryRevision++
+                }
+                renamed
+            },
+            onDuplicate = { newName ->
+                val duplicated = YoryThemeLibraryStore.duplicate(context, current, newName)
+                if (duplicated) libraryRevision++
+                duplicated
+            },
+            onDelete = {
+                YoryThemeLibraryStore.delete(context, current.name)
+                if (activeTheme.name.equals(current.name, ignoreCase = true)) {
+                    val fallback = YoryTheme.default
+                    YoryThemeStore.save(context, fallback)
+                    activeTheme = fallback
+                }
+                libraryRevision++
+                detailTheme = null
+            }
+        )
+        return
+    }
     val builtInThemes = YoryTheme.presets.filterNot { preset ->
         savedThemes.any { it.name.equals(preset.name, ignoreCase = true) }
     }
@@ -48,6 +104,7 @@ internal fun YoryThemeGalleryScreen(
     }
     val visibleThemes = when (category) {
         "Yours" -> savedThemes
+        "Favorites" -> themes.filter { favorites.contains(it.name.lowercase()) }
         "Dark" -> themes.filter { it.name in setOf("Tinted Glass", "Midnight", "Neon", "Custom") }
         "Light" -> themes.filter { it.name in setOf("Arctic", "Rose") }
         "Colorful" -> themes.filter { it.name in setOf("Neon", "Rose", "Arctic") }
@@ -83,7 +140,7 @@ internal fun YoryThemeGalleryScreen(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("All", "Yours", "Dark", "Light", "Colorful").forEach { item ->
+                listOf("All", "Yours", "Favorites", "Dark", "Light", "Colorful").forEach { item ->
                     FilterChip(
                         selected = category == item,
                         onClick = { category = item },
@@ -114,6 +171,8 @@ internal fun YoryThemeGalleryScreen(
                         theme = theme,
                         selected = activeTheme.name == theme.name,
                         saved = savedThemes.any { it.name == theme.name },
+                        favorite = favorites.contains(theme.name.lowercase()),
+                        onDetails = { detailTheme = theme },
                         onApply = {
                             YoryThemeStore.save(context, theme)
                             activeTheme = theme
@@ -135,6 +194,8 @@ internal fun YoryThemeGalleryScreen(
                                     theme = theme,
                                     selected = activeTheme.name == theme.name,
                                     saved = savedThemes.any { it.name == theme.name },
+                                    favorite = favorites.contains(theme.name.lowercase()),
+                                    onDetails = { detailTheme = theme },
                                     onApply = {
                                         YoryThemeStore.save(context, theme)
                                         activeTheme = theme
@@ -176,6 +237,8 @@ private fun GalleryThemeCard(
     theme: YoryTheme,
     selected: Boolean,
     saved: Boolean,
+    favorite: Boolean,
+    onDetails: () -> Unit,
     onApply: () -> Unit,
     onCustomize: () -> Unit
 ) {
@@ -253,8 +316,14 @@ private fun GalleryThemeCard(
         ) {
             Text(if (selected) "Applied" else "Apply theme", fontSize = 12.sp)
         }
-        TextButton(onClick = onCustomize, modifier = Modifier.fillMaxWidth()) {
-            Text("Customize", color = GalleryAccent, fontSize = 12.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onDetails, modifier = Modifier.weight(1f)) {
+                Text("Details", color = GalleryAccent, fontSize = 12.sp)
+            }
+            TextButton(onClick = onCustomize, modifier = Modifier.weight(1f)) {
+                Text("Customize", color = GalleryAccent, fontSize = 12.sp)
+            }
+            if (favorite) Text("★", color = GalleryAccent, fontSize = 14.sp)
         }
     }
 }
@@ -269,4 +338,148 @@ private fun GalleryPanel(content: @Composable ColumnScope.() -> Unit) {
         verticalArrangement = Arrangement.spacedBy(7.dp),
         content = content
     )
+}
+
+@Composable
+private fun YoryThemeDetailScreen(
+    theme: YoryTheme,
+    isApplied: Boolean,
+    isSaved: Boolean,
+    isFavorite: Boolean,
+    onBack: () -> Unit,
+    onApply: () -> Unit,
+    onCustomize: () -> Unit,
+    onFavorite: (Boolean) -> Unit,
+    onRename: (String) -> Boolean,
+    onDuplicate: (String) -> Boolean,
+    onDelete: () -> Unit
+) {
+    var renameDialog by remember { mutableStateOf(false) }
+    var duplicateDialog by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    var nameInput by remember(theme.name) { mutableStateOf(theme.name) }
+    var message by remember { mutableStateOf("") }
+
+    Box(Modifier.fillMaxSize().background(
+        Brush.verticalGradient(listOf(Color(0xFF182236), GalleryBackground, Color(0xFF121526)))
+    )) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onBack) { Text("‹  Back", color = GalleryAccent) }
+                Spacer(Modifier.weight(1f))
+                Text(if (isSaved) "YOUR THEME" else "BUILT-IN", color = GalleryMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            }
+            Text(theme.name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            GalleryLargePreview(theme)
+            Text(if (isApplied) "Currently applied" else "Ready to apply", color = if (isApplied) GalleryAccent else GalleryMuted, fontSize = 13.sp)
+            Button(onClick = onApply, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text(if (isApplied) "Applied" else "Apply theme")
+            }
+            OutlinedButton(onClick = onCustomize, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Customize this theme")
+            }
+            GalleryPanel {
+                Text("Theme controls", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text("Key height: ${theme.keyHeightDp.toInt()} dp", color = GalleryMuted, fontSize = 12.sp)
+                Text("Key spacing: ${theme.keySpacingDp.toInt()} dp", color = GalleryMuted, fontSize = 12.sp)
+                Text("Corner radius: ${theme.cornerRadiusDp.toInt()} dp", color = GalleryMuted, fontSize = 12.sp)
+                Text("Letter size: ${theme.fontSizeSp.toInt()} sp", color = GalleryMuted, fontSize = 12.sp)
+            }
+            GalleryPanel {
+                Text("Manage theme", color = Color.White, fontWeight = FontWeight.SemiBold)
+                OutlinedButton(onClick = { onFavorite(!isFavorite) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (isFavorite) "★ Remove from Favorites" else "☆ Add to Favorites", color = GalleryAccent)
+                }
+                OutlinedButton(onClick = { nameInput = theme.name; renameDialog = true }, enabled = isSaved, modifier = Modifier.fillMaxWidth()) {
+                    Text("Rename")
+                }
+                OutlinedButton(onClick = { nameInput = "Copy of ${theme.name}".take(48); duplicateDialog = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Duplicate")
+                }
+                OutlinedButton(onClick = { confirmDelete = true }, enabled = isSaved, modifier = Modifier.fillMaxWidth()) {
+                    Text("Delete saved theme", color = Color(0xFFFF9A9A))
+                }
+                if (!isSaved) Text("Built-in presets cannot be deleted or renamed. Duplicate one to make your own copy.", color = GalleryMuted, fontSize = 12.sp)
+            }
+            if (message.isNotBlank()) Text(message, color = GalleryAccent, fontSize = 12.sp)
+        }
+    }
+
+    if (renameDialog) {
+        AlertDialog(
+            onDismissRequest = { renameDialog = false },
+            title = { Text("Rename theme") },
+            text = {
+                OutlinedTextField(value = nameInput, onValueChange = { nameInput = it.take(48) }, label = { Text("Theme name") }, singleLine = true)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val success = onRename(nameInput)
+                    message = if (success) "Theme renamed." else "That name is empty or already used."
+                    renameDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { renameDialog = false }) { Text("Cancel") } }
+        )
+    }
+    if (duplicateDialog) {
+        AlertDialog(
+            onDismissRequest = { duplicateDialog = false },
+            title = { Text("Duplicate theme") },
+            text = {
+                OutlinedTextField(value = nameInput, onValueChange = { nameInput = it.take(48) }, label = { Text("New theme name") }, singleLine = true)
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val success = onDuplicate(nameInput)
+                    message = if (success) "Theme duplicated into My Themes." else "That name is empty or already used."
+                    duplicateDialog = false
+                }) { Text("Duplicate") }
+            },
+            dismissButton = { TextButton(onClick = { duplicateDialog = false }) { Text("Cancel") } }
+        )
+    }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete theme?") },
+            text = { Text("This removes the saved theme from this device. It will not affect built-in presets.") },
+            confirmButton = {
+                TextButton(onClick = { confirmDelete = false; onDelete() }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun GalleryLargePreview(theme: YoryTheme) {
+    val keyColor = Color(theme.keyArgb)
+    val textColor = Color(theme.textArgb)
+    val keyShape = RoundedCornerShape(theme.cornerRadiusDp.coerceIn(6f, 18f).dp)
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
+            .background(Color(theme.backgroundArgb).copy(alpha = theme.opacity.coerceIn(0.35f, 1f)))
+            .border(0.8.dp, GalleryBorder, RoundedCornerShape(22.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(theme.keySpacingDp.coerceIn(1f, 7f).dp)
+    ) {
+        listOf("qwertyuiop", "asdfghjkl", "⇧zxcvbnm⌫").forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                row.forEach { character ->
+                    Box(
+                        Modifier.weight(1f).height(theme.keyHeightDp.coerceIn(34f, 54f).dp)
+                            .clip(keyShape).background(keyColor.copy(alpha = 0.94f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(character.toString(), color = textColor, fontSize = theme.fontSizeSp.coerceIn(12f, 24f).sp)
+                    }
+                }
+            }
+        }
+    }
 }
