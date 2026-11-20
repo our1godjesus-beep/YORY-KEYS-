@@ -15,6 +15,7 @@ final class KeyboardViewController: UIInputViewController {
     private var toolbarRow: UIStackView?
     private let emojiRow = UIStackView()
     private let suggestionRow = UIStackView()
+    private var toolsMode = false
     private let keysStack = UIStackView()
 
     override func loadView() {
@@ -112,7 +113,7 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.addArrangedSubview(toolButton("⇄", action: #selector(toggleLanguage)))
         toolbar.addArrangedSubview(toolButton("Aa", action: #selector(toggleSymbols)))
         toolbar.addArrangedSubview(toolButton("⌨", action: #selector(switchKeyboard)))
-        toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleEmoji)))
+        toolbar.addArrangedSubview(toolButton("•••", action: #selector(toggleTools)))
         toolbar.semanticContentAttribute = isArabic ? .forceRightToLeft : .forceLeftToRight
         toolbarRow = toolbar
         root.addArrangedSubview(toolbar)
@@ -273,6 +274,9 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func insertKey(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
+        if title.range(of: "^[^\\p{L}\\p{M}]+$", options: .regularExpression) != nil {
+            learnCurrentWord()
+        }
         playKeyClick()
         textDocumentProxy.insertText(isShifted ? title.uppercased() : title)
         refreshAutomaticShift()
@@ -300,6 +304,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func insertSpace() {
+        learnCurrentWord()
         playKeyClick()
         textDocumentProxy.insertText(" ")
         refreshAutomaticShift()
@@ -308,6 +313,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func insertReturn() {
+        learnCurrentWord()
         playKeyClick()
         textDocumentProxy.insertText("\n")
         refreshAutomaticShift()
@@ -337,6 +343,39 @@ final class KeyboardViewController: UIInputViewController {
         rebuildKeys()
     }
 
+    private func learnCurrentWord() {
+        guard YoryThemeReader.personalLearningEnabled,
+              !numericInput,
+              currentKeyboardType != .emailAddress,
+              currentKeyboardType != .URL else { return }
+        let context = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let range = context.range(of: "[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) else {
+            return
+        }
+        let word = String(context[range])
+        YoryLocalWordSuggestions.learnAcceptedWord(word, languageTag: isArabic ? "ar" : "en")
+    }
+
+    @objc private func toggleTools() {
+        playKeyClick()
+        toolsMode.toggle()
+        updateSuggestions()
+    }
+
+    @objc private func clearLearnedWords() {
+        YoryLocalWordSuggestions.clearPersonalWords()
+        updateSuggestions()
+    }
+
+    private func toolActionButton(_ title: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(YoryThemeReader.accentColor, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 12, weight: .medium)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        return button
+    }
+
     @objc private func toggleEmoji() {
         playKeyClick()
         emojiMode.toggle()
@@ -351,6 +390,11 @@ final class KeyboardViewController: UIInputViewController {
         }
         suggestionRow.isHidden = emojiMode || numericInput
         guard !emojiMode && !numericInput else { return }
+        if toolsMode {
+            suggestionRow.addArrangedSubview(toolActionButton("Clear learned words", action: #selector(clearLearnedWords)))
+            suggestionRow.addArrangedSubview(toolActionButton("Done", action: #selector(toggleTools)))
+            return
+        }
 
         let context = textDocumentProxy.documentContextBeforeInput ?? ""
         guard let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) else {
