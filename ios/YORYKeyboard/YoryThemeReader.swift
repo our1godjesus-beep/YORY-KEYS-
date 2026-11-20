@@ -36,9 +36,12 @@ enum YoryThemeReader {
         CGFloat(settings?.double(forKey: "opacity") ?? 0.92).clamped(to: 0.35...1)
     }
 
-    static var isArabic: Bool {
-        settings?.string(forKey: "language") == "العربية"
+    static var languageTag: String {
+        settings?.string(forKey: "yory.active.language") ??
+            ((settings?.string(forKey: "language") == "العربية") ? "ar" : "en-US")
     }
+
+    static var isArabic: Bool { languageTag == "ar" }
 
     static var soundEnabled: Bool {
         settings?.object(forKey: "soundEnabled") as? Bool ?? true
