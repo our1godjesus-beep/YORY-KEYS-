@@ -1114,7 +1114,7 @@ private struct YoryThemeDetailView: View {
         HStack {
             Text(title).foregroundStyle(.white.opacity(0.72))
             Spacer()
-            Text(value).foregroundStyle(.white.weight(.medium))
+            Text(value).font(.footnote.weight(.medium)).foregroundStyle(.white)
         }
         .font(.footnote)
     }
