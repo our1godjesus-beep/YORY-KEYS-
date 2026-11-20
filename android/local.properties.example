@@ -1,4 +1,5 @@
-# Copy this file to android/local.properties (do not commit local.properties).
-# Use the YORY Supabase project URL and publishable key only.
-SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
+# Android Studio manages local.properties (usually SDK path / sdk.dir).
+# Do NOT put Supabase credentials here.
+# Supabase app configuration now lives in:
+#   android/supabase.local.properties
+# Copy android/supabase.local.properties.example to that filename.
