@@ -92,3 +92,8 @@ Dense rows are a keyboard-specific exception to the normal utility touch-target 
 - Key touch feedback does not cause cumulative geometry shifts.
 - Reference screenshot diffs should be made at matching device width, density, language, editor type, theme and keyboard height.
 - Automated builds do not replace adjacent-key, spacebar swipe, gesture-nav or screen-reader testing on physical hardware.
+
+
+### Spacebar label typography
+- Treat the language-labelled spacebar as a utility key rather than a letter key. Use the compact utility font scale (roughly 10–13sp/pt depending on display width) so left/right chevrons and longer names such as Português stay inside the 36–40% spacebar.
+- Keep a minimum visual gap between chevrons and text; the spoken label remains “Space, [active language]” with a separate hint describing swipe-left/right behavior.
