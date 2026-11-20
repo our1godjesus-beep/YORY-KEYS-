@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 private let yoryGroup = UserDefaults(suiteName: "group.app.yory.keys")
 
@@ -13,6 +14,11 @@ struct ContentView: View {
     @State private var soundEnabled = true
     @State private var hapticsEnabled = true
     @State private var selectedLanguage = "English"
+    @State private var themeName = "Tinted Glass"
+    @State private var fileMessage = "Themes stay on this device unless you export them."
+    @State private var showExporter = false
+    @State private var showImporter = false
+    @State private var themeDocument = YoryThemeDocument(data: Data())
 
     var body: some View {
         ZStack {
@@ -34,6 +40,21 @@ struct ContentView: View {
                         preset("Arctic", bg: "#DDE7F5", key: "#FFFFFF", accent: "#5598DB")
                         preset("Rose", bg: "#F3DDE5", key: "#FFFFFF", accent: "#DE7297")
                     }
+
+                    sectionTitle("THEME FILES")
+                    HStack(spacing: 10) {
+                        Button("Export .yorytheme") {
+                            themeDocument = YoryThemeDocument(data: encodeTheme())
+                            showExporter = true
+                        }
+                        .buttonStyle(.bordered)
+                        Button("Import theme") { showImporter = true }
+                            .buttonStyle(.bordered)
+                    }
+                    .font(.caption.weight(.semibold))
+                    Text(fileMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.55))
 
                     sectionTitle("COLORS")
                     colorPickerRow("Background", selection: $background)
@@ -87,6 +108,37 @@ struct ContentView: View {
         .onChange(of: soundEnabled) { _ in persistTheme() }
         .onChange(of: hapticsEnabled) { _ in persistTheme() }
         .onChange(of: selectedLanguage) { _ in persistTheme() }
+        .fileExporter(
+            isPresented: $showExporter,
+            document: themeDocument,
+            contentType: .json,
+            defaultFilename: "YORY-" + themeName.replacingOccurrences(of: " ", with: "-") + ".yorytheme"
+        ) { result in
+            switch result {
+            case .success:
+                fileMessage = "Theme exported successfully."
+            case .failure(let error):
+                fileMessage = "Export failed: " + error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $showImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                let urls = try result.get()
+                guard let url = urls.first else { return }
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                let data = try Data(contentsOf: url)
+                try importTheme(data)
+                persistTheme()
+                fileMessage = "Theme imported and applied."
+            } catch {
+                fileMessage = "Import failed: " + error.localizedDescription
+            }
+        }
     }
 
     private var keyboardPreview: some View {
@@ -177,6 +229,70 @@ struct ContentView: View {
         cornerRadius = defaults.object(forKey: "cornerRadius") == nil ? 13 : defaults.double(forKey: "cornerRadius")
         soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
         hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
+    }
+
+    private func encodeTheme() -> Data {
+        let document: [String: Any] = [
+            "schemaVersion": 1,
+            "id": UUID().uuidString,
+            "name": themeName,
+            "appearance": [
+                "background": background.hexString,
+                "key": key.hexString,
+                "keyPressed": accent.hexString,
+                "text": text.hexString,
+                "accent": accent.hexString
+            ],
+            "glass": ["enabled": true, "opacity": opacity],
+            "geometry": [
+                "keyShape": "rounded",
+                "cornerRadius": cornerRadius,
+                "keySpacing": 4,
+                "keyHeight": 46
+            ],
+            "sound": ["enabled": soundEnabled],
+            "haptics": ["enabled": hapticsEnabled],
+            "emoji": ["displayScale": 1.0, "recentFirst": true]
+        ]
+        return (try? JSONSerialization.data(withJSONObject: document, options: [.prettyPrinted, .sortedKeys])) ?? Data()
+    }
+
+    private func importTheme(_ data: Data) throws {
+        guard data.count <= 128 * 1024 else {
+            throw CocoaError(.fileReadTooLarge)
+        }
+        let raw = try JSONSerialization.jsonObject(with: data)
+        guard let document = raw as? [String: Any],
+              (document["schemaVersion"] as? NSNumber)?.intValue == 1,
+              let appearance = document["appearance"] as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        func color(_ key: String, fallback: Color) throws -> Color {
+            guard let hex = appearance[key] as? String,
+                  hex.range(of: "^#[A-Fa-f0-9]{6}$", options: .regularExpression) != nil else {
+                if appearance[key] == nil { return fallback }
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return Color(hex: hex)
+        }
+        let importedBackground = try color("background", fallback: background)
+        let importedKey = try color("key", fallback: key)
+        let importedText = try color("text", fallback: text)
+        let importedAccent = try color("accent", fallback: accent)
+        let importedGlass = document["glass"] as? [String: Any] ?? [:]
+        let importedGeometry = document["geometry"] as? [String: Any] ?? [:]
+        let importedSound = document["sound"] as? [String: Any] ?? [:]
+        let importedHaptics = document["haptics"] as? [String: Any] ?? [:]
+
+        background = importedBackground
+        key = importedKey
+        text = importedText
+        accent = importedAccent
+        opacity = min(1.0, max(0.35, (importedGlass["opacity"] as? NSNumber)?.doubleValue ?? opacity))
+        cornerRadius = min(28.0, max(4.0, (importedGeometry["cornerRadius"] as? NSNumber)?.doubleValue ?? cornerRadius))
+        soundEnabled = importedSound["enabled"] as? Bool ?? soundEnabled
+        hapticsEnabled = importedHaptics["enabled"] as? Bool ?? hapticsEnabled
+        themeName = String((document["name"] as? String ?? "Imported Theme").prefix(48))
     }
 
     private func persistTheme() {
