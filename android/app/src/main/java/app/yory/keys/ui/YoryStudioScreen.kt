@@ -114,17 +114,17 @@ internal fun YoryThemesEditorScreen(onBack: () -> Unit) {
     }
 
     MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0A0D16)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF090A0C)) {
             Column(
                 modifier = Modifier.fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0xFF101725), Color(0xFF080B12), Color(0xFF151A28))))
+                    .background(Brush.verticalGradient(listOf(Color(0xFF070809), Color(0xFF121418), Color(0xFF090A0C))))
                     .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .border(0.8.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
+                        .background(Color(0xFF17191D))
+                        .border(0.8.dp, Color(0xFFC9AE80).copy(alpha = 0.18f), RoundedCornerShape(18.dp))
                         .clickable { onBack() }.padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

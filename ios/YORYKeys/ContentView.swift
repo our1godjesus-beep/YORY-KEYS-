@@ -617,9 +617,9 @@ struct YoryThemeGalleryView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.12, green: 0.16, blue: 0.25),
-                    Color(red: 0.025, green: 0.035, blue: 0.065),
-                    Color(red: 0.10, green: 0.09, blue: 0.17)
+                    Color(hex: "#070809"),
+                    Color(hex: "#121418"),
+                    Color(hex: "#090A0C")
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -627,7 +627,7 @@ struct YoryThemeGalleryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("YORY KEYS").font(.caption.weight(.bold)).tracking(2.2).foregroundStyle(Color(hex: "#A7C7FF"))
+                        Text("YORY KEYS").font(.caption.weight(.bold)).tracking(2.2).foregroundStyle(Color(hex: "#C9AE80"))
                         Text("Themes").font(.system(size: 30, weight: .bold, design: .rounded)).foregroundStyle(.white)
                         Text("Choose a look for your keyboard. Your selection stays on this device.")
                             .font(.footnote).foregroundStyle(.white.opacity(0.64))
@@ -657,7 +657,7 @@ struct YoryThemeGalleryView: View {
                                 .font(.footnote).foregroundStyle(.white.opacity(0.62))
                             Button("Create your theme") { showEditor = true }
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Color(hex: "#A7C7FF"))
+                                .foregroundStyle(Color(hex: "#C9AE80"))
                         }
                         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
@@ -695,14 +695,14 @@ struct YoryThemeGalleryView: View {
                                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
                                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.24), lineWidth: 0.8))
                         }
-                        .buttonStyle(.plain).foregroundStyle(Color(hex: "#A7C7FF"))
+                        .buttonStyle(.plain).foregroundStyle(Color(hex: "#C9AE80"))
                     }
                     .padding(16)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 19))
                     .overlay(RoundedRectangle(cornerRadius: 19).stroke(.white.opacity(0.16), lineWidth: 0.8))
 
                     if !statusMessage.isEmpty {
-                        Text(statusMessage).font(.footnote).foregroundStyle(Color(hex: "#A7C7FF"))
+                        Text(statusMessage).font(.footnote).foregroundStyle(Color(hex: "#C9AE80"))
                     }
                 }
                 .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 22)
@@ -715,7 +715,7 @@ struct YoryThemeGalleryView: View {
                 Button {
                     showEditor = true
                 } label: {
-                    Text("Create").fontWeight(.semibold).foregroundStyle(Color(hex: "#A7C7FF"))
+                    Text("Create").fontWeight(.semibold).foregroundStyle(Color(hex: "#C9AE80"))
                 }
             }
         }
@@ -843,10 +843,10 @@ struct YoryThemeGalleryView: View {
     private func categoryChip(_ item: String) -> some View {
         let selected = category == item
         let backgroundColor = selected
-            ? Color(hex: "#A7C7FF").opacity(0.22)
+            ? Color(hex: "#C9AE80").opacity(0.22)
             : Color.white.opacity(0.055)
         let borderColor = selected
-            ? Color(hex: "#A7C7FF").opacity(0.72)
+            ? Color(hex: "#C9AE80").opacity(0.72)
             : Color.white.opacity(0.15)
 
         Button(action: { category = item }) {

@@ -23,10 +23,10 @@ import app.yory.keys.theme.YoryTheme
 import app.yory.keys.theme.YoryThemeStore
 import app.yory.keys.theme.YoryThemeLibraryStore
 
-private val GalleryBackground = Color(0xFF0A0D16)
-private val GalleryMuted = Color(0xFFB0B6C4)
-private val GalleryAccent = Color(0xFFA7C7FF)
-private val GalleryBorder = Color.White.copy(alpha = 0.16f)
+private val GalleryBackground = Color(0xFF090A0C)
+private val GalleryMuted = Color(0xFFC2BBAE)
+private val GalleryAccent = Color(0xFFC9AE80)
+private val GalleryBorder = Color.White.copy(alpha = 0.11f)
 
 @Composable
 internal fun YoryThemeGalleryScreen(
