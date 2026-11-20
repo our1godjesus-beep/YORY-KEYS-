@@ -261,7 +261,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func playKeyClick() {
-        if YoryThemeReader.soundEnabled {
+        if YoryThemeReader.soundEnabled && hasFullAccess {
             UIDevice.current.playInputClick()
         }
         if YoryThemeReader.hapticsEnabled {
