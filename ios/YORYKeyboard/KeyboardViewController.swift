@@ -66,6 +66,7 @@ final class KeyboardViewController: UIInputViewController {
     private var toolsMode = false
     private var resizeMode = false
     private var isToolsPanelVisible = false
+    private var displayedToolsResizeMode: Bool?
     private var localKeyHeightOverride: CGFloat?
     private var resizeHeightSlider: UISlider?
     private var resizeHeightLabel: UILabel?
@@ -1191,7 +1192,7 @@ final class KeyboardViewController: UIInputViewController {
         if toolsMode {
             keysStack.isHidden = true
             emojiRow.isHidden = true
-            if !isToolsPanelVisible {
+            if !isToolsPanelVisible || displayedToolsResizeMode != resizeMode {
                 suggestionRow.arrangedSubviews.forEach { item in
                     suggestionRow.removeArrangedSubview(item)
                     item.removeFromSuperview()
@@ -1202,6 +1203,7 @@ final class KeyboardViewController: UIInputViewController {
                 suggestionRowHeightConstraint?.constant = resizeMode ? 190 : 220
                 suggestionRow.addArrangedSubview(resizeMode ? makeResizePanel() : makeToolsGrid())
                 isToolsPanelVisible = true
+                displayedToolsResizeMode = resizeMode
             }
             view.setNeedsLayout()
             updateKeyboardHeight()
@@ -1214,6 +1216,7 @@ final class KeyboardViewController: UIInputViewController {
                 item.removeFromSuperview()
             }
             isToolsPanelVisible = false
+            displayedToolsResizeMode = nil
             suggestionToggleButton = nil
             suggestionButtons.removeAll(keepingCapacity: true)
             buildSuggestionControls()
@@ -1372,7 +1375,7 @@ final class KeyboardViewController: UIInputViewController {
         container.layoutMargins = UIEdgeInsets(top: 4, left: 7, bottom: 3, right: 7)
 
         let title = UILabel()
-        title.text = "RESIZE KEYBOARD"
+        title.text = "ADJUST SIZING"
         title.font = .systemFont(ofSize: 10, weight: .semibold)
         title.textColor = YoryThemeReader.textColor.withAlphaComponent(0.78)
         title.textAlignment = .center
@@ -1385,55 +1388,48 @@ final class KeyboardViewController: UIInputViewController {
         frame.translatesAutoresizingMaskIntoConstraints = false
         frame.heightAnchor.constraint(equalToConstant: 54).isActive = true
 
-        func addHandle(width: CGFloat, height: CGFloat, centerX: NSLayoutXAxisAnchor? = nil,
-                       centerY: NSLayoutYAxisAnchor? = nil, leading: NSLayoutXAxisAnchor? = nil,
-                       trailing: NSLayoutXAxisAnchor? = nil, top: NSLayoutYAxisAnchor? = nil,
-                       bottom: NSLayoutYAxisAnchor? = nil, tag: Int = 0, draggable: Bool = false) {
-            let handle = UIView()
-            handle.backgroundColor = UIColor.systemBlue
-            handle.layer.cornerRadius = min(width, height) / 2
-            handle.translatesAutoresizingMaskIntoConstraints = false
-            frame.addSubview(handle)
-            var constraints = [
-                handle.widthAnchor.constraint(equalToConstant: width),
-                handle.heightAnchor.constraint(equalToConstant: height)
-            ]
-            if let centerX { constraints.append(handle.centerXAnchor.constraint(equalTo: centerX)) }
-            if let centerY { constraints.append(handle.centerYAnchor.constraint(equalTo: centerY)) }
-            if let leading { constraints.append(handle.leadingAnchor.constraint(equalTo: leading)) }
-            if let trailing { constraints.append(handle.trailingAnchor.constraint(equalTo: trailing)) }
-            if let top { constraints.append(handle.topAnchor.constraint(equalTo: top)) }
-            if let bottom { constraints.append(handle.bottomAnchor.constraint(equalTo: bottom)) }
-            NSLayoutConstraint.activate(constraints)
-            handle.accessibilityLabel = draggable ? "Drag to resize keyboard height" : "iOS controls keyboard width"
-            handle.isAccessibilityElement = true
-            handle.tag = tag
-            if draggable {
-                handle.isUserInteractionEnabled = true
-                handle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
-            }
-        }
+        let topHandle = UIView()
+        topHandle.backgroundColor = UIColor.systemBlue
+        topHandle.layer.cornerRadius = 4
+        topHandle.translatesAutoresizingMaskIntoConstraints = false
+        topHandle.tag = 1
+        topHandle.isUserInteractionEnabled = true
+        topHandle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
+        topHandle.accessibilityLabel = "Drag to reduce or increase key height"
+        frame.addSubview(topHandle)
 
-        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, top: frame.topAnchor, tag: 1, draggable: true)
-        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, bottom: frame.bottomAnchor, tag: -1, draggable: true)
-        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, leading: frame.leadingAnchor)
-        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, trailing: frame.trailingAnchor)
+        let bottomHandle = UIView()
+        bottomHandle.backgroundColor = UIColor.systemBlue
+        bottomHandle.layer.cornerRadius = 4
+        bottomHandle.translatesAutoresizingMaskIntoConstraints = false
+        bottomHandle.tag = -1
+        bottomHandle.isUserInteractionEnabled = true
+        bottomHandle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
+        bottomHandle.accessibilityLabel = "Drag to increase or reduce key height"
+        frame.addSubview(bottomHandle)
 
-        let position = UIButton(type: .system)
-        position.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right"), for: .normal)
-        position.tintColor = .white
-        position.backgroundColor = UIColor.systemBlue
-        position.layer.cornerRadius = 22
-        position.accessibilityLabel = "Keyboard position is managed by iOS"
-        position.translatesAutoresizingMaskIntoConstraints = false
-        frame.addSubview(position)
+        let systemConstraintNote = UILabel()
+        systemConstraintNote.text = "iOS manages keyboard width and placement"
+        systemConstraintNote.font = .systemFont(ofSize: 10, weight: .medium)
+        systemConstraintNote.textColor = YoryThemeReader.textColor.withAlphaComponent(0.78)
+        systemConstraintNote.textAlignment = .center
+        systemConstraintNote.translatesAutoresizingMaskIntoConstraints = false
+        frame.addSubview(systemConstraintNote)
+
         NSLayoutConstraint.activate([
-            position.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
-            position.centerYAnchor.constraint(equalTo: frame.centerYAnchor),
-            position.widthAnchor.constraint(equalToConstant: 44),
-            position.heightAnchor.constraint(equalToConstant: 44)
+            topHandle.topAnchor.constraint(equalTo: frame.topAnchor, constant: -3),
+            topHandle.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            topHandle.widthAnchor.constraint(equalToConstant: 38),
+            topHandle.heightAnchor.constraint(equalToConstant: 8),
+            bottomHandle.bottomAnchor.constraint(equalTo: frame.bottomAnchor, constant: 3),
+            bottomHandle.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            bottomHandle.widthAnchor.constraint(equalToConstant: 38),
+            bottomHandle.heightAnchor.constraint(equalToConstant: 8),
+            systemConstraintNote.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            systemConstraintNote.centerYAnchor.constraint(equalTo: frame.centerYAnchor),
+            systemConstraintNote.leadingAnchor.constraint(greaterThanOrEqualTo: frame.leadingAnchor, constant: 12),
+            systemConstraintNote.trailingAnchor.constraint(lessThanOrEqualTo: frame.trailingAnchor, constant: -12)
         ])
-        position.isEnabled = false
         container.addArrangedSubview(frame)
 
         let value = UILabel()
