@@ -1228,9 +1228,9 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.spacing = 4
         suggestionRow.semanticContentAttribute = .forceLeftToRight
         let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
-        let visible = !incognitoMode && !emojiMode && !numericInput && !sensitiveField &&
+        let visible = !incognitoMode && !emojiMode && !numericInput &&
             currentKeyboardType != .emailAddress && currentKeyboardType != .URL &&
-            YoryThemeReader.wordSuggestionsEnabled
+            textDocumentProxy.autocorrectionType != .no && YoryThemeReader.wordSuggestionsEnabled
         let normalHeight: CGFloat = suggestionsCollapsed ? 19 : (compactMode ? 24 : 32)
         suggestionRowHeightConstraint?.constant = visible ? normalHeight : 0
         suggestionRow.isHidden = !visible
@@ -1553,7 +1553,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func commitWordBoundary(_ boundary: String) {
-        if YoryThemeReader.autoCorrectEnabled && autocorrectionType != .no &&
+        if YoryThemeReader.autoCorrectEnabled && textDocumentProxy.autocorrectionType != .no &&
             !incognitoMode && !numericInput &&
             currentKeyboardType != .emailAddress && currentKeyboardType != .URL {
             let context = textDocumentProxy.documentContextBeforeInput ?? ""
