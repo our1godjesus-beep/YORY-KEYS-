@@ -65,9 +65,14 @@ final class KeyboardViewController: UIInputViewController {
     private let suggestionRow = UIStackView()
     private var toolsMode = false
     private var resizeMode = false
+    private var isToolsPanelVisible = false
     private var localKeyHeightOverride: CGFloat?
     private var resizeHeightSlider: UISlider?
     private var resizeHeightLabel: UILabel?
+    private var suggestionToggleButton: UIButton?
+    private var suggestionButtons: [UIButton] = []
+    private var letterKeyButtons: [(button: UIButton, base: String)] = []
+    private var effectiveKeyHeightValue: CGFloat = 40
     private var activeKeyHeight: CGFloat { localKeyHeightOverride ?? YoryThemeReader.keyHeight }
     private let keysStack = UIStackView()
     private var keyboardHeightConstraint: NSLayoutConstraint?
@@ -96,6 +101,7 @@ final class KeyboardViewController: UIInputViewController {
         super.viewWillAppear(animated)
         updateInputTraits()
         refreshAutomaticShift()
+        updateShiftedLetterKeys()
         applyCurrentTheme()
         emojiMode = false
         emojiRow.isHidden = true
@@ -114,6 +120,7 @@ final class KeyboardViewController: UIInputViewController {
         super.textDidChange(textInput)
         updateInputTraits()
         refreshAutomaticShift()
+        updateShiftedLetterKeys()
         updateSuggestions()
     }
 
@@ -285,6 +292,7 @@ final class KeyboardViewController: UIInputViewController {
         let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 32)
         suggestionRowHeightConstraint = suggestionHeight
         suggestionHeight.isActive = true
+        buildSuggestionControls()
 
         emojiRow.axis = .vertical
         emojiRow.spacing = 3
@@ -333,6 +341,7 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.semanticContentAttribute = direction
         emojiRow.semanticContentAttribute = direction
         keysStack.semanticContentAttribute = direction
+        letterKeyButtons.removeAll(keepingCapacity: true)
         keysStack.arrangedSubviews.forEach { item in
             keysStack.removeArrangedSubview(item)
             item.removeFromSuperview()
@@ -462,7 +471,9 @@ final class KeyboardViewController: UIInputViewController {
         let row = UIStackView()
         row.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
-        row.spacing = compact ? max(1, YoryThemeReader.keySpacing * 0.35) : YoryThemeReader.keySpacing
+        let width = view.bounds.width > 0 ? view.bounds.width : (view.window?.windowScene?.screen.bounds.width ?? UIScreen.main.bounds.width)
+        let adaptiveGap = min(YoryThemeReader.keySpacing, max(2, width / 80))
+        row.spacing = compact ? max(1, min(2.4, adaptiveGap * 0.38)) : adaptiveGap
         let hasWideModifiers = labels.contains("⇧") || labels.contains("⌫")
         row.distribution = hasWideModifiers ? .fill : .fillEqually
         if horizontalInset > 0 {
@@ -481,6 +492,10 @@ final class KeyboardViewController: UIInputViewController {
             } else {
                 let display = isShifted ? label.uppercased() : label
                 key = keyButton(display, secondaryHint: secondaryHints[label], compact: compact)
+                if label.count == 1, label.first?.isLetter == true {
+                    key.accessibilityIdentifier = label
+                    letterKeyButtons.append((key, label))
+                }
             }
             if hasWideModifiers {
                 let units: CGFloat = (label == "⇧" || label == "⌫") ? 1.25 : 1.0
@@ -495,7 +510,9 @@ final class KeyboardViewController: UIInputViewController {
         if toolsMode {
             let panelHeight: CGFloat = resizeMode ? 190 : 220
             let chrome = 4 + 36 + panelHeight + 8
-            keyboardHeightConstraint?.constant = min(430, max(240, chrome))
+            let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
+            let maximum = min(430, max(240, screenHeight * 0.48))
+            keyboardHeightConstraint?.constant = min(maximum, max(220, chrome))
             return
         }
         let rowCount: CGFloat = numericInput ? 5 :
@@ -505,8 +522,12 @@ final class KeyboardViewController: UIInputViewController {
         let emojiPanelHeight: CGFloat = emojiMode ? (emojiCategory == "People" ? 126 : 98) : 0
         let suggestionHeight = suggestionRowHeightConstraint?.constant ?? 32
         let topChrome: CGFloat = 8 + 36 + suggestionHeight + rowGap * 2
-        let required = topChrome + rowCount * activeKeyHeight + innerGaps + emojiPanelHeight
-        keyboardHeightConstraint?.constant = min(430, max(240, required))
+        let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
+        let maximum = min(430, max(240, screenHeight * 0.48))
+        let availableForKeys = max(0, maximum - topChrome - innerGaps - emojiPanelHeight)
+        effectiveKeyHeightValue = min(activeKeyHeight, max(30, availableForKeys / max(1, rowCount)))
+        let required = topChrome + rowCount * effectiveKeyHeightValue + innerGaps + emojiPanelHeight
+        keyboardHeightConstraint?.constant = min(maximum, max(220, required))
     }
 
     private func longPressMenu(for title: String) -> UIMenu? {
@@ -662,7 +683,7 @@ final class KeyboardViewController: UIInputViewController {
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        button.heightAnchor.constraint(equalToConstant: activeKeyHeight).isActive = true
+        button.heightAnchor.constraint(equalToConstant: effectiveKeyHeightValue).isActive = true
         if let menu = longPressMenu(for: title) {
             button.menu = menu
             button.showsMenuAsPrimaryAction = false
