@@ -59,7 +59,7 @@ internal fun YoryKeyboardResizeScreen(onBack: () -> Unit) {
                     Text("‹  Back", color = ResizeAccent, fontSize = 16.sp)
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { saveHeight(46f) }) {
+                TextButton(onClick = { saveHeight(40f) }) {
                     Text("Reset", color = ResizeAccent, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -67,7 +67,7 @@ internal fun YoryKeyboardResizeScreen(onBack: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("YORY KEYS", color = ResizeAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Text("Resize keyboard", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("Adjust the key height and preview the result before returning to typing.", color = ResizeMuted, fontSize = 13.sp)
+                Text("Match the reference keyboard height and preview your changes before returning to typing.", color = ResizeMuted, fontSize = 13.sp)
             }
 
             ResizePreviewCard(theme = theme, keyHeight = previewHeight)
@@ -101,7 +101,7 @@ internal fun YoryKeyboardResizeScreen(onBack: () -> Unit) {
             ResizeSurface {
                 Text("QUICK SIZES", color = ResizeMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Compact" to 40f, "Standard" to 46f, "Tall" to 54f).forEach { (label, value) ->
+                    listOf("Compact" to 36f, "Standard" to 40f, "Tall" to 48f).forEach { (label, value) ->
                         val selected = previewHeight.toInt() == value.toInt()
                         FilterChip(
                             selected = selected,
