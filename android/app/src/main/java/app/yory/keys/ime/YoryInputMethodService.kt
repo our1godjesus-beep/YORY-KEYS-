@@ -76,7 +76,13 @@ class YoryInputMethodService : InputMethodService() {
     private val suggestionLabels = mutableListOf<TextView>()
     private var suggestionToggle: FrameLayout? = null
     private var suggestionToggleGlyph: TextView? = null
-    private var resizingHandleState: ResizeHandleState? = null
+    private var imeWindow: Window? = null
+    private var resizeFrameView: FrameLayout? = null
+    private var resizeHeightValue: TextView? = null
+    private var resizeHeightSlider: SeekBar? = null
+    private var resizeWidthPercent = 1f
+    private var resizeOffsetXdp = 0f
+    private var resizeOffsetYdp = 0f
     private val learningExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
         Thread(task, "YORY-PersonalLearning").apply { isDaemon = true }
     }
@@ -147,9 +153,57 @@ class YoryInputMethodService : InputMethodService() {
         return root
     }
 
+    override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
+        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
+        imeWindow = win
+        if (!isFullscreen && !isCandidatesOnly) applyKeyboardWindowGeometry(win)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        loadResizeGeometry()
+        applyKeyboardWindowGeometry()
+        keyboardRoot?.post { applyKeyboardWindowGeometry() }
+    }
+
+    private fun loadResizeGeometry() {
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        resizeWidthPercent = prefs.getFloat("keyboard_width_percent", 1f).coerceIn(0.70f, 1f)
+        resizeOffsetXdp = prefs.getFloat("keyboard_offset_x_dp", 0f).coerceIn(-120f, 120f)
+        resizeOffsetYdp = prefs.getFloat("keyboard_offset_y_dp", 0f).coerceIn(0f, 300f)
+    }
+
+    private fun persistResizeGeometry() {
+        getSharedPreferences("yory_user_settings", MODE_PRIVATE).edit()
+            .putFloat("keyboard_width_percent", resizeWidthPercent.coerceIn(0.70f, 1f))
+            .putFloat("keyboard_offset_x_dp", resizeOffsetXdp.coerceIn(-120f, 120f))
+            .putFloat("keyboard_offset_y_dp", resizeOffsetYdp.coerceIn(0f, 300f))
+            .apply()
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun applyKeyboardWindowGeometry(window: Window? = imeWindow) {
+        val target = window ?: runCatching { getWindow().window }.getOrNull() ?: return
+        val metrics = resources.displayMetrics
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val widthPercent = prefs.getFloat("keyboard_width_percent", resizeWidthPercent).coerceIn(0.70f, 1f)
+        val offsetX = prefs.getFloat("keyboard_offset_x_dp", resizeOffsetXdp).coerceIn(-120f, 120f)
+        val offsetY = prefs.getFloat("keyboard_offset_y_dp", resizeOffsetYdp).coerceIn(0f, 300f)
+        val widthPx = if (widthPercent >= 0.995f) WindowManager.LayoutParams.MATCH_PARENT
+            else (metrics.widthPixels * widthPercent).toInt().coerceAtLeast(dp(260))
+        val params = target.attributes
+        params.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        params.width = widthPx
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT
+        params.x = dp(offsetX).toInt()
+        params.y = dp(offsetY).toInt()
+        target.attributes = params
+    }
+
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         theme = YoryThemeStore.load(applicationContext)
+        loadResizeGeometry()
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", languageTag) ?: languageTag
         sensitiveField = isSensitive(info)
@@ -696,9 +750,9 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun refreshResizePanel(panel: LinearLayout) {
         val title = TextView(this).apply {
-            text = "RESIZE KEYBOARD"
+            text = "ADJUST KEYBOARD SIZE"
             textSize = 11f
-            letterSpacing = 0.12f
+            letterSpacing = 0.10f
             setTextColor(theme.textArgb)
             gravity = Gravity.CENTER
         }
@@ -710,40 +764,53 @@ class YoryInputMethodService : InputMethodService() {
                 cornerRadius = dp(2).toFloat()
                 setStroke(dp(2), Color.rgb(65, 105, 255))
             }
-            contentDescription = "Keyboard resize boundary. Use the height slider below."
+            contentDescription = "Drag top and bottom to resize height, side handles to resize width, and the center handle to move the keyboard."
+            clipChildren = false
         }
-        fun handleView(width: Int, height: Int, gravity: Int) {
+        resizeFrameView = resizeFrame
+
+        fun handle(width: Int, height: Int, gravity: Int, mode: String) {
             resizeFrame.addView(View(this).apply {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(4).toFloat()
                     setColor(Color.rgb(65, 105, 255))
                 }
+                setOnTouchListener(resizeHandleTouch(mode))
+                contentDescription = when (mode) {
+                    "top", "bottom" -> "Resize keyboard height"
+                    "left", "right" -> "Resize keyboard width"
+                    else -> "Move keyboard"
+                }
             }, FrameLayout.LayoutParams(dp(width), dp(height), gravity))
         }
-        handleView(34, 7, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-        handleView(34, 7, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.START)
-        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.END)
+        handle(34, 8, Gravity.TOP or Gravity.CENTER_HORIZONTAL, "top")
+        handle(34, 8, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, "bottom")
+        handle(8, 28, Gravity.CENTER_VERTICAL or Gravity.START, "left")
+        handle(8, 28, Gravity.CENTER_VERTICAL or Gravity.END, "right")
+
         val moveHandle = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.rgb(65, 105, 255))
             }
-            contentDescription = "Resize controls use the height slider"
+            contentDescription = "Move keyboard"
+            setOnTouchListener(resizeHandleTouch("move"))
         }
         moveHandle.addView(
             YoryKeyboardIconView(this, "move", Color.WHITE),
             FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
         )
-        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
-        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(56)))
+        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER))
+        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(60)))
+        updateResizePreviewFrame()
 
         val value = TextView(this).apply {
-            text = "${theme.keyHeightDp.toInt()} dp"
-            textSize = 13f
+            text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
+            textSize = 12f
             setTextColor(theme.textArgb)
             gravity = Gravity.CENTER
         }
+        resizeHeightValue = value
         panel.addView(value, LinearLayout.LayoutParams(-1, dp(22)))
 
         val slider = SeekBar(this).apply {
@@ -753,18 +820,23 @@ class YoryInputMethodService : InputMethodService() {
             thumbTintList = android.content.res.ColorStateList.valueOf(theme.textArgb)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (fromUser) value.text = "${36 + progress} dp"
+                    if (fromUser) {
+                        val height = 36 + progress
+                        value.text = "${height} dp · ${(resizeWidthPercent * 100).toInt()}%"
+                        updateResizePreviewFrame()
+                    }
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                    val height = (36 + (seekBar?.progress ?: 4)).toFloat()
-                    theme = theme.copy(keyHeightDp = height)
+                    theme = theme.copy(keyHeightDp = (36 + (seekBar?.progress ?: 4)).toFloat())
                     YoryThemeStore.save(applicationContext, theme)
-                    value.text = "${height.toInt()} dp"
+                    value.text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
+                    updateResizePreviewFrame()
                 }
             })
         }
-        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(36)))
+        resizeHeightSlider = slider
+        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(34)))
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -775,13 +847,12 @@ class YoryInputMethodService : InputMethodService() {
                 text = label
                 gravity = Gravity.CENTER
                 textSize = 13f
-                setTextColor(theme.textArgb)
+                setTextColor(Color.BLACK)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
                     setColor(Color.WHITE)
                     setStroke(dp(1), Color.WHITE)
                 }
-                setTextColor(Color.BLACK)
                 setOnClickListener { performKeyFeedback(this); action() }
             }
             actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
@@ -789,19 +860,88 @@ class YoryInputMethodService : InputMethodService() {
             })
         }
         addActionButton("Reset") {
+            resizeWidthPercent = 1f
+            resizeOffsetXdp = 0f
+            resizeOffsetYdp = 0f
             theme = theme.copy(keyHeightDp = 40f)
             YoryThemeStore.save(applicationContext, theme)
+            persistResizeGeometry()
             panel.removeAllViews()
             refreshResizePanel(panel)
         }
         addActionButton("OK") {
+            persistResizeGeometry()
             resizeMode = false
             toolsMode = false
             refreshToolbar()
             refreshKeyboard()
             updateSuggestions()
+            applyKeyboardWindowGeometry()
         }
         panel.addView(actions, LinearLayout.LayoutParams(-1, dp(38)))
+    }
+
+    private fun resizeHandleTouch(mode: String): View.OnTouchListener {
+        var previousX = 0f
+        var previousY = 0f
+        return View.OnTouchListener { _, event ->
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    previousX = event.rawX
+                    previousY = event.rawY
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val density = resources.displayMetrics.density
+                    val dx = (event.rawX - previousX) / density
+                    val dy = (event.rawY - previousY) / density
+                    previousX = event.rawX
+                    previousY = event.rawY
+                    when (mode) {
+                        "left" -> resizeWidthPercent = (resizeWidthPercent - dx / (resources.displayMetrics.widthPixels / density)).coerceIn(0.70f, 1f)
+                        "right" -> resizeWidthPercent = (resizeWidthPercent + dx / (resources.displayMetrics.widthPixels / density)).coerceIn(0.70f, 1f)
+                        "top" -> {
+                            theme = theme.copy(keyHeightDp = (theme.keyHeightDp - dy * 0.38f).coerceIn(36f, 60f))
+                            YoryThemeStore.save(applicationContext, theme)
+                            resizeHeightSlider?.progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+                        }
+                        "bottom" -> {
+                            theme = theme.copy(keyHeightDp = (theme.keyHeightDp + dy * 0.38f).coerceIn(36f, 60f))
+                            YoryThemeStore.save(applicationContext, theme)
+                            resizeHeightSlider?.progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+                        }
+                        "move" -> {
+                            resizeOffsetXdp = (resizeOffsetXdp + dx).coerceIn(-120f, 120f)
+                            resizeOffsetYdp = (resizeOffsetYdp - dy).coerceIn(0f, 300f)
+                            val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE).edit()
+                                .putFloat("keyboard_offset_x_dp", resizeOffsetXdp)
+                                .putFloat("keyboard_offset_y_dp", resizeOffsetYdp)
+                                .apply()
+                            applyKeyboardWindowGeometry()
+                        }
+                    }
+                    resizeHeightValue?.text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
+                    updateResizePreviewFrame()
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    persistResizeGeometry()
+                    true
+                }
+                else -> true
+            }
+        }
+    }
+
+    private fun updateResizePreviewFrame() {
+        val frame = resizeFrameView ?: return
+        val widthDp = (resources.displayMetrics.widthPixels / resources.displayMetrics.density * resizeWidthPercent).toInt()
+        val heightDp = (56 + (theme.keyHeightDp - 40f) * 2f).toInt().coerceIn(40, 96)
+        frame.layoutParams = (frame.layoutParams as LinearLayout.LayoutParams).apply {
+            width = dp(widthDp.toFloat())
+            height = dp(heightDp.toFloat())
+            gravity = Gravity.CENTER
+        }
     }
 
     private fun shareYory() {
