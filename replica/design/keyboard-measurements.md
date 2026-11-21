@@ -9,7 +9,11 @@ This is the measurement contract for a responsive keyboard inspired by the inter
 - Panel: #090A0C, near-black and opaque.
 - Keycap: #202328 with #F2EEE7 text; champagne #C9AE80 is a restrained utility/selection accent.
 - Standard key height: 46 dp/pt, with an allowed runtime range around 42–50 dp/pt.
-- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range.
+- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range. Match vertical row gaps to horizontal key gaps across Android and iOS.
+- Latin home row: inset by about 10 dp/pt per side; preserve full-width first and modifier rows. Arabic rows use their own RTL/letter-count geometry rather than copying Latin insets.
+- Bottom action row: spacebar occupies about 39–40% of available width; distribute the remaining width proportionally between symbols, language, punctuation and Return. Never let intrinsic title widths distort the row.
+- Toolbar controls: use consistent 19–21 dp/pt original outline icons with generous touch regions; avoid font-dependent Unicode ornament icons for command actions.
+- Suggestion strip: 30–34 dp/pt standard, 23–25 compact, and 18–20 collapsed. Keep three balanced suggestion slots plus a dedicated expand/collapse affordance.
 - Corner radius: approximately 12 dp/pt; use the same geometry in the Studio preview and runtime keyboard.
 - Use matte keycaps and restrained depth, not blur-heavy glass effects.
 
@@ -40,7 +44,7 @@ Android values are dp; iOS values are points. Keep the visual ratios consistent,
 | Arabic secondary digit legend | 8–9 sp/pt | 7.5–8 sp/pt | Visual hint only; accessibility label must announce the primary character, not the hint |
 | Primary key label | 17–20 sp/pt | 14–16 sp/pt | Adapt down gently for dense Arabic rows |
 | Special modifier width | 1.15–1.3 key units | 1.15 key units | Shift and Backspace stay at opposite ends of the final letter row |
-| Spacebar width | 36–40% of bottom row | 34–38% | Keep a stable hit target; swipe gesture must not intercept a tap |
+| Spacebar width | 39–40% of bottom row | 34–38% | Keep a stable hit target; swipe gesture must not intercept a tap |
 | Spacebar height | 44–48 dp/pt | 40–44 dp/pt | Label uses current active language |
 | Bottom action keys | 34–44 dp/pt | 32–40 dp/pt | Number/symbol, globe, comma, period, Enter remain discoverable |
 | Utility touch target | 44–48 dp/pt minimum | 44 dp/pt target | Toolbar/tools targets must not shrink with dense letter rows |
