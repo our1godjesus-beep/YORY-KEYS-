@@ -166,7 +166,10 @@ class YoryInputMethodService : InputMethodService() {
         content.addView(keysContainer, LinearLayout.LayoutParams(-1, -2))
 
         resizeOverlay = createResizeOverlay()
-        mainArea.addView(resizeOverlay, FrameLayout.LayoutParams(-1, -1))
+        mainArea.addView(resizeOverlay, FrameLayout.LayoutParams(-1, 0))
+        content.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            syncResizeOverlayBounds()
+        }
 
         refreshKeyboard()
         updateSuggestions()
@@ -862,6 +865,21 @@ class YoryInputMethodService : InputMethodService() {
         return overlay
     }
 
+    private fun syncResizeOverlayBounds() {
+        val content = keyboardContent ?: return
+        val overlay = resizeOverlay ?: return
+        val width = content.width
+        val height = content.height
+        if (width <= 0 || height <= 0) return
+        val params = overlay.layoutParams as? FrameLayout.LayoutParams ?: return
+        if (params.width != width || params.height != height) {
+            params.width = width
+            params.height = height
+            overlay.layoutParams = params
+        }
+        overlay.bringToFront()
+    }
+
     private fun startResizeOverlay() {
         toolsMode = false
         resizeMode = true
@@ -871,7 +889,7 @@ class YoryInputMethodService : InputMethodService() {
         refreshKeyboard()
         updateSuggestions()
         resizeOverlay?.visibility = View.VISIBLE
-        resizeOverlay?.bringToFront()
+        resizeOverlay?.post { syncResizeOverlayBounds() }
         applyKeyboardWindowGeometry()
     }
 
