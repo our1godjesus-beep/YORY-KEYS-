@@ -557,7 +557,7 @@ class YoryInputMethodService : InputMethodService() {
                 currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
             }
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp * 0.72f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() * 0.72f)))
     }
 
     private fun addNumericLayout(parent: LinearLayout) {
@@ -574,7 +574,7 @@ class YoryInputMethodService : InputMethodService() {
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ".", 1)
         }
         addKey(bottom, "⌫", 1f) { handleKey("⌫") }
-        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -587,7 +587,7 @@ class YoryInputMethodService : InputMethodService() {
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
         }
-        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addKeyRow(
@@ -610,7 +610,7 @@ class YoryInputMethodService : InputMethodService() {
                 secondaryLegend = secondaryHints.getOrNull(index)
             )
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addArabicFinalRow(
@@ -629,7 +629,7 @@ class YoryInputMethodService : InputMethodService() {
             addKey(row, label, 1f, { handleKey(label) }, compact = true, secondaryLegend = secondaryHints.getOrNull(index))
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = true)
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addSpecialLetterRow(parent: LinearLayout, letters: String, compact: Boolean = false) {
@@ -643,7 +643,7 @@ class YoryInputMethodService : InputMethodService() {
             addKey(row, label, 1f, { handleKey(label) }, compact = compact)
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = compact)
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addSymbolLayout(parent: LinearLayout) {
@@ -669,7 +669,7 @@ class YoryInputMethodService : InputMethodService() {
                 val weight = if (label == "⌫") 1.35f else 1f
                 addKey(row, label, weight, { handleKey(label) }, compact = true)
             }
-            parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+            parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
         }
     }
 
@@ -917,10 +917,10 @@ class YoryInputMethodService : InputMethodService() {
         val container = keysContainer ?: return
         for (rowIndex in 0 until container.childCount) {
             val row = container.getChildAt(rowIndex) as? LinearLayout ?: continue
-            row.layoutParams = row.layoutParams.apply { height = dp(theme.keyHeightDp + 4f) }
+            row.layoutParams = row.layoutParams.apply { height = dp(effectiveKeyHeightDp() + 4f) }
             for (keyIndex in 0 until row.childCount) {
                 val key = row.getChildAt(keyIndex)
-                key.layoutParams = key.layoutParams.apply { height = dp(theme.keyHeightDp) }
+                key.layoutParams = key.layoutParams.apply { height = dp(effectiveKeyHeightDp()) }
             }
         }
         container.requestLayout()
@@ -1047,7 +1047,7 @@ class YoryInputMethodService : InputMethodService() {
             updateDynamicKeyLabels()
             updateSuggestions()
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addKey(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
@@ -1190,7 +1190,7 @@ class YoryInputMethodService : InputMethodService() {
         }
         if (baseLetter != null) dynamicKeyLabels.add(Triple(view, baseLetter, secondaryLegend))
         val gap = if (compact) dp(1.0f) else dp((theme.keySpacingDp / 2f).coerceIn(1.5f, 4f))
-        val params = LinearLayout.LayoutParams(0, dp(theme.keyHeightDp), weight).apply {
+        val params = LinearLayout.LayoutParams(0, dp(effectiveKeyHeightDp()), weight).apply {
             setMargins(gap, dp(2), gap, dp(2))
         }
         parent.addView(view, params)
@@ -1688,7 +1688,7 @@ class YoryInputMethodService : InputMethodService() {
         val bottomBase = blendColors(Color.rgb(Color.red(base), Color.green(base), Color.blue(base)), Color.BLACK, 0.07f)
         val top = Color.argb(alpha, Color.red(topBase), Color.green(topBase), Color.blue(topBase))
         val bottom = Color.argb(alpha, Color.red(bottomBase), Color.green(bottomBase), Color.blue(bottomBase))
-        val keyHeight = dp(theme.keyHeightDp).toFloat()
+        val keyHeight = dp(effectiveKeyHeightDp()).toFloat()
         val radius = when (theme.keyShape) {
             "pill", "circle" -> keyHeight / 2f
             "squircle" -> dp(theme.cornerRadiusDp * 1.35f).toFloat()
@@ -1714,6 +1714,25 @@ class YoryInputMethodService : InputMethodService() {
             (Color.green(first) * inverse + Color.green(second) * ratio).toInt().coerceIn(0, 255),
             (Color.blue(first) * inverse + Color.blue(second) * ratio).toInt().coerceIn(0, 255)
         )
+    }
+
+    private fun effectiveKeyHeightDp(): Float {
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val showNumberRow = !symbolMode && prefs.getBoolean("number_row", false)
+        val showArrowRow = prefs.getBoolean("arrow_keys", false)
+        val rowCount = when {
+            numericField -> 5f
+            else -> (4 + (if (showNumberRow) 1 else 0) + (if (showArrowRow) 1 else 0)).toFloat()
+        }
+        val suggestionsHeight = if (!sensitiveField && !numericField && !emailField && !urlField &&
+            !emojiMode && !clipboardMode && !incognitoMode && prefs.getBoolean("word_suggestions", true)) 32f else 0f
+        val clipboardHeight = if (clipboardMode && theme.clipboardEnabled && !incognitoMode) 42f else 0f
+        val emojiHeight = if (emojiMode) 104f else 0f
+        val chrome = 8f + 36f + suggestionsHeight + clipboardHeight + emojiHeight
+        val screenHeightDp = resources.displayMetrics.heightPixels / resources.displayMetrics.density
+        val maximumImeHeight = (screenHeightDp * 0.54f).coerceIn(250f, 480f)
+        val rowHeightBudget = (maximumImeHeight - chrome) / rowCount - 4f
+        return minOf(theme.keyHeightDp, rowHeightBudget.coerceIn(32f, 60f))
     }
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()
