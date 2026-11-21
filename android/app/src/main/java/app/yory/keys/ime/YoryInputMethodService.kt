@@ -1328,15 +1328,16 @@ private class YoryKeyboardIconView(
     private val icon: String,
     tint: Int
 ) : View(context) {
+    private val iconTint = tint
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = tint
+        color = iconTint
         style = Paint.Style.STROKE
         strokeWidth = 1.8f
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = tint
+        color = iconTint
         style = Paint.Style.FILL
     }
 
@@ -1410,7 +1411,7 @@ private class YoryKeyboardIconView(
             }
             "symbols" -> {
                 val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = tint
+                    color = iconTint
                     textAlign = Paint.Align.CENTER
                     textSize = 7.2f
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
