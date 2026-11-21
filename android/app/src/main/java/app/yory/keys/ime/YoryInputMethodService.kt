@@ -211,6 +211,7 @@ class YoryInputMethodService : InputMethodService() {
                 "more" -> addToolbarIconButton(toolbar, if (toolsMode) "close" else "more", if (toolsMode) "Close tools" else "More tools", 1f) {
                     toolsMode = !toolsMode
                     if (toolsMode) {
+                        resizeMode = false
                         emojiMode = false
                         clipboardMode = false
                     }
@@ -581,120 +582,191 @@ class YoryInputMethodService : InputMethodService() {
     private fun refreshMoreTools() {
         val panel = moreToolsPanel ?: return
         panel.removeAllViews()
-        val heading = TextView(this).apply {
-            text = "YORY TOOLS"
-            textSize = 11f
-            letterSpacing = 0.16f
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            setTextColor(theme.textArgb)
-            setPadding(dp(5), dp(2), dp(5), dp(7))
+        if (resizeMode) {
+            refreshResizePanel(panel)
+            return
         }
-        panel.addView(heading, LinearLayout.LayoutParams(-1, dp(25)))
 
-        val tools = mutableListOf<Triple<String, String, () -> Unit>>()
-        tools.add(Triple("Emoji", "emoji") {
-            toolsMode = false
-            emojiMode = true
-            refreshToolbar()
-            refreshKeyboard()
-            refreshEmojiPicker()
-            updateSuggestions()
-        })
-        tools.add(Triple("Languages", "language") {
-            toolsMode = false
-            cycleLanguage(1)
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
-        })
-        tools.add(Triple("Symbols", "symbols") {
-            toolsMode = false
-            symbolMode = true
-            symbolPage = 0
-            refreshToolbar()
-            refreshKeyboard()
-        })
-        if (theme.clipboardEnabled && !sensitiveField && !numericField && !emailField && !urlField && !incognitoMode) {
-            tools.add(Triple("Clipboard", "clipboard") {
+        data class ToolItem(
+            val title: String,
+            val icon: String,
+            val enabled: Boolean = true,
+            val action: () -> Unit
+        )
+        val tools = listOf(
+            ToolItem("Stickers", "stickers", false) {},
+            ToolItem("Settings", "settings") { openStudio() },
+            ToolItem("Languages", "language") {
+                cycleLanguage(1)
                 toolsMode = false
-                clipboardMode = true
                 refreshToolbar()
                 refreshKeyboard()
-                refreshClipboardRow()
-            })
-        }
-        tools.add(Triple("Incognito", "privacy") {
-            toolsMode = false
-            incognitoMode = !incognitoMode
-            if (incognitoMode) clipboardMode = false
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
-            refreshClipboardListener()
-        })
-        tools.add(Triple("Next keyboard", "keyboard") {
-            toolsMode = false
-            switchToNextInputMethod(false)
-            refreshToolbar()
-            refreshKeyboard()
-        })
-        tools.add(Triple("Clear words", "text") {
-            PersonalDictionaryStore.clear(applicationContext)
-            toolsMode = false
-            refreshKeyboard()
-            updateSuggestions()
-        })
-        tools.add(Triple("Studio", "settings") {
-            toolsMode = false
-            openStudio()
-            refreshToolbar()
-            refreshKeyboard()
-        })
+                updateSuggestions()
+            },
+            ToolItem("Layouts", "keyboard", false) {},
+            ToolItem("Incognito", "privacy") {
+                incognitoMode = !incognitoMode
+                if (incognitoMode) clipboardMode = false
+                toolsMode = false
+                refreshToolbar()
+                refreshKeyboard()
+                updateSuggestions()
+                refreshClipboardListener()
+            },
+            ToolItem("Resize", "resize") {
+                resizeMode = true
+                refreshMoreTools()
+            },
+            ToolItem("Themes", "themes") { openStudio() },
+            ToolItem("Modes", "modes") {
+                symbolMode = !symbolMode
+                symbolPage = 0
+                toolsMode = false
+                refreshToolbar()
+                refreshKeyboard()
+            },
+            ToolItem("Emoji", "emoji") {
+                toolsMode = false
+                emojiMode = true
+                refreshEmojiPicker()
+                refreshToolbar()
+                refreshKeyboard()
+                updateSuggestions()
+            },
+            ToolItem("Share", "share") { shareYory() },
+            ToolItem("Autocorrect", "autocorrect", false) {},
+            ToolItem("Create", "create", false) {}
+        )
 
-        tools.chunked(4).forEach { group ->
+        tools.chunked(4).forEachIndexed { rowIndex, group ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
             }
-            group.forEach { (title, icon, action) ->
+            group.forEachIndexed { columnIndex, item ->
                 val tile = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
-                    isClickable = true
-                    isFocusable = true
-                    contentDescription = title
-                    background = GradientDrawable().apply {
-                        setColor(Color.argb(22, 255, 255, 255))
-                        cornerRadius = dp(15).toFloat()
-                        setStroke(dp(1), Color.argb(42, 255, 255, 255))
-                    }
-                    setPadding(dp(2), dp(5), dp(2), dp(5))
+                    isClickable = item.enabled
+                    isFocusable = item.enabled
+                    contentDescription = if (item.enabled) item.title else "${item.title}, unavailable"
+                    alpha = if (item.enabled) 1f else 0.42f
+                    background = ColorDrawable(Color.TRANSPARENT)
                     setOnClickListener {
-                        performKeyFeedback(this)
-                        action()
+                        if (item.enabled) {
+                            performKeyFeedback(this)
+                            item.action()
+                        }
                     }
                 }
-                val glyph = YoryKeyboardIconView(this, icon, theme.textArgb)
-                val caption = TextView(this).apply {
-                    text = title
-                    textSize = 10.5f
+                tile.addView(
+                    YoryKeyboardIconView(this, item.icon, theme.textArgb),
+                    LinearLayout.LayoutParams(-1, dp(31))
+                )
+                tile.addView(TextView(this).apply {
+                    text = item.title
+                    textSize = 11f
                     gravity = Gravity.CENTER
                     maxLines = 1
                     setTextColor(theme.textArgb)
+                }, LinearLayout.LayoutParams(-1, dp(20)))
+                row.addView(tile, LinearLayout.LayoutParams(0, dp(67), 1f))
+                if (columnIndex < group.lastIndex) {
+                    row.addView(View(this).apply {
+                        setBackgroundColor(Color.argb(38, 255, 255, 255))
+                    }, LinearLayout.LayoutParams(dp(1), dp(62)))
                 }
-                tile.addView(glyph, LinearLayout.LayoutParams(-1, dp(31)))
-                tile.addView(caption, LinearLayout.LayoutParams(-1, dp(18)))
-                row.addView(tile, LinearLayout.LayoutParams(0, dp(64), 1f).apply {
-                    setMargins(dp(3), dp(3), dp(3), dp(3))
-                })
             }
-            repeat(4 - group.size) {
-                row.addView(View(this), LinearLayout.LayoutParams(0, dp(64), 1f).apply {
-                    setMargins(dp(3), dp(3), dp(3), dp(3))
-                })
+            panel.addView(row, LinearLayout.LayoutParams(-1, dp(68)))
+            if (rowIndex < 2) {
+                panel.addView(View(this).apply {
+                    setBackgroundColor(Color.argb(38, 255, 255, 255))
+                }, LinearLayout.LayoutParams(-1, dp(1)))
             }
-            panel.addView(row, LinearLayout.LayoutParams(-1, dp(70)))
         }
+    }
+
+    private fun refreshResizePanel(panel: LinearLayout) {
+        val title = TextView(this).apply {
+            text = "RESIZE KEYBOARD"
+            textSize = 11f
+            letterSpacing = 0.12f
+            setTextColor(theme.textArgb)
+            gravity = Gravity.CENTER
+        }
+        panel.addView(title, LinearLayout.LayoutParams(-1, dp(24)))
+
+        val value = TextView(this).apply {
+            text = "${theme.keyHeightDp.toInt()} dp"
+            textSize = 13f
+            setTextColor(theme.textArgb)
+            gravity = Gravity.CENTER
+        }
+        panel.addView(value, LinearLayout.LayoutParams(-1, dp(22)))
+
+        val slider = SeekBar(this).apply {
+            max = 24
+            progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+            progressTintList = android.content.res.ColorStateList.valueOf(theme.accentArgb)
+            thumbTintList = android.content.res.ColorStateList.valueOf(theme.textArgb)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) value.text = "${36 + progress} dp"
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                    val height = (36 + (seekBar?.progress ?: 4)).toFloat()
+                    theme = theme.copy(keyHeightDp = height)
+                    YoryThemeStore.save(applicationContext, theme)
+                    value.text = "${height.toInt()} dp"
+                }
+            })
+        }
+        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(36)))
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        fun addActionButton(label: String, action: () -> Unit) {
+            val button = TextView(this).apply {
+                text = label
+                gravity = Gravity.CENTER
+                textSize = 13f
+                setTextColor(theme.textArgb)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(18).toFloat()
+                    setColor(Color.argb(32, 255, 255, 255))
+                    setStroke(dp(1), Color.argb(55, 255, 255, 255))
+                }
+                setOnClickListener { performKeyFeedback(this); action() }
+            }
+            actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
+                setMargins(dp(6), 0, dp(6), 0)
+            })
+        }
+        addActionButton("Reset") {
+            theme = theme.copy(keyHeightDp = 40f)
+            YoryThemeStore.save(applicationContext, theme)
+            panel.removeAllViews()
+            refreshResizePanel(panel)
+        }
+        addActionButton("OK") {
+            resizeMode = false
+            toolsMode = false
+            refreshToolbar()
+            refreshKeyboard()
+            updateSuggestions()
+        }
+        panel.addView(actions, LinearLayout.LayoutParams(-1, dp(38)))
+    }
+
+    private fun shareYory() {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, "YORY KEYS — a customizable keyboard. https://github.com/our1godjesus-beep/YORY-KEYS-")
+        }
+        startActivity(Intent.createChooser(send, "Share YORY KEYS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun addBottomRow(parent: LinearLayout) {
@@ -1490,6 +1562,69 @@ private class YoryKeyboardIconView(
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 }
                 canvas.drawText("Aa", 12f, 15f, textPaint)
+            }
+            "chevron-down", "chevron-up" -> {
+                val path = Path().apply {
+                    if (icon == "chevron-down") {
+                        moveTo(5f, 9f); lineTo(12f, 15f); lineTo(19f, 9f)
+                    } else {
+                        moveTo(5f, 15f); lineTo(12f, 9f); lineTo(19f, 15f)
+                    }
+                }
+                canvas.drawPath(path, stroke)
+            }
+            "stickers" -> {
+                canvas.drawRoundRect(RectF(3f, 4f, 18f, 19f), 3f, 3f, stroke)
+                canvas.drawCircle(8f, 9f, 1f, fill)
+                canvas.drawCircle(13f, 9f, 1f, fill)
+                canvas.drawArc(RectF(7f, 9f, 15f, 16f), 15f, 150f, false, stroke)
+                canvas.drawLine(18f, 3f, 18f, 8f, stroke)
+                canvas.drawLine(15.5f, 5.5f, 20.5f, 5.5f, stroke)
+            }
+            "resize" -> {
+                canvas.drawRoundRect(RectF(4f, 4f, 20f, 20f), 2f, 2f, stroke)
+                canvas.drawLine(8f, 8f, 4f, 4f, stroke)
+                canvas.drawLine(4f, 4f, 9f, 4f, stroke)
+                canvas.drawLine(4f, 4f, 4f, 9f, stroke)
+                canvas.drawLine(16f, 16f, 20f, 20f, stroke)
+                canvas.drawLine(20f, 20f, 15f, 20f, stroke)
+                canvas.drawLine(20f, 20f, 20f, 15f, stroke)
+            }
+            "themes" -> {
+                canvas.drawCircle(12f, 12f, 8f, stroke)
+                canvas.drawCircle(9f, 8f, 1.1f, fill)
+                canvas.drawCircle(15f, 9f, 1.1f, fill)
+                canvas.drawCircle(9f, 15f, 1.1f, fill)
+                canvas.drawCircle(15f, 15f, 1.1f, fill)
+            }
+            "modes" -> {
+                canvas.drawRoundRect(RectF(3f, 5f, 21f, 19f), 3f, 3f, stroke)
+                canvas.drawLine(7f, 9f, 17f, 9f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 12f, stroke)
+                canvas.drawLine(7f, 15f, 14f, 15f, stroke)
+            }
+            "share" -> {
+                canvas.drawLine(7f, 12f, 17f, 6f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 18f, stroke)
+                canvas.drawCircle(6f, 12f, 2.5f, stroke)
+                canvas.drawCircle(18f, 5f, 2.5f, stroke)
+                canvas.drawCircle(18f, 19f, 2.5f, stroke)
+            }
+            "autocorrect" -> {
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = iconTint
+                    textAlign = Paint.Align.CENTER
+                    textSize = 11f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+                canvas.drawText("A", 9f, 15f, textPaint)
+                val tick = Path().apply { moveTo(13f, 13f); lineTo(16f, 16f); lineTo(21f, 8f) }
+                canvas.drawPath(tick, stroke)
+            }
+            "create" -> {
+                canvas.drawRoundRect(RectF(3f, 3f, 21f, 21f), 4f, 4f, stroke)
+                canvas.drawLine(12f, 7f, 12f, 17f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 12f, stroke)
             }
         }
         canvas.restore()
