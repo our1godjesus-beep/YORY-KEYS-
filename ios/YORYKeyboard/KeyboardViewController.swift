@@ -1184,6 +1184,7 @@ final class KeyboardViewController: UIInputViewController {
             slots.addArrangedSubview(cell)
         }
         suggestionRow.addArrangedSubview(slots)
+        slots.widthAnchor.constraint(equalTo: suggestionRow.widthAnchor, constant: -32).isActive = true
     }
 
     private func updateSuggestions() {
