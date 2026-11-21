@@ -8,7 +8,7 @@ private struct YoryKeyboardLayout {
 
     static let supported: [YoryKeyboardLayout] = [
         .init(tag: "en-US", name: "English (US)", spaceLabel: "English", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: true),
-        .init(tag: "ar", name: "العربية (مصر)", spaceLabel: "العربية", rows: ["ضصثقفغعهخحجد", "شسيبلاتنمكذ", "طظئءؤرىةوز"], isRightToLeft: true, hasBundledDictionary: true),
+        .init(tag: "ar", name: "العربية (مصر)", spaceLabel: "مصري", rows: ["ضصثقفغعهخحجد", "شسيبلاتنمكذ", "طظئءؤرىةوز"], isRightToLeft: true, hasBundledDictionary: true),
         .init(tag: "de", name: "Deutsch (DE)", spaceLabel: "Deutsch", rows: ["qwertzuiop", "asdfghjkl", "yxcvbnm"], isRightToLeft: false, hasBundledDictionary: false),
         .init(tag: "es", name: "Español", spaceLabel: "Español", rows: ["qwertyuiop", "asdfghjklñ", "zxcvbnm"], isRightToLeft: false, hasBundledDictionary: false),
         .init(tag: "fr", name: "Français", spaceLabel: "Français", rows: ["azertyuiop", "qsdfghjklm", "wxcvbn"], isRightToLeft: false, hasBundledDictionary: false),
