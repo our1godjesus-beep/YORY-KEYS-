@@ -24,6 +24,7 @@ import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.View
+import android.view.Window
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
@@ -71,6 +72,11 @@ class YoryInputMethodService : InputMethodService() {
     private var emojiSkinTone = ""
     private var keysContainer: LinearLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
+    private val dynamicKeyLabels = mutableListOf<Triple<TextView, String, String?>>()
+    private val suggestionLabels = mutableListOf<TextView>()
+    private var suggestionToggle: FrameLayout? = null
+    private var suggestionToggleGlyph: TextView? = null
+    private var resizingHandleState: ResizeHandleState? = null
     private val learningExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
         Thread(task, "YORY-PersonalLearning").apply { isDaemon = true }
     }
@@ -105,6 +111,7 @@ class YoryInputMethodService : InputMethodService() {
             setPadding(0, dp(2), 0, dp(2))
         }
         suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        buildSuggestionRow()
         root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
 
         clipboardRow = LinearLayout(this).apply {
@@ -269,6 +276,7 @@ class YoryInputMethodService : InputMethodService() {
         keyboardRoot?.layoutDirection = direction
         container.layoutDirection = direction
         suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        dynamicKeyLabels.clear()
         container.removeAllViews()
 
         moreToolsPanel?.visibility = if (toolsMode) View.VISIBLE else View.GONE
@@ -509,7 +517,7 @@ class YoryInputMethodService : InputMethodService() {
             if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
         }
         letters.forEachIndexed { index, char ->
-            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
+            val label = char.toString()
             addKey(
                 row, label, 1f, { handleKey(label) },
                 compact = compact,
@@ -880,6 +888,7 @@ class YoryInputMethodService : InputMethodService() {
         onSwipeDirection: ((Float) -> Unit)? = null
     ) {
         val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val baseLetter = label.takeIf { it.length == 1 && it[0].isLetter() }?.lowercase()
         val handler = Handler(Looper.getMainLooper())
         var longPressConsumed = false
         var pendingLongPressOptions: List<String> = emptyList()
@@ -891,25 +900,7 @@ class YoryInputMethodService : InputMethodService() {
             longPressConsumed = pendingLongPressOptions.isNotEmpty()
         }
         val view = TextView(this).apply {
-            text = if (secondaryLegend.isNullOrBlank()) {
-                label
-            } else {
-                val legendLine = secondaryLegend
-                android.text.SpannableString("$legendLine\n$label").apply {
-                    setSpan(
-                        android.text.style.RelativeSizeSpan(0.48f),
-                        0,
-                        legendLine.length,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    setSpan(
-                        android.text.style.ForegroundColorSpan(Color.argb(160, 255, 255, 255)),
-                        0,
-                        legendLine.length,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
-            }
+            text = styledKeyLabel(if (baseLetter != null && shifted) baseLetter.uppercase() else (baseLetter ?: label), secondaryLegend)
             gravity = Gravity.CENTER
             includeFontPadding = false
             val baseSize = when {
@@ -1013,7 +1004,8 @@ class YoryInputMethodService : InputMethodService() {
                 else -> label
             }
         }
-        val gap = if (compact) dp(1.25f) else dp((theme.keySpacingDp / 2f).coerceIn(1.5f, 4f))
+        if (baseLetter != null) dynamicKeyLabels.add(Triple(view, baseLetter, secondaryLegend))
+        val gap = if (compact) dp(1.0f) else dp((theme.keySpacingDp / 2f).coerceIn(1.5f, 4f))
         val params = LinearLayout.LayoutParams(0, dp(theme.keyHeightDp), weight).apply {
             setMargins(gap, dp(2), gap, dp(2))
         }
@@ -1189,23 +1181,63 @@ class YoryInputMethodService : InputMethodService() {
         val connection: InputConnection = currentInputConnection ?: return
         when (label) {
             "⌫" -> {
-                connection.deleteSurroundingText(1, 0)
+                connection.deleteSurroundingTextInCodePoints(1, 0)
                 refreshAutomaticShift()
-                refreshKeyboard()
+                updateDynamicKeyLabels()
                 updateSuggestions()
             }
             "⇧" -> {
                 shifted = !shifted
-                refreshKeyboard()
+                updateDynamicKeyLabels()
             }
+            " " -> commitWordBoundary(" ")
             else -> {
-                val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
-                connection.commitText(output, 1)
-                refreshAutomaticShift()
-                refreshKeyboard()
-                updateSuggestions()
+                if (label.length == 1 && !label[0].isLetterOrDigit() && label !in setOf("'", "’")) {
+                    commitWordBoundary(label)
+                } else {
+                    val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
+                    connection.commitText(output, 1)
+                    refreshAutomaticShift()
+                    updateDynamicKeyLabels()
+                    updateSuggestions()
+                }
             }
         }
+    }
+
+    private fun styledKeyLabel(primary: String, secondary: String?): CharSequence {
+        if (secondary.isNullOrBlank()) return primary
+        return android.text.SpannableString("$secondary\n$primary").apply {
+            setSpan(android.text.style.RelativeSizeSpan(0.48f), 0, secondary.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.ForegroundColorSpan(Color.argb(160, 255, 255, 255)),
+                0, secondary.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
+    private fun updateDynamicKeyLabels() {
+        dynamicKeyLabels.forEach { (view, base, secondary) ->
+            view.text = styledKeyLabel(if (shifted) base.uppercase() else base, secondary)
+        }
+    }
+
+    private fun commitWordBoundary(boundary: String) {
+        val connection = currentInputConnection ?: return
+        if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+            getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+            val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
+            val correction = token?.let { wordSuggestions?.correct(it, languageTag) }
+            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
+                connection.deleteSurroundingText(token.length, 0)
+                connection.commitText(correction, 1)
+            }
+        }
+        learnCurrentWord()
+        connection.commitText(boundary, 1)
+        refreshAutomaticShift()
+        updateDynamicKeyLabels()
+        updateSuggestions()
     }
 
     private fun cycleLanguage(direction: Int = 1) {
@@ -1310,49 +1342,11 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
-    private fun updateSuggestions() {
+    private fun buildSuggestionRow() {
         val row = suggestionRow ?: return
-        if (toolsMode) { row.visibility = View.GONE; return }
-        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val compactMode = prefs.getBoolean("compact_mode", false)
-        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        row.layoutParams = row.layoutParams.apply {
-            height = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
-        }
-        row.requestLayout()
         row.removeAllViews()
-        if (incognitoMode || sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
-            !prefs.getBoolean("word_suggestions", true)) {
-            row.visibility = View.GONE
-            return
-        }
-        row.visibility = View.VISIBLE
-        addSuggestionToggleButton(row) {
-            suggestionsCollapsed = !suggestionsCollapsed
-            updateSuggestions()
-        }
-        if (suggestionsCollapsed) return
-        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
-        val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
-        val limit = if (compactMode) 2 else 3
-        val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
-        val bundled = wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
-        val candidates = (personal + bundled).distinct().take(limit)
-        val visible = if (candidates.isEmpty()) listOf(YoryLanguageLayouts.forTag(languageTag).shortLabel) else candidates
-        visible.forEachIndexed { index, suggestion ->
-            addSuggestionLabel(row, suggestion, suggestion.isNotEmpty()) {
-                if (candidates.isNotEmpty()) replaceCurrentWord(suggestion)
-            }
-            if (index < visible.lastIndex) {
-                row.addView(View(this).apply { setBackgroundColor(Color.argb(40, 255, 255, 255)) },
-                    LinearLayout.LayoutParams(dp(1), dp(16)))
-            }
-        }
-        repeat((limit - visible.size).coerceAtLeast(0)) { addSuggestionLabel(row, "", false) {} }
-    }
-
-    private fun addSuggestionToggleButton(parent: LinearLayout, action: () -> Unit) {
-        val button = FrameLayout(this).apply {
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val toggle = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.TRANSPARENT)
@@ -1360,33 +1354,86 @@ class YoryInputMethodService : InputMethodService() {
             }
             isClickable = true
             isFocusable = true
-            contentDescription = if (suggestionsCollapsed) "Expand suggestions" else "Collapse suggestions"
-            setOnClickListener { performKeyFeedback(this); action() }
+            contentDescription = "Collapse suggestions"
+            setOnClickListener {
+                suggestionsCollapsed = !suggestionsCollapsed
+                updateSuggestions()
+            }
         }
-        button.addView(
-            YoryKeyboardIconView(this, if (suggestionsCollapsed) "chevron-down" else "chevron-up", theme.textArgb),
-            FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER)
-        )
-        parent.addView(button, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
+        val glyph = TextView(this).apply {
+            text = "⌃"
+            gravity = Gravity.CENTER
+            textSize = 17f
+            setTextColor(theme.textArgb)
+        }
+        toggle.addView(glyph, FrameLayout.LayoutParams(-1, -1))
+        row.addView(toggle, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
             gravity = Gravity.CENTER_VERTICAL
             setMargins(dp(2), 0, dp(7), 0)
         })
+        suggestionToggle = toggle
+        suggestionToggleGlyph = glyph
+
+        repeat(3) { index ->
+            val label = TextView(this).apply {
+                gravity = Gravity.CENTER
+                textSize = 16f
+                maxLines = 1
+                setTextColor(theme.textArgb)
+                background = ColorDrawable(Color.TRANSPARENT)
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    val chosen = text?.toString().orEmpty()
+                    if (chosen.isNotBlank()) replaceCurrentWord(chosen)
+                }
+            }
+            row.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
+            suggestionLabels.add(label)
+            if (index < 2) {
+                row.addView(View(this).apply {
+                    setBackgroundColor(Color.argb(40, 255, 255, 255))
+                }, LinearLayout.LayoutParams(dp(1), dp(16)))
+            }
+        }
     }
 
-    private fun addSuggestionLabel(parent: LinearLayout, value: String, enabled: Boolean, action: () -> Unit) {
-        val label = TextView(this).apply {
-            text = value
-            gravity = Gravity.CENTER
-            textSize = 16f
-            maxLines = 1
-            setTextColor(theme.textArgb)
-            alpha = if (enabled) 1f else 0.18f
-            background = ColorDrawable(Color.TRANSPARENT)
-            isClickable = enabled
-            isFocusable = enabled
-            if (enabled) setOnClickListener { performKeyFeedback(this); action() }
+    private fun updateSuggestions() {
+        val row = suggestionRow ?: return
+        if (toolsMode) {
+            row.visibility = View.GONE
+            return
         }
-        parent.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val compactMode = prefs.getBoolean("compact_mode", false)
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val desiredHeight = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
+        if (row.layoutParams.height != desiredHeight) {
+            row.layoutParams = row.layoutParams.apply { height = desiredHeight }
+        }
+        val enabled = !incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+            !emojiMode && !clipboardMode && prefs.getBoolean("word_suggestions", true)
+        row.visibility = if (enabled) View.VISIBLE else View.GONE
+        if (!enabled) return
+
+        suggestionToggle?.contentDescription = if (suggestionsCollapsed) "Expand suggestions" else "Collapse suggestions"
+        suggestionToggleGlyph?.text = if (suggestionsCollapsed) "⌄" else "⌃"
+        suggestionLabels.forEach { it.isEnabled = !suggestionsCollapsed }
+        if (suggestionsCollapsed) {
+            suggestionLabels.forEach { it.text = "" }
+            return
+        }
+
+        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
+        val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
+        val limit = if (compactMode) 2 else 3
+        val candidates = if (prefix.length >= 2) wordSuggestions?.suggest(prefix, languageTag, limit).orEmpty() else emptyList()
+        suggestionLabels.forEachIndexed { index, label ->
+            val suggestion = candidates.getOrNull(index).orEmpty()
+            label.text = suggestion
+            label.isEnabled = suggestion.isNotEmpty()
+            label.alpha = if (suggestion.isNotEmpty()) 1f else 0.18f
+        }
     }
 
     private fun replaceCurrentWord(suggestion: String) {
