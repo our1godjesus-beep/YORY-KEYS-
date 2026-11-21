@@ -65,9 +65,17 @@ final class KeyboardViewController: UIInputViewController {
     private let suggestionRow = UIStackView()
     private var toolsMode = false
     private var resizeMode = false
+    private var isToolsPanelVisible = false
+    private var displayedToolsResizeMode: Bool?
     private var localKeyHeightOverride: CGFloat?
-    private var resizeHeightSlider: UISlider?
     private var resizeHeightLabel: UILabel?
+    private var suggestionToggleButton: UIButton?
+    private var suggestionButtons: [UIButton] = []
+    private var systemLexicon: [String: String] = [:]
+    private var sortedSystemLexicon: [(input: String, output: String)] = []
+    private var letterKeyButtons: [(button: UIButton, base: String)] = []
+    private var keyHeightConstraints: [NSLayoutConstraint] = []
+    private var effectiveKeyHeightValue: CGFloat = 40
     private var activeKeyHeight: CGFloat { localKeyHeightOverride ?? YoryThemeReader.keyHeight }
     private let keysStack = UIStackView()
     private var keyboardHeightConstraint: NSLayoutConstraint?
@@ -90,12 +98,25 @@ final class KeyboardViewController: UIInputViewController {
         primaryLanguage = languageTag
         applyCurrentTheme()
         buildInterface()
+        requestSupplementaryLexicon { [weak self] lexicon in
+            guard let self else { return }
+            let entries = Array(lexicon.entries).map {
+                (input: $0.userInput.lowercased(), output: $0.documentText)
+            }
+            self.systemLexicon = Dictionary(
+                entries.map { ($0.input, $0.output) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            self.sortedSystemLexicon = entries.sorted { $0.input < $1.input }
+            self.updateSuggestions()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateInputTraits()
         refreshAutomaticShift()
+        updateShiftedLetterKeys()
         applyCurrentTheme()
         emojiMode = false
         emojiRow.isHidden = true
@@ -114,6 +135,7 @@ final class KeyboardViewController: UIInputViewController {
         super.textDidChange(textInput)
         updateInputTraits()
         refreshAutomaticShift()
+        updateShiftedLetterKeys()
         updateSuggestions()
     }
 
@@ -285,6 +307,7 @@ final class KeyboardViewController: UIInputViewController {
         let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 32)
         suggestionRowHeightConstraint = suggestionHeight
         suggestionHeight.isActive = true
+        buildSuggestionControls()
 
         emojiRow.axis = .vertical
         emojiRow.spacing = 3
@@ -333,6 +356,8 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.semanticContentAttribute = direction
         emojiRow.semanticContentAttribute = direction
         keysStack.semanticContentAttribute = direction
+        letterKeyButtons.removeAll(keepingCapacity: true)
+        keyHeightConstraints.removeAll(keepingCapacity: true)
         keysStack.arrangedSubviews.forEach { item in
             keysStack.removeArrangedSubview(item)
             item.removeFromSuperview()
@@ -462,7 +487,9 @@ final class KeyboardViewController: UIInputViewController {
         let row = UIStackView()
         row.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
-        row.spacing = compact ? max(1, YoryThemeReader.keySpacing * 0.35) : YoryThemeReader.keySpacing
+        let width = view.bounds.width > 0 ? view.bounds.width : (view.window?.windowScene?.screen.bounds.width ?? UIScreen.main.bounds.width)
+        let adaptiveGap = min(YoryThemeReader.keySpacing, max(2, width / 80))
+        row.spacing = compact ? max(1, min(2.4, adaptiveGap * 0.38)) : adaptiveGap
         let hasWideModifiers = labels.contains("⇧") || labels.contains("⌫")
         row.distribution = hasWideModifiers ? .fill : .fillEqually
         if horizontalInset > 0 {
@@ -481,6 +508,10 @@ final class KeyboardViewController: UIInputViewController {
             } else {
                 let display = isShifted ? label.uppercased() : label
                 key = keyButton(display, secondaryHint: secondaryHints[label], compact: compact)
+                if label.count == 1, label.first?.isLetter == true {
+                    key.accessibilityIdentifier = label
+                    letterKeyButtons.append((key, label))
+                }
             }
             if hasWideModifiers {
                 let units: CGFloat = (label == "⇧" || label == "⌫") ? 1.25 : 1.0
@@ -495,7 +526,9 @@ final class KeyboardViewController: UIInputViewController {
         if toolsMode {
             let panelHeight: CGFloat = resizeMode ? 190 : 220
             let chrome = 4 + 36 + panelHeight + 8
-            keyboardHeightConstraint?.constant = min(430, max(240, chrome))
+            let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
+            let maximum = min(430, max(240, screenHeight * 0.48))
+            keyboardHeightConstraint?.constant = min(maximum, max(220, chrome))
             return
         }
         let rowCount: CGFloat = numericInput ? 5 :
@@ -505,8 +538,13 @@ final class KeyboardViewController: UIInputViewController {
         let emojiPanelHeight: CGFloat = emojiMode ? (emojiCategory == "People" ? 126 : 98) : 0
         let suggestionHeight = suggestionRowHeightConstraint?.constant ?? 32
         let topChrome: CGFloat = 8 + 36 + suggestionHeight + rowGap * 2
-        let required = topChrome + rowCount * activeKeyHeight + innerGaps + emojiPanelHeight
-        keyboardHeightConstraint?.constant = min(430, max(240, required))
+        let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
+        let maximum = min(430, max(240, screenHeight * 0.48))
+        let availableForKeys = max(0, maximum - topChrome - innerGaps - emojiPanelHeight)
+        effectiveKeyHeightValue = min(activeKeyHeight, max(30, availableForKeys / max(1, rowCount)))
+        let required = topChrome + rowCount * effectiveKeyHeightValue + innerGaps + emojiPanelHeight
+        keyboardHeightConstraint?.constant = min(maximum, max(220, required))
+        keyHeightConstraints.forEach { $0.constant = effectiveKeyHeightValue }
     }
 
     private func longPressMenu(for title: String) -> UIMenu? {
@@ -662,7 +700,9 @@ final class KeyboardViewController: UIInputViewController {
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        button.heightAnchor.constraint(equalToConstant: activeKeyHeight).isActive = true
+        let keyHeight = button.heightAnchor.constraint(equalToConstant: effectiveKeyHeightValue)
+        keyHeight.isActive = true
+        keyHeightConstraints.append(keyHeight)
         if let menu = longPressMenu(for: title) {
             button.menu = menu
             button.showsMenuAsPrimaryAction = false
@@ -745,13 +785,15 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func insertKey(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
-        if title.range(of: "^[^\\p{L}\\p{M}]+$", options: .regularExpression) != nil {
-            learnCurrentWord()
+        let rawValue = sender.accessibilityIdentifier ?? title
+        if rawValue.range(of: "^[\\s\\p{P}\\p{S}]+$", options: .regularExpression) != nil {
+            commitWordBoundary(rawValue)
+            return
         }
         playKeyClick()
-        textDocumentProxy.insertText(isShifted ? title.uppercased() : title)
+        textDocumentProxy.insertText(isShifted ? rawValue.uppercased() : rawValue)
         refreshAutomaticShift()
-        rebuildKeys()
+        updateShiftedLetterKeys()
         updateSuggestions()
     }
 
@@ -766,21 +808,17 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+
     @objc private func deleteBackward() {
         playKeyClick()
         textDocumentProxy.deleteBackward()
         refreshAutomaticShift()
-        rebuildKeys()
+        updateShiftedLetterKeys()
         updateSuggestions()
     }
 
     @objc private func insertSpace() {
-        learnCurrentWord()
-        playKeyClick()
-        textDocumentProxy.insertText(" ")
-        refreshAutomaticShift()
-        rebuildKeys()
-        updateSuggestions()
+        commitWordBoundary(" ")
     }
 
     private var returnKeyTitle: String {
@@ -812,24 +850,20 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func insertReturn() {
-        learnCurrentWord()
-        playKeyClick()
-        textDocumentProxy.insertText("\n")
-        refreshAutomaticShift()
-        rebuildKeys()
-        updateSuggestions()
+        commitWordBoundary("\n")
     }
 
     @objc private func toggleShift() {
         playKeyClick()
         isShifted.toggle()
-        rebuildKeys()
+        updateShiftedLetterKeys()
     }
 
     @objc private func toggleLanguage() {
         playKeyClick()
         cycleLanguage(direction: 1)
     }
+
 
     private func cycleLanguage(direction: Int) {
         toolsMode = false
@@ -891,6 +925,7 @@ final class KeyboardViewController: UIInputViewController {
     private func learnCurrentWord() {
         guard hasFullAccess,
               !incognitoMode,
+              textDocumentProxy.isSecureTextEntry != true,
               YoryThemeReader.personalLearningEnabled,
               !numericInput,
               currentKeyboardType != .emailAddress,
@@ -1088,89 +1123,52 @@ final class KeyboardViewController: UIInputViewController {
         if emojiCategory == "Recent" { refreshEmojiPicker() }
     }
 
-    private func updateSuggestions() {
+    private func buildSuggestionControls() {
         suggestionRow.arrangedSubviews.forEach { item in
             suggestionRow.removeArrangedSubview(item)
             item.removeFromSuperview()
         }
-        suggestionRow.isHidden = false
-
-        if toolsMode {
-            keysStack.isHidden = true
-            emojiRow.isHidden = true
-            suggestionRow.axis = .vertical
-            suggestionRow.distribution = .fill
-            suggestionRow.spacing = 0
-            suggestionRowHeightConstraint?.constant = resizeMode ? 190 : 220
-            suggestionRow.addArrangedSubview(resizeMode ? makeResizePanel() : makeToolsGrid())
-            view.setNeedsLayout()
-            updateKeyboardHeight()
-            return
-        }
-
-        keysStack.isHidden = false
         suggestionRow.axis = .horizontal
         suggestionRow.distribution = .fill
         suggestionRow.spacing = 4
         suggestionRow.semanticContentAttribute = .forceLeftToRight
-        let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
-        suggestionRowHeightConstraint?.constant = suggestionsCollapsed ? 19 : (compactMode ? 24 : 32)
-        suggestionRow.isHidden = incognitoMode || emojiMode || numericInput || !YoryThemeReader.wordSuggestionsEnabled
-        guard !incognitoMode && !emojiMode && !numericInput && YoryThemeReader.wordSuggestionsEnabled else {
-            updateKeyboardHeight()
-            return
-        }
 
-        suggestionRow.addArrangedSubview(makeSuggestionUtilityButton(
+        let toggle = makeSuggestionUtilityButton(
             suggestionsCollapsed ? "chevron.down" : "chevron.up",
             accessibility: suggestionsCollapsed ? "Expand suggestions" : "Collapse suggestions"
         ) { [weak self] in
-            self?.suggestionsCollapsed.toggle()
-            self?.updateSuggestions()
-        })
-        if suggestionsCollapsed {
-            updateKeyboardHeight()
-            return
+            guard let self else { return }
+            self.suggestionsCollapsed.toggle()
+            self.updateSuggestions()
         }
+        suggestionToggleButton = toggle
+        suggestionRow.addArrangedSubview(toggle)
 
-        let context = textDocumentProxy.documentContextBeforeInput ?? ""
-        let candidates: [String]
-        if let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) {
-            let prefix = String(context[range])
-            candidates = Array(YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag).prefix(compactMode ? 2 : 3))
-        } else {
-            candidates = []
-        }
+        let slots = UIStackView()
+        slots.axis = .horizontal
+        slots.distribution = .fillEqually
+        slots.spacing = 0
+        suggestionButtons.removeAll(keepingCapacity: true)
 
-        let slots = compactMode ? 2 : 3
-        let suggestionsStack = UIStackView()
-        suggestionsStack.axis = .horizontal
-        suggestionsStack.distribution = .fillEqually
-        suggestionsStack.spacing = 0
-        for index in 0..<slots {
-            let suggestion = candidates.indices.contains(index) ? candidates[index] : ""
+        for index in 0..<3 {
             let cell = UIView()
             let button = UIButton(type: .system)
-            button.setTitle(suggestion, for: .normal)
-            button.setTitleColor(YoryThemeReader.textColor.withAlphaComponent(suggestion.isEmpty ? 0.18 : 1), for: .normal)
+            button.setTitle("", for: .normal)
+            button.setTitleColor(YoryThemeReader.textColor, for: .normal)
             button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
             button.titleLabel?.lineBreakMode = .byTruncatingTail
-            button.accessibilityLabel = suggestion.isEmpty ? "No suggestion" : "Use suggestion " + suggestion
-            button.isEnabled = !suggestion.isEmpty
-            if !suggestion.isEmpty {
-                button.addAction(UIAction { [weak self] _ in
-                    self?.replaceCurrentWord(with: suggestion)
-                }, for: .touchUpInside)
-            }
+            button.contentHorizontalAlignment = .center
+            button.accessibilityLabel = "Word suggestion"
+            button.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
             button.translatesAutoresizingMaskIntoConstraints = false
             cell.addSubview(button)
             NSLayoutConstraint.activate([
                 button.leadingAnchor.constraint(equalTo: cell.leadingAnchor),
-                button.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: index < slots - 1 ? -1 : 0),
+                button.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: index < 2 ? -1 : 0),
                 button.topAnchor.constraint(equalTo: cell.topAnchor),
                 button.bottomAnchor.constraint(equalTo: cell.bottomAnchor)
             ])
-            if index < slots - 1 {
+            if index < 2 {
                 let divider = UIView()
                 divider.backgroundColor = UIColor.white.withAlphaComponent(0.16)
                 divider.translatesAutoresizingMaskIntoConstraints = false
@@ -1182,9 +1180,112 @@ final class KeyboardViewController: UIInputViewController {
                     divider.trailingAnchor.constraint(equalTo: cell.trailingAnchor)
                 ])
             }
-            suggestionsStack.addArrangedSubview(cell)
+            suggestionButtons.append(button)
+            slots.addArrangedSubview(cell)
         }
-        suggestionRow.addArrangedSubview(suggestionsStack)
+        suggestionRow.addArrangedSubview(slots)
+        slots.widthAnchor.constraint(equalTo: suggestionRow.widthAnchor, constant: -32).isActive = true
+    }
+
+    private func updateSuggestions() {
+        suggestionRow.isHidden = false
+
+        if toolsMode {
+            keysStack.isHidden = true
+            emojiRow.isHidden = true
+            if !isToolsPanelVisible || displayedToolsResizeMode != resizeMode {
+                suggestionRow.arrangedSubviews.forEach { item in
+                    suggestionRow.removeArrangedSubview(item)
+                    item.removeFromSuperview()
+                }
+                suggestionRow.axis = .vertical
+                suggestionRow.distribution = .fill
+                suggestionRow.spacing = 0
+                suggestionRowHeightConstraint?.constant = resizeMode ? 190 : 220
+                suggestionRow.addArrangedSubview(resizeMode ? makeResizePanel() : makeToolsGrid())
+                isToolsPanelVisible = true
+                displayedToolsResizeMode = resizeMode
+            }
+            view.setNeedsLayout()
+            updateKeyboardHeight()
+            return
+        }
+
+        if isToolsPanelVisible {
+            suggestionRow.arrangedSubviews.forEach { item in
+                suggestionRow.removeArrangedSubview(item)
+                item.removeFromSuperview()
+            }
+            isToolsPanelVisible = false
+            displayedToolsResizeMode = nil
+            suggestionToggleButton = nil
+            suggestionButtons.removeAll(keepingCapacity: true)
+            buildSuggestionControls()
+        }
+
+        keysStack.isHidden = false
+        suggestionRow.axis = .horizontal
+        suggestionRow.distribution = .fill
+        suggestionRow.spacing = 4
+        suggestionRow.semanticContentAttribute = .forceLeftToRight
+        let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
+        let visible = !incognitoMode && !emojiMode && !numericInput &&
+            textDocumentProxy.isSecureTextEntry != true &&
+            currentKeyboardType != .emailAddress && currentKeyboardType != .URL &&
+            textDocumentProxy.autocorrectionType != .no && YoryThemeReader.wordSuggestionsEnabled
+        let normalHeight: CGFloat = suggestionsCollapsed ? 19 : (compactMode ? 24 : 32)
+        suggestionRowHeightConstraint?.constant = visible ? normalHeight : 0
+        suggestionRow.isHidden = !visible
+
+        guard visible else {
+            updateKeyboardHeight()
+            return
+        }
+
+        suggestionToggleButton?.setImage(
+            UIImage(systemName: suggestionsCollapsed ? "chevron.down" : "chevron.up"),
+            for: .normal
+        )
+        suggestionToggleButton?.accessibilityLabel = suggestionsCollapsed ? "Expand suggestions" : "Collapse suggestions"
+        suggestionButtons.forEach { $0.isHidden = suggestionsCollapsed }
+        if suggestionsCollapsed {
+            suggestionButtons.forEach { $0.setTitle("", for: .normal) }
+            updateKeyboardHeight()
+            return
+        }
+
+        let context = textDocumentProxy.documentContextBeforeInput ?? ""
+        let candidates: [String]
+        if let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) {
+            let prefix = String(context[range])
+            if prefix.count >= 2 {
+                let local = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
+                let system = Array(sortedSystemLexicon.lazy
+                    .filter { $0.input.hasPrefix(prefix.lowercased()) }
+                    .prefix(3)
+                    .map(\.output))
+                var seen = Set<String>()
+                candidates = (local + system).filter { seen.insert($0.lowercased()).inserted }
+                    .prefix(compactMode ? 2 : 3).map { $0 }
+            } else {
+                candidates = []
+            }
+        } else {
+            candidates = []
+        }
+        for index in suggestionButtons.indices {
+            let active = !compactMode || index < 2
+            let candidate = candidates.indices.contains(index) && active ? candidates[index] : ""
+            let button = suggestionButtons[index]
+            button.isHidden = !active
+            button.setTitle(candidate, for: .normal)
+            button.isEnabled = !candidate.isEmpty
+            button.accessibilityLabel = candidate.isEmpty ? "No suggestion" : "Use suggestion " + candidate
+            button.setTitleColor(
+                YoryThemeReader.textColor.withAlphaComponent(candidate.isEmpty ? 0.18 : 1),
+                for: .normal
+            )
+        }
         updateKeyboardHeight()
     }
 
@@ -1284,7 +1385,7 @@ final class KeyboardViewController: UIInputViewController {
         container.layoutMargins = UIEdgeInsets(top: 4, left: 7, bottom: 3, right: 7)
 
         let title = UILabel()
-        title.text = "RESIZE KEYBOARD"
+        title.text = "ADJUST SIZING"
         title.font = .systemFont(ofSize: 10, weight: .semibold)
         title.textColor = YoryThemeReader.textColor.withAlphaComponent(0.78)
         title.textAlignment = .center
@@ -1297,55 +1398,48 @@ final class KeyboardViewController: UIInputViewController {
         frame.translatesAutoresizingMaskIntoConstraints = false
         frame.heightAnchor.constraint(equalToConstant: 54).isActive = true
 
-        func addHandle(width: CGFloat, height: CGFloat, centerX: NSLayoutXAxisAnchor? = nil,
-                       centerY: NSLayoutYAxisAnchor? = nil, leading: NSLayoutXAxisAnchor? = nil,
-                       trailing: NSLayoutXAxisAnchor? = nil, top: NSLayoutYAxisAnchor? = nil,
-                       bottom: NSLayoutYAxisAnchor? = nil, tag: Int = 0, draggable: Bool = false) {
-            let handle = UIView()
-            handle.backgroundColor = UIColor.systemBlue
-            handle.layer.cornerRadius = min(width, height) / 2
-            handle.translatesAutoresizingMaskIntoConstraints = false
-            frame.addSubview(handle)
-            var constraints = [
-                handle.widthAnchor.constraint(equalToConstant: width),
-                handle.heightAnchor.constraint(equalToConstant: height)
-            ]
-            if let centerX { constraints.append(handle.centerXAnchor.constraint(equalTo: centerX)) }
-            if let centerY { constraints.append(handle.centerYAnchor.constraint(equalTo: centerY)) }
-            if let leading { constraints.append(handle.leadingAnchor.constraint(equalTo: leading)) }
-            if let trailing { constraints.append(handle.trailingAnchor.constraint(equalTo: trailing)) }
-            if let top { constraints.append(handle.topAnchor.constraint(equalTo: top)) }
-            if let bottom { constraints.append(handle.bottomAnchor.constraint(equalTo: bottom)) }
-            NSLayoutConstraint.activate(constraints)
-            handle.accessibilityLabel = draggable ? "Drag to resize keyboard height" : "iOS controls keyboard width"
-            handle.isAccessibilityElement = true
-            handle.tag = tag
-            if draggable {
-                handle.isUserInteractionEnabled = true
-                handle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
-            }
-        }
+        let topHandle = UIView()
+        topHandle.backgroundColor = UIColor.systemBlue
+        topHandle.layer.cornerRadius = 4
+        topHandle.translatesAutoresizingMaskIntoConstraints = false
+        topHandle.tag = 1
+        topHandle.isUserInteractionEnabled = true
+        topHandle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
+        topHandle.accessibilityLabel = "Drag to reduce or increase key height"
+        frame.addSubview(topHandle)
 
-        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, top: frame.topAnchor, tag: 1, draggable: true)
-        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, bottom: frame.bottomAnchor, tag: -1, draggable: true)
-        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, leading: frame.leadingAnchor)
-        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, trailing: frame.trailingAnchor)
+        let bottomHandle = UIView()
+        bottomHandle.backgroundColor = UIColor.systemBlue
+        bottomHandle.layer.cornerRadius = 4
+        bottomHandle.translatesAutoresizingMaskIntoConstraints = false
+        bottomHandle.tag = -1
+        bottomHandle.isUserInteractionEnabled = true
+        bottomHandle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
+        bottomHandle.accessibilityLabel = "Drag to increase or reduce key height"
+        frame.addSubview(bottomHandle)
 
-        let position = UIButton(type: .system)
-        position.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right"), for: .normal)
-        position.tintColor = .white
-        position.backgroundColor = UIColor.systemBlue
-        position.layer.cornerRadius = 22
-        position.accessibilityLabel = "Keyboard position is managed by iOS"
-        position.translatesAutoresizingMaskIntoConstraints = false
-        frame.addSubview(position)
+        let systemConstraintNote = UILabel()
+        systemConstraintNote.text = "iOS manages keyboard width and placement"
+        systemConstraintNote.font = .systemFont(ofSize: 10, weight: .medium)
+        systemConstraintNote.textColor = YoryThemeReader.textColor.withAlphaComponent(0.78)
+        systemConstraintNote.textAlignment = .center
+        systemConstraintNote.translatesAutoresizingMaskIntoConstraints = false
+        frame.addSubview(systemConstraintNote)
+
         NSLayoutConstraint.activate([
-            position.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
-            position.centerYAnchor.constraint(equalTo: frame.centerYAnchor),
-            position.widthAnchor.constraint(equalToConstant: 44),
-            position.heightAnchor.constraint(equalToConstant: 44)
+            topHandle.topAnchor.constraint(equalTo: frame.topAnchor, constant: -3),
+            topHandle.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            topHandle.widthAnchor.constraint(equalToConstant: 38),
+            topHandle.heightAnchor.constraint(equalToConstant: 8),
+            bottomHandle.bottomAnchor.constraint(equalTo: frame.bottomAnchor, constant: 3),
+            bottomHandle.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            bottomHandle.widthAnchor.constraint(equalToConstant: 38),
+            bottomHandle.heightAnchor.constraint(equalToConstant: 8),
+            systemConstraintNote.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            systemConstraintNote.centerYAnchor.constraint(equalTo: frame.centerYAnchor),
+            systemConstraintNote.leadingAnchor.constraint(greaterThanOrEqualTo: frame.leadingAnchor, constant: 12),
+            systemConstraintNote.trailingAnchor.constraint(lessThanOrEqualTo: frame.trailingAnchor, constant: -12)
         ])
-        position.isEnabled = false
         container.addArrangedSubview(frame)
 
         let value = UILabel()
@@ -1355,16 +1449,6 @@ final class KeyboardViewController: UIInputViewController {
         value.text = "\(Int(activeKeyHeight)) pt"
         resizeHeightLabel = value
         container.addArrangedSubview(value)
-
-        let slider = UISlider()
-        slider.minimumValue = 36
-        slider.maximumValue = 60
-        slider.value = Float(activeKeyHeight)
-        slider.minimumTrackTintColor = YoryThemeReader.accentColor
-        slider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.20)
-        slider.addTarget(self, action: #selector(resizeHeightChanged(_:)), for: .valueChanged)
-        resizeHeightSlider = slider
-        container.addArrangedSubview(slider)
 
         let actions = UIStackView()
         actions.axis = .horizontal
@@ -1411,17 +1495,11 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    @objc private func resizeHeightChanged(_ sender: UISlider) {
-        setKeyboardHeight(CGFloat(sender.value))
-    }
-
     private func setKeyboardHeight(_ value: CGFloat) {
         let safe = min(max(value, 36), 60)
         localKeyHeightOverride = safe
         UserDefaults.standard.set(Double(safe), forKey: "yory.keyboard.keyHeight.local")
-        resizeHeightSlider?.value = Float(safe)
         resizeHeightLabel?.text = "\(Int(safe)) pt"
-        rebuildKeys()
         updateKeyboardHeight()
     }
 
@@ -1463,6 +1541,40 @@ final class KeyboardViewController: UIInputViewController {
         button.accessibilityLabel = title
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button
+    }
+
+    @objc private func suggestionTapped(_ sender: UIButton) {
+        guard let value = sender.title(for: .normal), !value.isEmpty else { return }
+        replaceCurrentWord(with: value)
+    }
+
+    private func updateShiftedLetterKeys() {
+        for entry in letterKeyButtons {
+            entry.button.setTitle(isShifted ? entry.base.uppercased() : entry.base, for: .normal)
+        }
+    }
+
+    private func commitWordBoundary(_ boundary: String) {
+        if YoryThemeReader.autoCorrectEnabled && textDocumentProxy.autocorrectionType != .no &&
+            textDocumentProxy.isSecureTextEntry != true && !incognitoMode && !numericInput &&
+            currentKeyboardType != .emailAddress && currentKeyboardType != .URL {
+            let context = textDocumentProxy.documentContextBeforeInput ?? ""
+            if let range = context.range(of: "[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) {
+                let token = String(context[range])
+                let systemCorrection = systemLexicon[token.lowercased()]
+                let correction = systemCorrection ?? YoryLocalWordSuggestions.correct(token, languageTag: languageTag)
+                if let correction, correction != token {
+                    for _ in token { textDocumentProxy.deleteBackward() }
+                    textDocumentProxy.insertText(correction)
+                }
+            }
+        }
+        learnCurrentWord()
+        playKeyClick()
+        textDocumentProxy.insertText(boundary)
+        refreshAutomaticShift()
+        updateShiftedLetterKeys()
+        updateSuggestions()
     }
 
     private func replaceCurrentWord(with suggestion: String) {

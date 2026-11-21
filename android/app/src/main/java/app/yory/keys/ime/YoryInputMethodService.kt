@@ -24,10 +24,10 @@ import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.View
+import android.view.Window
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
-import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import java.util.concurrent.ExecutorService
@@ -70,7 +70,18 @@ class YoryInputMethodService : InputMethodService() {
     private var emojiCategory = "Recent"
     private var emojiSkinTone = ""
     private var keysContainer: LinearLayout? = null
+    private var keyboardMainArea: FrameLayout? = null
+    private var keyboardContent: LinearLayout? = null
+    private var resizeOverlay: FrameLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
+    private val dynamicKeyLabels = mutableListOf<Triple<TextView, String, String?>>()
+    private val suggestionLabels = mutableListOf<TextView>()
+    private var suggestionToggle: FrameLayout? = null
+    private var suggestionToggleGlyph: TextView? = null
+    private var imeWindow: Window? = null
+    private var resizeWidthPercent = 1f
+    private var resizeOffsetXdp = 0f
+    private var resizeOffsetYdp = 0f
     private val learningExecutor: ExecutorService = Executors.newSingleThreadExecutor { task ->
         Thread(task, "YORY-PersonalLearning").apply { isDaemon = true }
     }
@@ -82,11 +93,13 @@ class YoryInputMethodService : InputMethodService() {
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", "en-US") ?: "en-US"
         theme = YoryThemeStore.load(applicationContext)
+        loadResizeGeometry()
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(4), dp(4), dp(4))
             background = panelBackground()
+            clipChildren = false
         }
         keyboardRoot = root
 
@@ -99,19 +112,36 @@ class YoryInputMethodService : InputMethodService() {
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(36)))
         refreshToolbar()
 
+        val mainArea = FrameLayout(this).apply {
+            clipChildren = false
+            clipToPadding = false
+        }
+        keyboardMainArea = mainArea
+        root.addView(mainArea, LinearLayout.LayoutParams(-1, -2))
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            clipChildren = false
+            clipToPadding = false
+        }
+        keyboardContent = content
+        mainArea.addView(content, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+
         suggestionRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(0, dp(2), 0, dp(2))
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
-        suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
+        buildSuggestionRow()
+        content.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
 
         clipboardRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            visibility = View.GONE
         }
-        root.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
+        content.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
 
         moreToolsPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -119,7 +149,7 @@ class YoryInputMethodService : InputMethodService() {
             visibility = View.GONE
             setPadding(dp(8), dp(6), dp(8), dp(6))
         }
-        root.addView(moreToolsPanel, LinearLayout.LayoutParams(-1, -2))
+        content.addView(moreToolsPanel, LinearLayout.LayoutParams(-1, -2))
 
         emojiRow = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -127,12 +157,19 @@ class YoryInputMethodService : InputMethodService() {
             visibility = View.GONE
         }
         refreshEmojiPicker()
-        root.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(104)))
+        content.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(104)))
 
         keysContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            clipChildren = false
         }
-        root.addView(keysContainer, LinearLayout.LayoutParams(-1, -2))
+        content.addView(keysContainer, LinearLayout.LayoutParams(-1, -2))
+
+        resizeOverlay = createResizeOverlay()
+        mainArea.addView(resizeOverlay, FrameLayout.LayoutParams(-1, 0))
+        content.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            syncResizeOverlayBounds()
+        }
 
         refreshKeyboard()
         updateSuggestions()
@@ -140,9 +177,63 @@ class YoryInputMethodService : InputMethodService() {
         return root
     }
 
+    override fun onConfigureWindow(win: Window, isFullscreen: Boolean, isCandidatesOnly: Boolean) {
+        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly)
+        imeWindow = win
+        if (!isFullscreen && !isCandidatesOnly) applyKeyboardWindowGeometry(win)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        loadResizeGeometry()
+        theme = YoryThemeStore.load(applicationContext)
+        refreshAutomaticShift()
+        refreshKeyboard()
+        updateSuggestions()
+        applyKeyboardWindowGeometry()
+        keyboardRoot?.post {
+            applyKeyboardWindowGeometry()
+            syncResizeOverlayBounds()
+        }
+    }
+
+    private fun loadResizeGeometry() {
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        resizeWidthPercent = prefs.getFloat("keyboard_width_percent", 1f).coerceIn(0.70f, 1f)
+        resizeOffsetXdp = prefs.getFloat("keyboard_offset_x_dp", 0f).coerceIn(-120f, 120f)
+        resizeOffsetYdp = prefs.getFloat("keyboard_offset_y_dp", 0f).coerceIn(0f, 300f)
+    }
+
+    private fun persistResizeGeometry() {
+        getSharedPreferences("yory_user_settings", MODE_PRIVATE).edit()
+            .putFloat("keyboard_width_percent", resizeWidthPercent.coerceIn(0.70f, 1f))
+            .putFloat("keyboard_offset_x_dp", resizeOffsetXdp.coerceIn(-120f, 120f))
+            .putFloat("keyboard_offset_y_dp", resizeOffsetYdp.coerceIn(0f, 300f))
+            .apply()
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun applyKeyboardWindowGeometry(window: Window? = imeWindow) {
+        val target = window ?: runCatching { getWindow().window }.getOrNull() ?: return
+        val metrics = resources.displayMetrics
+        val widthPercent = resizeWidthPercent.coerceIn(0.70f, 1f)
+        val offsetX = resizeOffsetXdp.coerceIn(-120f, 120f)
+        val offsetY = resizeOffsetYdp.coerceIn(0f, 300f)
+        val widthPx = if (widthPercent >= 0.995f) WindowManager.LayoutParams.MATCH_PARENT
+            else (metrics.widthPixels * widthPercent).toInt().coerceAtLeast(dp(260))
+        val params = target.attributes
+        params.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        params.width = widthPx
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT
+        params.x = dp(offsetX).toInt()
+        params.y = dp(offsetY).toInt()
+        target.attributes = params
+    }
+
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         theme = YoryThemeStore.load(applicationContext)
+        loadResizeGeometry()
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", languageTag) ?: languageTag
         sensitiveField = isSensitive(info)
@@ -160,6 +251,7 @@ class YoryInputMethodService : InputMethodService() {
         incognitoMode = false
         toolsMode = false
         resizeMode = false
+        resizeOverlay?.visibility = View.GONE
         symbolPage = 0
         suggestionsCollapsed = false
         refreshAutomaticShift()
@@ -208,16 +300,24 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                 }
                 "settings" -> addToolbarIconButton(toolbar, "settings", "Open YORY Studio", 1f) { openStudio() }
-                "more" -> addToolbarIconButton(toolbar, if (toolsMode) "close" else "more", if (toolsMode) "Close tools" else "More tools", 1f) {
-                    toolsMode = !toolsMode
-                    if (toolsMode) {
-                        resizeMode = false
-                        emojiMode = false
-                        clipboardMode = false
+                "more" -> addToolbarIconButton(
+                    toolbar,
+                    if (toolsMode || resizeMode) "close" else "more",
+                    if (toolsMode || resizeMode) "Close tools" else "More tools",
+                    1f
+                ) {
+                    if (resizeMode) {
+                        finishResizeOverlay()
+                    } else {
+                        toolsMode = !toolsMode
+                        if (toolsMode) {
+                            emojiMode = false
+                            clipboardMode = false
+                        }
+                        refreshToolbar()
+                        refreshKeyboard()
+                        updateSuggestions()
                     }
-                    refreshToolbar()
-                    refreshKeyboard()
-                    updateSuggestions()
                 }
                 "clipboard" -> if (!incognitoMode && !sensitiveField &&
                     !numericField && !emailField && !urlField) {
@@ -269,6 +369,7 @@ class YoryInputMethodService : InputMethodService() {
         keyboardRoot?.layoutDirection = direction
         container.layoutDirection = direction
         suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        dynamicKeyLabels.clear()
         container.removeAllViews()
 
         moreToolsPanel?.visibility = if (toolsMode) View.VISIBLE else View.GONE
@@ -463,7 +564,7 @@ class YoryInputMethodService : InputMethodService() {
                 currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
             }
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp * 0.72f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() * 0.72f)))
     }
 
     private fun addNumericLayout(parent: LinearLayout) {
@@ -480,7 +581,7 @@ class YoryInputMethodService : InputMethodService() {
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ".", 1)
         }
         addKey(bottom, "⌫", 1f) { handleKey("⌫") }
-        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -493,7 +594,7 @@ class YoryInputMethodService : InputMethodService() {
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
         }
-        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addKeyRow(
@@ -509,14 +610,14 @@ class YoryInputMethodService : InputMethodService() {
             if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
         }
         letters.forEachIndexed { index, char ->
-            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
+            val label = char.toString()
             addKey(
                 row, label, 1f, { handleKey(label) },
                 compact = compact,
                 secondaryLegend = secondaryHints.getOrNull(index)
             )
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addArabicFinalRow(
@@ -535,7 +636,7 @@ class YoryInputMethodService : InputMethodService() {
             addKey(row, label, 1f, { handleKey(label) }, compact = true, secondaryLegend = secondaryHints.getOrNull(index))
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = true)
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addSpecialLetterRow(parent: LinearLayout, letters: String, compact: Boolean = false) {
@@ -543,13 +644,13 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        addKey(row, "⇧", 1.25f, { shifted = !shifted; refreshKeyboard() }, compact = compact)
+        addKey(row, "⇧", 1.25f, { shifted = !shifted; updateDynamicKeyLabels() }, compact = compact)
         letters.forEach { char ->
-            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
+            val label = char.toString()
             addKey(row, label, 1f, { handleKey(label) }, compact = compact)
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = compact)
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addSymbolLayout(parent: LinearLayout) {
@@ -575,7 +676,7 @@ class YoryInputMethodService : InputMethodService() {
                 val weight = if (label == "⌫") 1.35f else 1f
                 addKey(row, label, weight, { handleKey(label) }, compact = true)
             }
-            parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+            parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
         }
     }
 
@@ -583,7 +684,7 @@ class YoryInputMethodService : InputMethodService() {
         val panel = moreToolsPanel ?: return
         panel.removeAllViews()
         if (resizeMode) {
-            refreshResizePanel(panel)
+            panel.visibility = View.GONE
             return
         }
 
@@ -614,8 +715,7 @@ class YoryInputMethodService : InputMethodService() {
                 refreshClipboardListener()
             },
             ToolItem("Resize", "resize") {
-                resizeMode = true
-                refreshMoreTools()
+                startResizeOverlay()
             },
             ToolItem("Themes", "themes") { openStudio() },
             ToolItem("Modes", "modes") {
@@ -686,114 +786,209 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
-    private fun refreshResizePanel(panel: LinearLayout) {
-        val title = TextView(this).apply {
-            text = "RESIZE KEYBOARD"
-            textSize = 11f
-            letterSpacing = 0.12f
-            setTextColor(theme.textArgb)
-            gravity = Gravity.CENTER
+    private fun createResizeOverlay(): FrameLayout {
+        val overlay = FrameLayout(this).apply {
+            visibility = View.GONE
+            background = ColorDrawable(Color.argb(164, 0, 0, 0))
+            isClickable = true
+            isFocusable = true
+            clipChildren = false
+            contentDescription = "Adjust keyboard size and position"
         }
-        panel.addView(title, LinearLayout.LayoutParams(-1, dp(22)))
 
-        val resizeFrame = FrameLayout(this).apply {
+        val bounds = FrameLayout(this).apply {
             background = GradientDrawable().apply {
-                setColor(Color.argb(8, 65, 105, 255))
+                setColor(Color.argb(4, 65, 105, 255))
                 cornerRadius = dp(2).toFloat()
                 setStroke(dp(2), Color.rgb(65, 105, 255))
             }
-            contentDescription = "Keyboard resize boundary. Use the height slider below."
+            clipChildren = false
         }
-        fun handleView(width: Int, height: Int, gravity: Int) {
-            resizeFrame.addView(View(this).apply {
+        overlay.addView(bounds, FrameLayout.LayoutParams(-1, -1).apply {
+            setMargins(dp(2), dp(2), dp(2), dp(2))
+        })
+
+        fun addHandle(width: Int, height: Int, gravity: Int, mode: String) {
+            bounds.addView(View(this).apply {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(4).toFloat()
                     setColor(Color.rgb(65, 105, 255))
                 }
+                contentDescription = when (mode) {
+                    "top", "bottom" -> "Drag to resize keyboard height"
+                    "left", "right" -> "Drag to resize keyboard width"
+                    else -> "Drag to move keyboard"
+                }
+                setOnTouchListener(resizeHandleTouch(mode))
             }, FrameLayout.LayoutParams(dp(width), dp(height), gravity))
         }
-        handleView(34, 7, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
-        handleView(34, 7, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.START)
-        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.END)
+        addHandle(38, 8, Gravity.TOP or Gravity.CENTER_HORIZONTAL, "top")
+        addHandle(38, 8, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, "bottom")
+        addHandle(8, 28, Gravity.CENTER_VERTICAL or Gravity.START, "left")
+        addHandle(8, 28, Gravity.CENTER_VERTICAL or Gravity.END, "right")
+
         val moveHandle = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.rgb(65, 105, 255))
             }
-            contentDescription = "Resize controls use the height slider"
+            contentDescription = "Drag to move keyboard"
+            setOnTouchListener(resizeHandleTouch("move"))
         }
         moveHandle.addView(
             YoryKeyboardIconView(this, "move", Color.WHITE),
-            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+            FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER)
         )
-        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
-        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(56)))
-
-        val value = TextView(this).apply {
-            text = "${theme.keyHeightDp.toInt()} dp"
-            textSize = 13f
-            setTextColor(theme.textArgb)
-            gravity = Gravity.CENTER
-        }
-        panel.addView(value, LinearLayout.LayoutParams(-1, dp(22)))
-
-        val slider = SeekBar(this).apply {
-            max = 24
-            progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
-            progressTintList = android.content.res.ColorStateList.valueOf(theme.accentArgb)
-            thumbTintList = android.content.res.ColorStateList.valueOf(theme.textArgb)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (fromUser) value.text = "${36 + progress} dp"
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                    val height = (36 + (seekBar?.progress ?: 4)).toFloat()
-                    theme = theme.copy(keyHeightDp = height)
-                    YoryThemeStore.save(applicationContext, theme)
-                    value.text = "${height.toInt()} dp"
-                }
-            })
-        }
-        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(36)))
+        bounds.addView(moveHandle, FrameLayout.LayoutParams(dp(46), dp(46), Gravity.CENTER))
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        fun addActionButton(label: String, action: () -> Unit) {
+        fun actionPill(label: String, action: () -> Unit) {
             val button = TextView(this).apply {
                 text = label
                 gravity = Gravity.CENTER
-                textSize = 13f
-                setTextColor(theme.textArgb)
-                background = GradientDrawable().apply {
-                    cornerRadius = dp(18).toFloat()
-                    setColor(Color.WHITE)
-                    setStroke(dp(1), Color.WHITE)
-                }
+                textSize = 14f
                 setTextColor(Color.BLACK)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(22).toFloat()
+                    setColor(Color.WHITE)
+                }
+                isClickable = true
+                isFocusable = true
+                minHeight = dp(44)
                 setOnClickListener { performKeyFeedback(this); action() }
             }
-            actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
-                setMargins(dp(6), 0, dp(6), 0)
+            actions.addView(button, LinearLayout.LayoutParams(0, dp(44), 1f).apply {
+                setMargins(dp(7), 0, dp(7), 0)
             })
         }
-        addActionButton("Reset") {
-            theme = theme.copy(keyHeightDp = 40f)
-            YoryThemeStore.save(applicationContext, theme)
-            panel.removeAllViews()
-            refreshResizePanel(panel)
+        actionPill("Reset") { resetResizeGeometry() }
+        actionPill("OK") { finishResizeOverlay() }
+        overlay.addView(actions, FrameLayout.LayoutParams(dp(300), dp(48), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin = dp(18)
+        })
+        return overlay
+    }
+
+    private fun syncResizeOverlayBounds() {
+        val content = keyboardContent ?: return
+        val overlay = resizeOverlay ?: return
+        val width = content.width
+        val height = content.height
+        if (width <= 0 || height <= 0) return
+        val params = overlay.layoutParams as? FrameLayout.LayoutParams ?: return
+        if (params.width != width || params.height != height) {
+            params.width = width
+            params.height = height
+            overlay.layoutParams = params
         }
-        addActionButton("OK") {
-            resizeMode = false
-            toolsMode = false
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
+        overlay.bringToFront()
+    }
+
+    private fun startResizeOverlay() {
+        toolsMode = false
+        resizeMode = true
+        emojiMode = false
+        clipboardMode = false
+        refreshToolbar()
+        refreshKeyboard()
+        updateSuggestions()
+        resizeOverlay?.visibility = View.VISIBLE
+        resizeOverlay?.post { syncResizeOverlayBounds() }
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun finishResizeOverlay() {
+        resizeMode = false
+        resizeOverlay?.visibility = View.GONE
+        persistResizeGeometry()
+        refreshToolbar()
+        refreshKeyboard()
+        updateSuggestions()
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun resetResizeGeometry() {
+        resizeWidthPercent = 1f
+        resizeOffsetXdp = 0f
+        resizeOffsetYdp = 0f
+        theme = theme.copy(keyHeightDp = 40f)
+        YoryThemeStore.save(applicationContext, theme)
+        updateLiveKeyHeights()
+        persistResizeGeometry()
+    }
+
+    private fun updateLiveKeyHeights() {
+        val container = keysContainer ?: return
+        for (rowIndex in 0 until container.childCount) {
+            val row = container.getChildAt(rowIndex) as? LinearLayout ?: continue
+            row.layoutParams = row.layoutParams.apply { height = dp(effectiveKeyHeightDp() + 4f) }
+            for (keyIndex in 0 until row.childCount) {
+                val key = row.getChildAt(keyIndex)
+                key.layoutParams = key.layoutParams.apply { height = dp(effectiveKeyHeightDp()) }
+            }
         }
-        panel.addView(actions, LinearLayout.LayoutParams(-1, dp(38)))
+        container.requestLayout()
+        keyboardContent?.requestLayout()
+        keyboardMainArea?.requestLayout()
+    }
+
+    private fun resizeHandleTouch(mode: String): View.OnTouchListener {
+        var previousX = 0f
+        var previousY = 0f
+        return View.OnTouchListener { _, event ->
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    previousX = event.rawX
+                    previousY = event.rawY
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val density = resources.displayMetrics.density
+                    val dx = (event.rawX - previousX) / density
+                    val dy = (event.rawY - previousY) / density
+                    previousX = event.rawX
+                    previousY = event.rawY
+                    val screenWidthDp = resources.displayMetrics.widthPixels / density
+                    when (mode) {
+                        "left" -> {
+                            resizeWidthPercent = (resizeWidthPercent - dx / screenWidthDp).coerceIn(0.70f, 1f)
+                            resizeOffsetXdp = (resizeOffsetXdp + dx / 2f).coerceIn(-120f, 120f)
+                            applyKeyboardWindowGeometry()
+                        }
+                        "right" -> {
+                            resizeWidthPercent = (resizeWidthPercent + dx / screenWidthDp).coerceIn(0.70f, 1f)
+                            resizeOffsetXdp = (resizeOffsetXdp + dx / 2f).coerceIn(-120f, 120f)
+                            applyKeyboardWindowGeometry()
+                        }
+                        "top" -> {
+                            theme = theme.copy(keyHeightDp = (theme.keyHeightDp - dy * 0.38f).coerceIn(36f, 60f))
+                            updateLiveKeyHeights()
+                        }
+                        "bottom" -> {
+                            theme = theme.copy(keyHeightDp = (theme.keyHeightDp + dy * 0.38f).coerceIn(36f, 60f))
+                            updateLiveKeyHeights()
+                        }
+                        "move" -> {
+                            resizeOffsetXdp = (resizeOffsetXdp + dx).coerceIn(-120f, 120f)
+                            resizeOffsetYdp = (resizeOffsetYdp - dy).coerceIn(0f, 300f)
+                            applyKeyboardWindowGeometry()
+                        }
+                    }
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (mode == "top" || mode == "bottom") {
+                        YoryThemeStore.save(applicationContext, theme)
+                    }
+                    persistResizeGeometry()
+                    true
+                }
+                else -> true
+            }
+        }
     }
 
     private fun shareYory() {
@@ -821,19 +1016,14 @@ class YoryInputMethodService : InputMethodService() {
             updateSuggestions()
         }
         addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.9f) {
-            learnCurrentWord()
-            currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
-            updateSuggestions()
+            commitWordBoundary(if (emailField) "@" else if (urlField) "/" else ",")
         }
         addKey(
             row,
             "‹  ${YoryLanguageLayouts.forTag(languageTag).shortLabel}  ›",
             4.2f,
             {
-                learnCurrentWord()
-                currentInputConnection?.commitText(" ", 1)
-                refreshAutomaticShift()
-                updateSuggestions()
+                commitWordBoundary(" ")
             },
             onSwipeDirection = { deltaX ->
                 cycleLanguage(if (deltaX < 0f) 1 else -1)
@@ -844,18 +1034,27 @@ class YoryInputMethodService : InputMethodService() {
             }
         )
         addKey(row, ".", 1f, {
-            learnCurrentWord()
-            currentInputConnection?.commitText(".", 1)
-            updateSuggestions()
+            commitWordBoundary(".")
         }, secondaryLegend = "؟!")
         addKey(row, "↵", 1.6f) {
+            val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
+            val correction = if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+                getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+                token?.let { wordSuggestions?.correct(it, languageTag) }
+            } else null
+            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
+                currentInputConnection?.deleteSurroundingText(token.length, 0)
+                currentInputConnection?.commitText(correction, 1)
+            }
             learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
+            updateDynamicKeyLabels()
             updateSuggestions()
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
     private fun addKey(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
@@ -880,6 +1079,7 @@ class YoryInputMethodService : InputMethodService() {
         onSwipeDirection: ((Float) -> Unit)? = null
     ) {
         val settings = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val baseLetter = label.takeIf { it.length == 1 && it[0].isLetter() }?.lowercase()
         val handler = Handler(Looper.getMainLooper())
         var longPressConsumed = false
         var pendingLongPressOptions: List<String> = emptyList()
@@ -891,25 +1091,7 @@ class YoryInputMethodService : InputMethodService() {
             longPressConsumed = pendingLongPressOptions.isNotEmpty()
         }
         val view = TextView(this).apply {
-            text = if (secondaryLegend.isNullOrBlank()) {
-                label
-            } else {
-                val legendLine = secondaryLegend
-                android.text.SpannableString("$legendLine\n$label").apply {
-                    setSpan(
-                        android.text.style.RelativeSizeSpan(0.48f),
-                        0,
-                        legendLine.length,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                    setSpan(
-                        android.text.style.ForegroundColorSpan(Color.argb(160, 255, 255, 255)),
-                        0,
-                        legendLine.length,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
-            }
+            text = styledKeyLabel(if (baseLetter != null && shifted) baseLetter.uppercase() else (baseLetter ?: label), secondaryLegend)
             gravity = Gravity.CENTER
             includeFontPadding = false
             val baseSize = when {
@@ -1013,8 +1195,9 @@ class YoryInputMethodService : InputMethodService() {
                 else -> label
             }
         }
-        val gap = if (compact) dp(1.25f) else dp((theme.keySpacingDp / 2f).coerceIn(1.5f, 4f))
-        val params = LinearLayout.LayoutParams(0, dp(theme.keyHeightDp), weight).apply {
+        if (baseLetter != null) dynamicKeyLabels.add(Triple(view, baseLetter, secondaryLegend))
+        val gap = if (compact) dp(1.0f) else dp((theme.keySpacingDp / 2f).coerceIn(1.5f, 4f))
+        val params = LinearLayout.LayoutParams(0, dp(effectiveKeyHeightDp()), weight).apply {
             setMargins(gap, dp(2), gap, dp(2))
         }
         parent.addView(view, params)
@@ -1189,23 +1372,63 @@ class YoryInputMethodService : InputMethodService() {
         val connection: InputConnection = currentInputConnection ?: return
         when (label) {
             "⌫" -> {
-                connection.deleteSurroundingText(1, 0)
+                connection.deleteSurroundingTextInCodePoints(1, 0)
                 refreshAutomaticShift()
-                refreshKeyboard()
+                updateDynamicKeyLabels()
                 updateSuggestions()
             }
             "⇧" -> {
                 shifted = !shifted
-                refreshKeyboard()
+                updateDynamicKeyLabels()
             }
+            " " -> commitWordBoundary(" ")
             else -> {
-                val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
-                connection.commitText(output, 1)
-                refreshAutomaticShift()
-                refreshKeyboard()
-                updateSuggestions()
+                if (label.length == 1 && !label[0].isLetterOrDigit() && label !in setOf("'", "’")) {
+                    commitWordBoundary(label)
+                } else {
+                    val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
+                    connection.commitText(output, 1)
+                    refreshAutomaticShift()
+                    updateDynamicKeyLabels()
+                    updateSuggestions()
+                }
             }
         }
+    }
+
+    private fun styledKeyLabel(primary: String, secondary: String?): CharSequence {
+        if (secondary.isNullOrBlank()) return primary
+        return android.text.SpannableString("$secondary\n$primary").apply {
+            setSpan(android.text.style.RelativeSizeSpan(0.48f), 0, secondary.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(android.text.style.ForegroundColorSpan(Color.argb(160, 255, 255, 255)),
+                0, secondary.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
+    private fun updateDynamicKeyLabels() {
+        dynamicKeyLabels.forEach { (view, base, secondary) ->
+            view.text = styledKeyLabel(if (shifted) base.uppercase() else base, secondary)
+        }
+    }
+
+    private fun commitWordBoundary(boundary: String) {
+        val connection = currentInputConnection ?: return
+        if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+            getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+            val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
+            val correction = token?.let { wordSuggestions?.correct(it, languageTag) }
+            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
+                connection.deleteSurroundingText(token.length, 0)
+                connection.commitText(correction, 1)
+            }
+        }
+        learnCurrentWord()
+        connection.commitText(boundary, 1)
+        refreshAutomaticShift()
+        updateDynamicKeyLabels()
+        updateSuggestions()
     }
 
     private fun cycleLanguage(direction: Int = 1) {
@@ -1281,6 +1504,11 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        if (resizeMode) {
+            resizeMode = false
+            resizeOverlay?.visibility = View.GONE
+            persistResizeGeometry()
+        }
         refreshClipboardListenerOff()
         super.onFinishInputView(finishingInput)
     }
@@ -1310,49 +1538,11 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
-    private fun updateSuggestions() {
+    private fun buildSuggestionRow() {
         val row = suggestionRow ?: return
-        if (toolsMode) { row.visibility = View.GONE; return }
-        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val compactMode = prefs.getBoolean("compact_mode", false)
-        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        row.layoutParams = row.layoutParams.apply {
-            height = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
-        }
-        row.requestLayout()
         row.removeAllViews()
-        if (incognitoMode || sensitiveField || numericField || emailField || urlField || emojiMode || clipboardMode ||
-            !prefs.getBoolean("word_suggestions", true)) {
-            row.visibility = View.GONE
-            return
-        }
-        row.visibility = View.VISIBLE
-        addSuggestionToggleButton(row) {
-            suggestionsCollapsed = !suggestionsCollapsed
-            updateSuggestions()
-        }
-        if (suggestionsCollapsed) return
-        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
-        val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
-        val limit = if (compactMode) 2 else 3
-        val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
-        val bundled = wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
-        val candidates = (personal + bundled).distinct().take(limit)
-        val visible = if (candidates.isEmpty()) listOf(YoryLanguageLayouts.forTag(languageTag).shortLabel) else candidates
-        visible.forEachIndexed { index, suggestion ->
-            addSuggestionLabel(row, suggestion, suggestion.isNotEmpty()) {
-                if (candidates.isNotEmpty()) replaceCurrentWord(suggestion)
-            }
-            if (index < visible.lastIndex) {
-                row.addView(View(this).apply { setBackgroundColor(Color.argb(40, 255, 255, 255)) },
-                    LinearLayout.LayoutParams(dp(1), dp(16)))
-            }
-        }
-        repeat((limit - visible.size).coerceAtLeast(0)) { addSuggestionLabel(row, "", false) {} }
-    }
-
-    private fun addSuggestionToggleButton(parent: LinearLayout, action: () -> Unit) {
-        val button = FrameLayout(this).apply {
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val toggle = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.TRANSPARENT)
@@ -1360,33 +1550,86 @@ class YoryInputMethodService : InputMethodService() {
             }
             isClickable = true
             isFocusable = true
-            contentDescription = if (suggestionsCollapsed) "Expand suggestions" else "Collapse suggestions"
-            setOnClickListener { performKeyFeedback(this); action() }
+            contentDescription = "Collapse suggestions"
+            setOnClickListener {
+                suggestionsCollapsed = !suggestionsCollapsed
+                updateSuggestions()
+            }
         }
-        button.addView(
-            YoryKeyboardIconView(this, if (suggestionsCollapsed) "chevron-down" else "chevron-up", theme.textArgb),
-            FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER)
-        )
-        parent.addView(button, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
+        val glyph = TextView(this).apply {
+            text = "⌃"
+            gravity = Gravity.CENTER
+            textSize = 17f
+            setTextColor(theme.textArgb)
+        }
+        toggle.addView(glyph, FrameLayout.LayoutParams(-1, -1))
+        row.addView(toggle, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
             gravity = Gravity.CENTER_VERTICAL
             setMargins(dp(2), 0, dp(7), 0)
         })
+        suggestionToggle = toggle
+        suggestionToggleGlyph = glyph
+
+        repeat(3) { index ->
+            val label = TextView(this).apply {
+                gravity = Gravity.CENTER
+                textSize = 16f
+                maxLines = 1
+                setTextColor(theme.textArgb)
+                background = ColorDrawable(Color.TRANSPARENT)
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    val chosen = text?.toString().orEmpty()
+                    if (chosen.isNotBlank()) replaceCurrentWord(chosen)
+                }
+            }
+            row.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
+            suggestionLabels.add(label)
+            if (index < 2) {
+                row.addView(View(this).apply {
+                    setBackgroundColor(Color.argb(40, 255, 255, 255))
+                }, LinearLayout.LayoutParams(dp(1), dp(16)))
+            }
+        }
     }
 
-    private fun addSuggestionLabel(parent: LinearLayout, value: String, enabled: Boolean, action: () -> Unit) {
-        val label = TextView(this).apply {
-            text = value
-            gravity = Gravity.CENTER
-            textSize = 16f
-            maxLines = 1
-            setTextColor(theme.textArgb)
-            alpha = if (enabled) 1f else 0.18f
-            background = ColorDrawable(Color.TRANSPARENT)
-            isClickable = enabled
-            isFocusable = enabled
-            if (enabled) setOnClickListener { performKeyFeedback(this); action() }
+    private fun updateSuggestions() {
+        val row = suggestionRow ?: return
+        if (toolsMode) {
+            row.visibility = View.GONE
+            return
         }
-        parent.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val compactMode = prefs.getBoolean("compact_mode", false)
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        val desiredHeight = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
+        if (row.layoutParams.height != desiredHeight) {
+            row.layoutParams = row.layoutParams.apply { height = desiredHeight }
+        }
+        val enabled = !incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+            !emojiMode && !clipboardMode && prefs.getBoolean("word_suggestions", true)
+        row.visibility = if (enabled) View.VISIBLE else View.GONE
+        if (!enabled) return
+
+        suggestionToggle?.contentDescription = if (suggestionsCollapsed) "Expand suggestions" else "Collapse suggestions"
+        suggestionToggleGlyph?.text = if (suggestionsCollapsed) "⌄" else "⌃"
+        suggestionLabels.forEach { it.isEnabled = !suggestionsCollapsed }
+        if (suggestionsCollapsed) {
+            suggestionLabels.forEach { it.text = "" }
+            return
+        }
+
+        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
+        val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
+        val limit = if (compactMode) 2 else 3
+        val candidates = if (prefix.length >= 2) wordSuggestions?.suggest(prefix, languageTag, limit).orEmpty() else emptyList()
+        suggestionLabels.forEachIndexed { index, label ->
+            val suggestion = candidates.getOrNull(index).orEmpty()
+            label.text = suggestion
+            label.isEnabled = suggestion.isNotEmpty()
+            label.alpha = if (suggestion.isNotEmpty()) 1f else 0.18f
+        }
     }
 
     private fun replaceCurrentWord(suggestion: String) {
@@ -1457,7 +1700,7 @@ class YoryInputMethodService : InputMethodService() {
         val bottomBase = blendColors(Color.rgb(Color.red(base), Color.green(base), Color.blue(base)), Color.BLACK, 0.07f)
         val top = Color.argb(alpha, Color.red(topBase), Color.green(topBase), Color.blue(topBase))
         val bottom = Color.argb(alpha, Color.red(bottomBase), Color.green(bottomBase), Color.blue(bottomBase))
-        val keyHeight = dp(theme.keyHeightDp).toFloat()
+        val keyHeight = dp(effectiveKeyHeightDp()).toFloat()
         val radius = when (theme.keyShape) {
             "pill", "circle" -> keyHeight / 2f
             "squircle" -> dp(theme.cornerRadiusDp * 1.35f).toFloat()
@@ -1483,6 +1726,25 @@ class YoryInputMethodService : InputMethodService() {
             (Color.green(first) * inverse + Color.green(second) * ratio).toInt().coerceIn(0, 255),
             (Color.blue(first) * inverse + Color.blue(second) * ratio).toInt().coerceIn(0, 255)
         )
+    }
+
+    private fun effectiveKeyHeightDp(): Float {
+        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
+        val showNumberRow = !symbolMode && prefs.getBoolean("number_row", false)
+        val showArrowRow = prefs.getBoolean("arrow_keys", false)
+        val rowCount = when {
+            numericField -> 5f
+            else -> (4 + (if (showNumberRow) 1 else 0) + (if (showArrowRow) 1 else 0)).toFloat()
+        }
+        val suggestionsHeight = if (!sensitiveField && !numericField && !emailField && !urlField &&
+            !emojiMode && !clipboardMode && !incognitoMode && prefs.getBoolean("word_suggestions", true)) 32f else 0f
+        val clipboardHeight = if (clipboardMode && theme.clipboardEnabled && !incognitoMode) 42f else 0f
+        val emojiHeight = if (emojiMode) 104f else 0f
+        val chrome = 8f + 36f + suggestionsHeight + clipboardHeight + emojiHeight
+        val screenHeightDp = resources.displayMetrics.heightPixels / resources.displayMetrics.density
+        val maximumImeHeight = (screenHeightDp * 0.54f).coerceIn(250f, 480f)
+        val rowHeightBudget = (maximumImeHeight - chrome) / rowCount - 4f
+        return minOf(theme.keyHeightDp, rowHeightBudget.coerceIn(32f, 60f))
     }
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()

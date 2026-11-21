@@ -42,8 +42,59 @@ enum YoryLocalWordSuggestions {
     ]
 
 
+    private static let extraWords: [String: [String]] = [
+        "en": [
+            "also", "anyone", "anything", "answer", "away", "back", "beautiful",
+            "business", "call", "called", "care", "check", "clear", "close",
+            "computer", "correct", "correction", "could", "day", "does", "doing",
+            "down", "early", "enough", "every", "everyone", "fast", "feel",
+            "first", "found", "free", "full", "game", "going", "group", "happy",
+            "hard", "home", "hope", "house", "into", "just", "keep", "kind",
+            "know", "large", "last", "later", "learn", "less", "life", "little",
+            "long", "look", "looking", "made", "many", "match", "message", "most",
+            "must", "name", "need", "never", "next", "number", "often", "other",
+            "over", "part", "people", "place", "possible", "power", "quick",
+            "quickly", "read", "ready", "real", "same", "screen", "see", "send",
+            "service", "settings", "small", "someone", "sound", "start", "still",
+            "take", "talk", "team", "typing", "writing", "tomorrow", "together",
+            "until", "using", "way", "well", "went", "were", "while", "whole",
+            "without", "word", "words", "working", "wrong", "year", "your"
+        ],
+        "ar": [
+            "النهاردة", "النهارده", "دلوقتي", "بكرة", "امبارح", "الكيبورد",
+            "الرسالة", "رسالة", "رسائل", "المسافة", "مقاس", "مقاسات", "تغيير",
+            "تعديل", "الإعدادات", "اعدادات", "المستخدم", "كلام", "كلمة", "كلمات",
+            "معلومة", "معلومات", "بسرعة", "سريع", "سريعة", "مناسب", "مناسبة",
+            "شكله", "تمام", "ممتاز", "جميل", "محتاج", "محتاجة", "محتاجين",
+            "مفيش", "اللي", "علشان", "عاوز", "عاوزة", "عامل", "عاملة", "فين",
+            "امتى", "طب", "ماشي", "حاضر", "برضه", "كتير", "قليل", "أكتر",
+            "أقل", "أحسن", "العربية", "الإنجليزية", "التصحيح", "تلقائي",
+            "تلقائيًا", "المفاتيح", "الشاشة", "الارتفاع", "العرض", "المكان",
+            "الحجم", "السرعة", "الدقة", "احترافي", "احترافية", "شركة", "برنامج",
+            "نظام", "حاجة", "حاجات", "بعض", "غلط", "واسع", "ضيق", "رائع", "رائعة"
+        ]
+    ]
+
+    private static let commonCorrections: [String: [String: String]] = [
+        "en": [
+            "teh": "the", "adn": "and", "thier": "their", "becuase": "because",
+            "recieve": "receive", "freind": "friend", "definately": "definitely",
+            "seperate": "separate", "wierd": "weird", "untill": "until",
+            "goverment": "government", "occured": "occurred", "adress": "address",
+            "langauge": "language", "keybaord": "keyboard", "taht": "that",
+            "whcih": "which", "hlelo": "hello", "wrold": "world", "mesage": "message"
+        ],
+        "ar": [
+            "لاكن": "لكن", "هاذا": "هذا", "هاذه": "هذه", "الغه": "اللغة",
+            "الكيبور": "الكيبورد", "التصمبم": "التصميم", "المشروغ": "المشروع",
+            "بسرعه": "بسرعة", "الان": "الآن"
+        ]
+    ]
+
     private static let personalWordsKey = "yory.personal.words.v1"
     private static let legacyClearRequestedKey = "yory.personal.words.clearLegacyRequested"
+    private static var cachedPersonalWords: [String: [String: Int]]?
+    private static var rankedPersonalWordsCache: [String: [(word: String, count: Int)]] = [:]
     private static var localDefaults: UserDefaults {
         UserDefaults(suiteName: "group.app.yory.keys") ?? .standard
     }
@@ -56,6 +107,8 @@ enum YoryLocalWordSuggestions {
             shared.removeObject(forKey: personalWordsKey)
             UserDefaults.standard.removeObject(forKey: personalWordsKey)
             shared.set(false, forKey: legacyClearRequestedKey)
+            cachedPersonalWords = [:]
+            rankedPersonalWordsCache = [:]
             return
         }
 
@@ -63,6 +116,7 @@ enum YoryLocalWordSuggestions {
            let legacy = UserDefaults.standard.dictionary(forKey: personalWordsKey) {
             shared.set(legacy, forKey: personalWordsKey)
             UserDefaults.standard.removeObject(forKey: personalWordsKey)
+            cachedPersonalWords = legacy as? [String: [String: Int]]
         }
     }
 
@@ -89,9 +143,13 @@ enum YoryLocalWordSuggestions {
         languageWords = boundedWords
         all[language] = languageWords
         defaults.set(all, forKey: personalWordsKey)
+        cachedPersonalWords = all
+        rankedPersonalWordsCache[language] = nil
     }
 
     static func clearPersonalWords() {
+        cachedPersonalWords = [:]
+        rankedPersonalWordsCache = [:]
         localDefaults.removeObject(forKey: personalWordsKey)
         UserDefaults.standard.removeObject(forKey: personalWordsKey)
         localDefaults.set(false, forKey: legacyClearRequestedKey)
@@ -100,12 +158,18 @@ enum YoryLocalWordSuggestions {
     private static func personalSuggestions(prefix: String, language: String, limit: Int) -> [String] {
         guard YoryThemeReader.personalLearningEnabled else { return [] }
         prepareLocalStorage()
-        let all = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
-        return (all[language] ?? [:])
-            .filter { matchesPrefix($0.key, prefix: prefix) }
-            .sorted { $0.value > $1.value }
+        if cachedPersonalWords == nil {
+            cachedPersonalWords = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        }
+        let all = cachedPersonalWords ?? [:]
+        let ranked = rankedPersonalWordsCache[language] ?? (all[language] ?? [:])
+            .map { (word: $0.key, count: $0.value) }
+            .sorted { $0.count > $1.count }
+        rankedPersonalWordsCache[language] = ranked
+        return ranked.lazy
+            .filter { matchesPrefix($0.word, prefix: prefix) }
             .prefix(max(1, min(limit, 5)))
-            .map { $0.key }
+            .map { $0.word }
     }
 
     /// Search-only Arabic normalization. Returned words keep their original spelling.
@@ -137,12 +201,83 @@ enum YoryLocalWordSuggestions {
             normalizedCandidate.hasPrefix(normalizedPrefix)
     }
 
+    static func correct(_ rawWord: String, languageTag: String) -> String? {
+        let word = rawWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (3...32).contains(word.count) else { return nil }
+        let language = String(languageTag.lowercased().split(separator: "-").first ?? "en")
+        let folded = word.lowercased()
+        if let explicit = commonCorrections[language]?[folded] {
+            return preserveCase(word, replacement: explicit)
+        }
+
+        let candidates = (words[language] ?? []) + (extraWords[language] ?? [])
+        let normalizedInput = normalizeForMatch(word)
+        if candidates.contains(where: { normalizeForMatch($0) == normalizedInput }) {
+            return nil
+        }
+
+        var best: [String] = []
+        var bestDistance = 2
+        for candidate in candidates {
+            if abs(candidate.count - word.count) > 1 { continue }
+            guard let distance = editDistanceAtMostOne(folded, candidate.lowercased()) else { continue }
+            if distance < bestDistance {
+                bestDistance = distance
+                best = [candidate]
+            } else if distance == bestDistance && !best.contains(where: { $0.caseInsensitiveCompare(candidate) == .orderedSame }) {
+                best.append(candidate)
+            }
+            if bestDistance == 1 && best.count > 1 { break }
+        }
+        guard bestDistance == 1, best.count == 1 else { return nil }
+        return preserveCase(word, replacement: best[0])
+    }
+
+    private static func editDistanceAtMostOne(_ first: String, _ second: String) -> Int? {
+        let left = Array(first)
+        let right = Array(second)
+        if left == right { return 0 }
+        if abs(left.count - right.count) > 1 { return nil }
+        if left.count == right.count {
+            let indexes = left.indices.filter { left[$0] != right[$0] }
+            if indexes.count == 1 { return 1 }
+            if indexes.count == 2 {
+                let a = indexes[0]
+                let b = indexes[1]
+                if b == a + 1 && left[a] == right[b] && left[b] == right[a] { return 1 }
+            }
+            return nil
+        }
+        let shorter = left.count < right.count ? left : right
+        let longer = left.count < right.count ? right : left
+        var i = 0
+        var j = 0
+        var edits = 0
+        while i < shorter.count && j < longer.count {
+            if shorter[i] == longer[j] {
+                i += 1; j += 1
+            } else {
+                edits += 1
+                if edits > 1 { return nil }
+                j += 1
+            }
+        }
+        if j < longer.count || i < shorter.count { edits += 1 }
+        return edits == 1 ? 1 : nil
+    }
+
+    private static func preserveCase(_ original: String, replacement: String) -> String {
+        if original == original.uppercased() { return replacement.uppercased() }
+        guard let first = original.first, first.isUppercase else { return replacement }
+        return replacement.prefix(1).uppercased() + replacement.dropFirst()
+    }
+
     static func suggestions(prefix: String, languageTag: String, limit: Int = 3) -> [String] {
         let clean = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return [] }
         let language = String(languageTag.lowercased().split(separator: "-").first ?? "en")
         let personal = personalSuggestions(prefix: clean, language: language, limit: limit)
-        let bundled = (words[language] ?? [])
+        let bundled = ((words[language] ?? []) + (extraWords[language] ?? []))
             .filter { matchesPrefix($0, prefix: clean) }
         var direct: [String] = []
         var normalizedMatches: [String] = []

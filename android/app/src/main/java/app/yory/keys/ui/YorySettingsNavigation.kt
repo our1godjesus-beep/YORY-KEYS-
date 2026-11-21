@@ -302,6 +302,7 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     InfoCard("Search and online suggestions", "No external search service is enabled. YORY keyboard typing remains local.")
                 }
                 "Typing" -> {
+                    ToggleCard("Auto-correction", "Correct confident local spelling errors when you insert a space or punctuation mark. Offline packs are currently available for English and Arabic.", readBool("auto_correct", true)) { writeBool("auto_correct", it) }
                     ToggleCard("Word suggestions", "Show local word suggestions while typing", readBool("word_suggestions", true)) { writeBool("word_suggestions", it) }
                     ToggleCard("Auto-capitalization", "Capitalize the first letter of sentences", readBool("auto_caps", true)) { writeBool("auto_caps", it) }
                     ToggleCard("Personal dictionary", "Learn accepted words on this device", personalLearning) {

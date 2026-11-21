@@ -120,6 +120,7 @@ private struct YorySettingsDetailView: View {
     @AppStorage("yory.layout.keyPopups", store: yorySettingsStore) private var keyPopups = true
     @AppStorage("yory.layout.largeText", store: yorySettingsStore) private var largeKeyText = true
     @AppStorage("yory.typing.suggestions", store: yorySettingsStore) private var wordSuggestions = true
+    @AppStorage("yory.typing.autoCorrect", store: yorySettingsStore) private var autoCorrect = true
     @AppStorage("yory.typing.autoCaps", store: yorySettingsStore) private var autoCaps = true
     @AppStorage("soundEnabled", store: yorySettingsStore) private var soundEnabled = true
     @AppStorage("hapticsEnabled", store: yorySettingsStore) private var hapticsEnabled = true
@@ -218,9 +219,11 @@ private struct YorySettingsDetailView: View {
                     }
                 case "Typing":
                     Section {
+                        glassToggle("Auto-correction", detail: "Correct confident local spelling errors when you insert a space or punctuation mark. Offline packs are currently available for English and Arabic.", isOn: $autoCorrect)
                         glassToggle("Word suggestions", detail: "Show local word suggestions while typing", isOn: $wordSuggestions)
                         glassToggle("Auto-capitalization", detail: "Capitalize the first letter of sentences", isOn: $autoCaps)
                         glassToggle("Personal dictionary", detail: "Learn accepted words locally on this device", isOn: $personalLearningEnabled)
+                        settingsInfo("iOS supplementary lexicon", "The iOS system-provided lexicon may include saved names and text shortcuts. YORY can use it for local suggestions and corrections; it is not uploaded by YORY.")
                     }
                     Section("PERSONAL DICTIONARY") {
                         settingsInfo("On-device learning", "Accepted words can be learned locally. Sensitive password, numeric, email and URL fields are excluded.")

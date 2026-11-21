@@ -105,6 +105,10 @@ enum YoryThemeReader {
         settings?.bool(forKey: "yory.typing.suggestions") ?? true
     }
 
+    static var autoCorrectEnabled: Bool {
+        settings?.bool(forKey: "yory.typing.autoCorrect") ?? true
+    }
+
     static var autoCapsEnabled: Bool {
         settings?.bool(forKey: "yory.typing.autoCaps") ?? true
     }
