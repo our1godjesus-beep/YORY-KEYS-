@@ -93,6 +93,7 @@ enum YoryLocalWordSuggestions {
 
     private static let personalWordsKey = "yory.personal.words.v1"
     private static let legacyClearRequestedKey = "yory.personal.words.clearLegacyRequested"
+    private static var cachedPersonalWords: [String: [String: Int]]?
     private static var localDefaults: UserDefaults {
         UserDefaults(suiteName: "group.app.yory.keys") ?? .standard
     }
@@ -105,6 +106,7 @@ enum YoryLocalWordSuggestions {
             shared.removeObject(forKey: personalWordsKey)
             UserDefaults.standard.removeObject(forKey: personalWordsKey)
             shared.set(false, forKey: legacyClearRequestedKey)
+            cachedPersonalWords = [:]
             return
         }
 
@@ -112,6 +114,7 @@ enum YoryLocalWordSuggestions {
            let legacy = UserDefaults.standard.dictionary(forKey: personalWordsKey) {
             shared.set(legacy, forKey: personalWordsKey)
             UserDefaults.standard.removeObject(forKey: personalWordsKey)
+            cachedPersonalWords = legacy as? [String: [String: Int]]
         }
     }
 
@@ -138,9 +141,11 @@ enum YoryLocalWordSuggestions {
         languageWords = boundedWords
         all[language] = languageWords
         defaults.set(all, forKey: personalWordsKey)
+        cachedPersonalWords = all
     }
 
     static func clearPersonalWords() {
+        cachedPersonalWords = [:]
         localDefaults.removeObject(forKey: personalWordsKey)
         UserDefaults.standard.removeObject(forKey: personalWordsKey)
         localDefaults.set(false, forKey: legacyClearRequestedKey)
@@ -149,7 +154,10 @@ enum YoryLocalWordSuggestions {
     private static func personalSuggestions(prefix: String, language: String, limit: Int) -> [String] {
         guard YoryThemeReader.personalLearningEnabled else { return [] }
         prepareLocalStorage()
-        let all = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        if cachedPersonalWords == nil {
+            cachedPersonalWords = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
+        }
+        let all = cachedPersonalWords ?? [:]
         return (all[language] ?? [:])
             .filter { matchesPrefix($0.key, prefix: prefix) }
             .sorted { $0.value > $1.value }
