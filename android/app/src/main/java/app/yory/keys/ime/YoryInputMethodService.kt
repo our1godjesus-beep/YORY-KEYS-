@@ -186,8 +186,15 @@ class YoryInputMethodService : InputMethodService() {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         loadResizeGeometry()
+        theme = YoryThemeStore.load(applicationContext)
+        refreshAutomaticShift()
+        refreshKeyboard()
+        updateSuggestions()
         applyKeyboardWindowGeometry()
-        keyboardRoot?.post { applyKeyboardWindowGeometry() }
+        keyboardRoot?.post {
+            applyKeyboardWindowGeometry()
+            syncResizeOverlayBounds()
+        }
     }
 
     private fun loadResizeGeometry() {
@@ -1497,6 +1504,11 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        if (resizeMode) {
+            resizeMode = false
+            resizeOverlay?.visibility = View.GONE
+            persistResizeGeometry()
+        }
         refreshClipboardListenerOff()
         super.onFinishInputView(finishingInput)
     }
