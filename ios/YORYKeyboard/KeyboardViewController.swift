@@ -73,6 +73,7 @@ final class KeyboardViewController: UIInputViewController {
     private var suggestionToggleButton: UIButton?
     private var suggestionButtons: [UIButton] = []
     private var letterKeyButtons: [(button: UIButton, base: String)] = []
+    private var keyHeightConstraints: [NSLayoutConstraint] = []
     private var effectiveKeyHeightValue: CGFloat = 40
     private var activeKeyHeight: CGFloat { localKeyHeightOverride ?? YoryThemeReader.keyHeight }
     private let keysStack = UIStackView()
@@ -343,6 +344,7 @@ final class KeyboardViewController: UIInputViewController {
         emojiRow.semanticContentAttribute = direction
         keysStack.semanticContentAttribute = direction
         letterKeyButtons.removeAll(keepingCapacity: true)
+        keyHeightConstraints.removeAll(keepingCapacity: true)
         keysStack.arrangedSubviews.forEach { item in
             keysStack.removeArrangedSubview(item)
             item.removeFromSuperview()
@@ -529,6 +531,7 @@ final class KeyboardViewController: UIInputViewController {
         effectiveKeyHeightValue = min(activeKeyHeight, max(30, availableForKeys / max(1, rowCount)))
         let required = topChrome + rowCount * effectiveKeyHeightValue + innerGaps + emojiPanelHeight
         keyboardHeightConstraint?.constant = min(maximum, max(220, required))
+        keyHeightConstraints.forEach { $0.constant = effectiveKeyHeightValue }
     }
 
     private func longPressMenu(for title: String) -> UIMenu? {
@@ -684,7 +687,9 @@ final class KeyboardViewController: UIInputViewController {
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
-        button.heightAnchor.constraint(equalToConstant: effectiveKeyHeightValue).isActive = true
+        let keyHeight = button.heightAnchor.constraint(equalToConstant: effectiveKeyHeightValue)
+        keyHeight.isActive = true
+        keyHeightConstraints.append(keyHeight)
         if let menu = longPressMenu(for: title) {
             button.menu = menu
             button.showsMenuAsPrimaryAction = false
@@ -1505,7 +1510,6 @@ final class KeyboardViewController: UIInputViewController {
         UserDefaults.standard.set(Double(safe), forKey: "yory.keyboard.keyHeight.local")
         resizeHeightSlider?.value = Float(safe)
         resizeHeightLabel?.text = "\(Int(safe)) pt"
-        rebuildKeys()
         updateKeyboardHeight()
     }
 
