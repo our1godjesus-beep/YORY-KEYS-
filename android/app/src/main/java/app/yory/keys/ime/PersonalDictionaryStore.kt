@@ -26,6 +26,7 @@ object PersonalDictionaryStore {
     private const val MAX_WORDS_PER_LANGUAGE = 1500
     private const val MAX_COUNT = 100
     @Volatile private var cachedDocument: JSONObject? = null
+    @Volatile private var rankedWordCache: Map<String, List<Pair<String, Int>>> = emptyMap()
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
@@ -49,6 +50,7 @@ object PersonalDictionaryStore {
         val languageWords = root.optJSONObject(language) ?: JSONObject()
         val previous = languageWords.optInt(word, 0)
         languageWords.put(word, (previous + 1).coerceAtMost(MAX_COUNT))
+        rankedWordCache = rankedWordCache - language
 
         val retained = languageWords.keys().asSequence()
             .map { key -> key to languageWords.optInt(key, 0) }
@@ -68,9 +70,14 @@ object PersonalDictionaryStore {
         if (clean.length < 2) return emptyList()
         val language = languageTag.substringBefore('-').lowercase().take(12)
         val words = readDocument(context).optJSONObject(language) ?: return emptyList()
-        return words.keys().asSequence()
+        val ranked = rankedWordCache[language] ?: words.keys().asSequence()
+            .map { it to words.optInt(it, 0) }
+            .sortedByDescending { it.second }
+            .toList()
+            .also { rankedWordCache = rankedWordCache + (language to it) }
+        return ranked.asSequence()
+            .map { it.first }
             .filter { YorySuggestionText.matchesPrefix(it, clean) }
-            .sortedByDescending { words.optInt(it, 0) }
             .take(limit.coerceIn(1, 5))
             .toList()
     }
@@ -78,6 +85,7 @@ object PersonalDictionaryStore {
     @Synchronized
     fun clear(context: Context) {
         cachedDocument = null
+        rankedWordCache = emptyMap()
         runCatching { dataFile(context).delete() }
         runCatching {
             val store = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -119,6 +127,7 @@ object PersonalDictionaryStore {
             stream.write(encrypted)
             file.finishWrite(stream)
             cachedDocument = document
+            rankedWordCache = emptyMap()
         } catch (error: Throwable) {
             file.failWrite(stream)
             throw error
