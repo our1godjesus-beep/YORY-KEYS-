@@ -8,8 +8,8 @@ This is the measurement contract for a responsive keyboard inspired by the inter
 
 - Panel: #090A0C, near-black and opaque.
 - Keycap: #202328 with #F2EEE7 text; champagne #C9AE80 is a restrained utility/selection accent.
-- Standard key height: 46 dp/pt, with an allowed runtime range around 42–50 dp/pt.
-- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range. Match vertical row gaps to horizontal key gaps across Android and iOS.
+- Reference-matched default key height: 40 dp/pt, with the existing customization range retained. Use the same default on Android and iOS.
+- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range. Match row gaps and key row containers to the actual key-cap height; the Android row container must include its top/bottom touch margins.
 - Latin home row: inset by about 10 dp/pt per side; preserve full-width first and modifier rows. Arabic rows use their own RTL/letter-count geometry rather than copying Latin insets.
 - Bottom action row: spacebar occupies about 39–40% of available width; distribute the remaining width proportionally between symbols, language, punctuation and Return. Never let intrinsic title widths distort the row.
 - Toolbar controls: use consistent 19–21 dp/pt original outline icons with generous touch regions; avoid font-dependent Unicode ornament icons for command actions.
@@ -34,10 +34,10 @@ Android values are dp; iOS values are points. Keep the visual ratios consistent,
 | Element | Baseline target | Compact target | Notes |
 |---|---:|---:|---|
 | Keyboard horizontal inset | 6 dp/pt | 4–5 dp/pt | Must include theme inset and avoid display cutouts |
-| Top toolbar height | 38–42 dp/pt | 36–38 dp/pt | Seven slots only if available width permits; icon visual size 20–23 |
-| Suggestion row | 30–34 dp/pt | 22–25 dp/pt | Three suggestions normally, two in compact mode, one collapse affordance |
+| Top toolbar height | 36 dp/pt | 34–36 dp/pt | Flat full-width strip; use original icons and evenly spaced slots |
+| Suggestion row | 32 dp/pt | 24 dp/pt | Circular collapse affordance plus three equal suggestion lanes (two in compact mode) |
 | Collapsed suggestion strip | 18–20 dp/pt | 18 dp/pt | Must not keep hidden rows reserving old height |
-| Standard letter key height | 44–48 dp/pt | 40–44 dp/pt | Theme may vary within existing supported height bounds |
+| Standard letter key height | 40 dp/pt | 36–40 dp/pt | Theme may vary within existing supported height bounds |
 | Row vertical gap | 4–6 dp/pt | 3–4 dp/pt | Recalculate total IME height from visible rows |
 | Standard horizontal key gap | 3–5 dp/pt | 2–3 dp/pt | Avoid reducing spacing below safe visual separation |
 | Dense Arabic key gap | 1.5–2.5 dp/pt | 1–2 dp/pt | Required for the 12/11/10 key rows; compensate with clear key outlines |
@@ -92,6 +92,9 @@ Dense rows are a keyboard-specific exception to the normal utility touch-target 
 ## 7. Height and navigation
 
 - Compute visible keyboard height from the actual toolbar, suggestion, tool/emoji panel and key rows; do not reserve hidden-row height.
+- Runtime panel is full-width and rectangular; the host OS owns the bottom navigation/gesture area. Never draw a fake Android navigation bar or attempt to replace the iOS home indicator.
+- More tools use a 4×3 cell grid with thin dividers, icon above label, and no individual rounded cards. Unsupported actions remain visibly disabled rather than pretending to work.
+- Android Resize adjusts the real IME key height from 36–60 dp and applies on the active keyboard. iOS Resize changes key height within the keyboard extension's permitted height; it cannot reposition the keyboard or independently change system-managed width/home-indicator geometry.
 - Keep the keyboard extension within the platform-provided height budget.
 - Android content must be tested in both 3-button and gesture navigation; its IME is system-managed and must not draw an app-owned fake bottom bar.
 - iOS must respect extension height and next-keyboard switching behavior; do not present unsupported floating/reposition controls.

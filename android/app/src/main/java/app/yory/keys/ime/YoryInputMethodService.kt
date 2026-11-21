@@ -27,7 +27,9 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import app.yory.keys.MainActivity
@@ -53,6 +55,7 @@ class YoryInputMethodService : InputMethodService() {
     private var clipboardMode = false
     private var incognitoMode = false
     private var toolsMode = false
+    private var resizeMode = false
     private var suggestionsCollapsed = false
     private var sensitiveField = false
     private var numericField = false
@@ -82,7 +85,7 @@ class YoryInputMethodService : InputMethodService() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(7), dp(7), dp(7), dp(5))
+            setPadding(dp(4), dp(4), dp(4), dp(4))
             background = panelBackground()
         }
         keyboardRoot = root
@@ -90,9 +93,10 @@ class YoryInputMethodService : InputMethodService() {
         val toolbar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            background = ColorDrawable(Color.rgb(34, 34, 34))
         }
         toolbarRoot = toolbar
-        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(38)))
+        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(36)))
         refreshToolbar()
 
         suggestionRow = LinearLayout(this).apply {
@@ -100,7 +104,8 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
             setPadding(0, dp(2), 0, dp(2))
         }
-        root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(34)))
+        suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
+        root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
 
         clipboardRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -154,6 +159,7 @@ class YoryInputMethodService : InputMethodService() {
         emojiMode = false
         incognitoMode = false
         toolsMode = false
+        resizeMode = false
         symbolPage = 0
         suggestionsCollapsed = false
         refreshAutomaticShift()
@@ -167,7 +173,7 @@ class YoryInputMethodService : InputMethodService() {
         val toolbar = toolbarRoot ?: return
         toolbar.removeAllViews()
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val defaultOrder = listOf("emoji", "language", "symbols", "settings", "clipboard", "privacy", "more")
+        val defaultOrder = listOf("emoji", "clipboard", "language", "symbols", "privacy", "settings", "more")
         val savedOrder = prefs.getString("toolbar_order", null)
             ?.split(",")
             ?.map { it.trim() }
@@ -192,7 +198,7 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                     updateSuggestions()
                 }
-                "symbols" -> addToolbarButton(toolbar, if (symbolMode) if (symbolPage == 0) "2/2" else "1/2" else "123", 1f) {
+                "symbols" -> addToolbarIconButton(toolbar, "symbols", if (symbolMode) "Symbols page ${symbolPage + 1}" else "Symbols", 1f) {
                     if (symbolMode) {
                         symbolPage = (symbolPage + 1) % 2
                     } else {
@@ -205,6 +211,7 @@ class YoryInputMethodService : InputMethodService() {
                 "more" -> addToolbarIconButton(toolbar, if (toolsMode) "close" else "more", if (toolsMode) "Close tools" else "More tools", 1f) {
                     toolsMode = !toolsMode
                     if (toolsMode) {
+                        resizeMode = false
                         emojiMode = false
                         clipboardMode = false
                     }
@@ -212,12 +219,17 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                     updateSuggestions()
                 }
-                "clipboard" -> if (theme.clipboardEnabled && !incognitoMode &&
-                    !sensitiveField && !numericField && !emailField && !urlField) {
+                "clipboard" -> if (!incognitoMode && !sensitiveField &&
+                    !numericField && !emailField && !urlField) {
                     addToolbarIconButton(toolbar, "clipboard", "Clipboard history", 1f) {
-                        clipboardMode = !clipboardMode
-                        refreshKeyboard()
-                        refreshClipboardRow()
+                        if (theme.clipboardEnabled) {
+                            clipboardMode = !clipboardMode
+                            refreshKeyboard()
+                            refreshClipboardRow()
+                        } else {
+                            Toast.makeText(this, "Enable clipboard history in YORY Studio first.", Toast.LENGTH_SHORT).show()
+                            openStudio()
+                        }
                     }
                 }
                 "privacy" -> addToolbarIconButton(toolbar, if (incognitoMode) "privacy-off" else "privacy", if (incognitoMode) "Incognito mode on" else "Incognito mode off", 1f) {
@@ -256,6 +268,7 @@ class YoryInputMethodService : InputMethodService() {
         val direction = if (activeLayout.isRtl && !numericField && !emailField && !urlField) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         keyboardRoot?.layoutDirection = direction
         container.layoutDirection = direction
+        suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
         container.removeAllViews()
 
         moreToolsPanel?.visibility = if (toolsMode) View.VISIBLE else View.GONE
@@ -289,9 +302,11 @@ class YoryInputMethodService : InputMethodService() {
             addSymbolLayout(container)
         } else if (activeLayout.isRtl) {
             val digitHints = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=")
+            val secondHints = listOf("@", "#", "&", "پ", "لا", "أ", "=", "(", ")", "گ", "*")
+            val thirdHints = listOf("−", "~", "−", "+", "؛", ":", "/", "ژ", "”", "◌")
             addKeyRow(container, activeLayout.rows[0], compact = true, secondaryHints = digitHints)
-            addKeyRow(container, activeLayout.rows[1], compact = true)
-            addSpecialLetterRow(container, activeLayout.rows[2], compact = true)
+            addKeyRow(container, activeLayout.rows[1], compact = true, secondaryHints = secondHints, horizontalInsetDp = 10)
+            addArabicFinalRow(container, activeLayout.rows[2], thirdHints, horizontalInsetDp = 10)
         } else {
             addKeyRow(container, activeLayout.rows[0])
             addKeyRow(container, activeLayout.rows[1], horizontalInsetDp = 10)
@@ -465,7 +480,7 @@ class YoryInputMethodService : InputMethodService() {
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ".", 1)
         }
         addKey(bottom, "⌫", 1f) { handleKey("⌫") }
-        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        parent.addView(bottom, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -478,7 +493,7 @@ class YoryInputMethodService : InputMethodService() {
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
         }
-        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        parent.addView(actions, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
     }
 
     private fun addKeyRow(
@@ -501,7 +516,26 @@ class YoryInputMethodService : InputMethodService() {
                 secondaryLegend = secondaryHints.getOrNull(index)
             )
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
+    }
+
+    private fun addArabicFinalRow(
+        parent: LinearLayout,
+        letters: String,
+        secondaryHints: List<String>,
+        horizontalInsetDp: Int = 0
+    ) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
+        }
+        letters.forEachIndexed { index, char ->
+            val label = char.toString()
+            addKey(row, label, 1f, { handleKey(label) }, compact = true, secondaryLegend = secondaryHints.getOrNull(index))
+        }
+        addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = true)
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
     }
 
     private fun addSpecialLetterRow(parent: LinearLayout, letters: String, compact: Boolean = false) {
@@ -515,7 +549,7 @@ class YoryInputMethodService : InputMethodService() {
             addKey(row, label, 1f, { handleKey(label) }, compact = compact)
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = compact)
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
     }
 
     private fun addSymbolLayout(parent: LinearLayout) {
@@ -541,127 +575,233 @@ class YoryInputMethodService : InputMethodService() {
                 val weight = if (label == "⌫") 1.35f else 1f
                 addKey(row, label, weight, { handleKey(label) }, compact = true)
             }
-            parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+            parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
         }
     }
 
     private fun refreshMoreTools() {
         val panel = moreToolsPanel ?: return
         panel.removeAllViews()
-        val heading = TextView(this).apply {
-            text = "YORY TOOLS"
-            textSize = 11f
-            letterSpacing = 0.16f
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            setTextColor(theme.textArgb)
-            setPadding(dp(5), dp(2), dp(5), dp(7))
+        if (resizeMode) {
+            refreshResizePanel(panel)
+            return
         }
-        panel.addView(heading, LinearLayout.LayoutParams(-1, dp(25)))
 
-        val tools = mutableListOf<Triple<String, String, () -> Unit>>()
-        tools.add(Triple("Emoji", "emoji") {
-            toolsMode = false
-            emojiMode = true
-            refreshToolbar()
-            refreshKeyboard()
-            refreshEmojiPicker()
-            updateSuggestions()
-        })
-        tools.add(Triple("Languages", "language") {
-            toolsMode = false
-            cycleLanguage(1)
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
-        })
-        tools.add(Triple("Symbols", "symbols") {
-            toolsMode = false
-            symbolMode = true
-            symbolPage = 0
-            refreshToolbar()
-            refreshKeyboard()
-        })
-        if (theme.clipboardEnabled && !sensitiveField && !numericField && !emailField && !urlField && !incognitoMode) {
-            tools.add(Triple("Clipboard", "clipboard") {
+        data class ToolItem(
+            val title: String,
+            val icon: String,
+            val enabled: Boolean = true,
+            val action: () -> Unit
+        )
+        val tools = listOf(
+            ToolItem("Stickers", "stickers", false) {},
+            ToolItem("Settings", "settings") { openStudio() },
+            ToolItem("Languages", "language") {
+                cycleLanguage(1)
                 toolsMode = false
-                clipboardMode = true
                 refreshToolbar()
                 refreshKeyboard()
-                refreshClipboardRow()
-            })
-        }
-        tools.add(Triple("Incognito", "privacy") {
-            toolsMode = false
-            incognitoMode = !incognitoMode
-            if (incognitoMode) clipboardMode = false
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
-            refreshClipboardListener()
-        })
-        tools.add(Triple("Next keyboard", "keyboard") {
-            toolsMode = false
-            switchToNextInputMethod(false)
-            refreshToolbar()
-            refreshKeyboard()
-        })
-        tools.add(Triple("Clear words", "text") {
-            PersonalDictionaryStore.clear(applicationContext)
-            toolsMode = false
-            refreshKeyboard()
-            updateSuggestions()
-        })
-        tools.add(Triple("Studio", "settings") {
-            toolsMode = false
-            openStudio()
-            refreshToolbar()
-            refreshKeyboard()
-        })
+                updateSuggestions()
+            },
+            ToolItem("Layouts", "keyboard", false) {},
+            ToolItem("Incognito", "privacy") {
+                incognitoMode = !incognitoMode
+                if (incognitoMode) clipboardMode = false
+                toolsMode = false
+                refreshToolbar()
+                refreshKeyboard()
+                updateSuggestions()
+                refreshClipboardListener()
+            },
+            ToolItem("Resize", "resize") {
+                resizeMode = true
+                refreshMoreTools()
+            },
+            ToolItem("Themes", "themes") { openStudio() },
+            ToolItem("Modes", "modes") {
+                symbolMode = !symbolMode
+                symbolPage = 0
+                toolsMode = false
+                refreshToolbar()
+                refreshKeyboard()
+            },
+            ToolItem("Emoji", "emoji") {
+                toolsMode = false
+                emojiMode = true
+                refreshEmojiPicker()
+                refreshToolbar()
+                refreshKeyboard()
+                updateSuggestions()
+            },
+            ToolItem("Share", "share") { shareYory() },
+            ToolItem("Autocorrect", "autocorrect", false) {},
+            ToolItem("Create", "create", false) {}
+        )
 
-        tools.chunked(4).forEach { group ->
+        tools.chunked(4).forEachIndexed { rowIndex, group ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
             }
-            group.forEach { (title, icon, action) ->
+            group.forEachIndexed { columnIndex, item ->
                 val tile = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER
-                    isClickable = true
-                    isFocusable = true
-                    contentDescription = title
-                    background = GradientDrawable().apply {
-                        setColor(Color.argb(22, 255, 255, 255))
-                        cornerRadius = dp(15).toFloat()
-                        setStroke(dp(1), Color.argb(42, 255, 255, 255))
-                    }
-                    setPadding(dp(2), dp(5), dp(2), dp(5))
+                    isClickable = item.enabled
+                    isFocusable = item.enabled
+                    contentDescription = if (item.enabled) item.title else "${item.title}, unavailable"
+                    alpha = if (item.enabled) 1f else 0.42f
+                    background = ColorDrawable(Color.TRANSPARENT)
                     setOnClickListener {
-                        performKeyFeedback(this)
-                        action()
+                        if (item.enabled) {
+                            performKeyFeedback(this)
+                            item.action()
+                        }
                     }
                 }
-                val glyph = YoryKeyboardIconView(this, icon, theme.textArgb)
-                val caption = TextView(this).apply {
-                    text = title
-                    textSize = 10.5f
+                tile.addView(
+                    YoryKeyboardIconView(this, item.icon, theme.textArgb),
+                    LinearLayout.LayoutParams(-1, dp(31))
+                )
+                tile.addView(TextView(this).apply {
+                    text = item.title
+                    textSize = 11f
                     gravity = Gravity.CENTER
                     maxLines = 1
                     setTextColor(theme.textArgb)
+                }, LinearLayout.LayoutParams(-1, dp(20)))
+                row.addView(tile, LinearLayout.LayoutParams(0, dp(67), 1f))
+                if (columnIndex < group.lastIndex) {
+                    row.addView(View(this).apply {
+                        setBackgroundColor(Color.argb(38, 255, 255, 255))
+                    }, LinearLayout.LayoutParams(dp(1), dp(62)))
                 }
-                tile.addView(glyph, LinearLayout.LayoutParams(-1, dp(31)))
-                tile.addView(caption, LinearLayout.LayoutParams(-1, dp(18)))
-                row.addView(tile, LinearLayout.LayoutParams(0, dp(64), 1f).apply {
-                    setMargins(dp(3), dp(3), dp(3), dp(3))
-                })
             }
-            repeat(4 - group.size) {
-                row.addView(View(this), LinearLayout.LayoutParams(0, dp(64), 1f).apply {
-                    setMargins(dp(3), dp(3), dp(3), dp(3))
-                })
+            panel.addView(row, LinearLayout.LayoutParams(-1, dp(68)))
+            if (rowIndex < 2) {
+                panel.addView(View(this).apply {
+                    setBackgroundColor(Color.argb(38, 255, 255, 255))
+                }, LinearLayout.LayoutParams(-1, dp(1)))
             }
-            panel.addView(row, LinearLayout.LayoutParams(-1, dp(70)))
         }
+    }
+
+    private fun refreshResizePanel(panel: LinearLayout) {
+        val title = TextView(this).apply {
+            text = "RESIZE KEYBOARD"
+            textSize = 11f
+            letterSpacing = 0.12f
+            setTextColor(theme.textArgb)
+            gravity = Gravity.CENTER
+        }
+        panel.addView(title, LinearLayout.LayoutParams(-1, dp(22)))
+
+        val resizeFrame = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.argb(8, 65, 105, 255))
+                cornerRadius = dp(2).toFloat()
+                setStroke(dp(2), Color.rgb(65, 105, 255))
+            }
+            contentDescription = "Keyboard resize boundary. Use the height slider below."
+        }
+        fun handleView(width: Int, height: Int, gravity: Int) {
+            resizeFrame.addView(View(this).apply {
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(4).toFloat()
+                    setColor(Color.rgb(65, 105, 255))
+                }
+            }, FrameLayout.LayoutParams(dp(width), dp(height), gravity))
+        }
+        handleView(34, 7, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
+        handleView(34, 7, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.START)
+        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.END)
+        val moveHandle = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.rgb(65, 105, 255))
+            }
+            contentDescription = "Resize controls use the height slider"
+        }
+        moveHandle.addView(
+            YoryKeyboardIconView(this, "move", Color.WHITE),
+            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+        )
+        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
+        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(56)))
+
+        val value = TextView(this).apply {
+            text = "${theme.keyHeightDp.toInt()} dp"
+            textSize = 13f
+            setTextColor(theme.textArgb)
+            gravity = Gravity.CENTER
+        }
+        panel.addView(value, LinearLayout.LayoutParams(-1, dp(22)))
+
+        val slider = SeekBar(this).apply {
+            max = 24
+            progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+            progressTintList = android.content.res.ColorStateList.valueOf(theme.accentArgb)
+            thumbTintList = android.content.res.ColorStateList.valueOf(theme.textArgb)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) value.text = "${36 + progress} dp"
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                    val height = (36 + (seekBar?.progress ?: 4)).toFloat()
+                    theme = theme.copy(keyHeightDp = height)
+                    YoryThemeStore.save(applicationContext, theme)
+                    value.text = "${height.toInt()} dp"
+                }
+            })
+        }
+        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(36)))
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        fun addActionButton(label: String, action: () -> Unit) {
+            val button = TextView(this).apply {
+                text = label
+                gravity = Gravity.CENTER
+                textSize = 13f
+                setTextColor(theme.textArgb)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(18).toFloat()
+                    setColor(Color.WHITE)
+                    setStroke(dp(1), Color.WHITE)
+                }
+                setTextColor(Color.BLACK)
+                setOnClickListener { performKeyFeedback(this); action() }
+            }
+            actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
+                setMargins(dp(6), 0, dp(6), 0)
+            })
+        }
+        addActionButton("Reset") {
+            theme = theme.copy(keyHeightDp = 40f)
+            YoryThemeStore.save(applicationContext, theme)
+            panel.removeAllViews()
+            refreshResizePanel(panel)
+        }
+        addActionButton("OK") {
+            resizeMode = false
+            toolsMode = false
+            refreshToolbar()
+            refreshKeyboard()
+            updateSuggestions()
+        }
+        panel.addView(actions, LinearLayout.LayoutParams(-1, dp(38)))
+    }
+
+    private fun shareYory() {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, "YORY KEYS — a customizable keyboard. https://github.com/our1godjesus-beep/YORY-KEYS-")
+        }
+        startActivity(Intent.createChooser(send, "Share YORY KEYS").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun addBottomRow(parent: LinearLayout) {
@@ -669,22 +809,18 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        addKey(row, if (symbolMode) "ABC" else "!#1", 1.15f) {
+        addKey(row, if (symbolMode) "ABC" else "123", 1f) {
             symbolMode = !symbolMode
             symbolPage = 0
             refreshKeyboard()
         }
-        addKey(row, if (symbolMode) "${symbolPage + 1}/2" else "🌐", 1f) {
-            if (symbolMode) {
-                symbolPage = (symbolPage + 1) % 2
-            } else {
-                cycleLanguage(1)
-                shifted = false
-            }
+        addKey(row, "☺", 1f) {
+            emojiMode = !emojiMode
+            if (emojiMode) refreshEmojiPicker()
             refreshKeyboard()
             updateSuggestions()
         }
-        addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.8f) {
+        addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.9f) {
             learnCurrentWord()
             currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
             updateSuggestions()
@@ -692,7 +828,7 @@ class YoryInputMethodService : InputMethodService() {
         addKey(
             row,
             "‹  ${YoryLanguageLayouts.forTag(languageTag).shortLabel}  ›",
-            3.3f,
+            4.2f,
             {
                 learnCurrentWord()
                 currentInputConnection?.commitText(" ", 1)
@@ -700,7 +836,6 @@ class YoryInputMethodService : InputMethodService() {
                 updateSuggestions()
             },
             onSwipeDirection = { deltaX ->
-                // Left = next language; right = previous. Swipes never insert a space.
                 cycleLanguage(if (deltaX < 0f) 1 else -1)
                 shifted = false
                 refreshToolbar()
@@ -708,19 +843,19 @@ class YoryInputMethodService : InputMethodService() {
                 updateSuggestions()
             }
         )
-        addKey(row, ".", 0.8f) {
+        addKey(row, ".", 1f, {
             learnCurrentWord()
             currentInputConnection?.commitText(".", 1)
             updateSuggestions()
-        }
-        addKey(row, "↵", 1.15f) {
+        }, secondaryLegend = "؟!")
+        addKey(row, "↵", 1.6f) {
             learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
             updateSuggestions()
         }
-        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp)))
+        parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
     }
 
     private fun addKey(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
@@ -992,17 +1127,19 @@ class YoryInputMethodService : InputMethodService() {
         weight: Float,
         action: () -> Unit
     ) {
-        val surfaceLabel = when (icon) {
-            "emoji" -> "☺"
-            "language" -> "⇄"
-            "settings" -> "⚙"
-            "clipboard" -> "▣"
-            "privacy", "privacy-off" -> "◎"
-            "more", "close" -> "⋯"
-            else -> icon
+        val active = when (icon) {
+            "emoji" -> emojiMode
+            "clipboard" -> clipboardMode
+            "privacy", "privacy-off" -> incognitoMode
+            "more", "close" -> toolsMode
+            "symbols" -> symbolMode
+            else -> false
         }
         val button = FrameLayout(this).apply {
-            background = keyBackground(surfaceLabel)
+            background = if (active) GradientDrawable().apply {
+                setColor(Color.argb(38, 255, 255, 255))
+                cornerRadius = dp(12).toFloat()
+            } else ColorDrawable(Color.TRANSPARENT)
             isClickable = true
             isFocusable = true
             contentDescription = accessibilityLabel
@@ -1012,11 +1149,11 @@ class YoryInputMethodService : InputMethodService() {
             }
         }
         button.addView(
-            YoryKeyboardIconView(this, icon, theme.accentArgb),
-            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+            YoryKeyboardIconView(this, icon, theme.textArgb),
+            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
         )
         parent.addView(button, LinearLayout.LayoutParams(0, dp(34), weight).apply {
-            setMargins(dp(3), dp(1), dp(3), dp(1))
+            setMargins(dp(2), 0, dp(2), 0)
         })
     }
 
@@ -1175,14 +1312,12 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun updateSuggestions() {
         val row = suggestionRow ?: return
-        if (toolsMode) {
-            row.visibility = View.GONE
-            return
-        }
+        if (toolsMode) { row.visibility = View.GONE; return }
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
         val compactMode = prefs.getBoolean("compact_mode", false)
+        row.layoutDirection = View.LAYOUT_DIRECTION_LTR
         row.layoutParams = row.layoutParams.apply {
-            height = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 34)
+            height = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
         }
         row.requestLayout()
         row.removeAllViews()
@@ -1192,25 +1327,66 @@ class YoryInputMethodService : InputMethodService() {
             return
         }
         row.visibility = View.VISIBLE
-        addToolbarButton(row, if (suggestionsCollapsed) "⌄" else "⌃", 0.42f) {
+        addSuggestionToggleButton(row) {
             suggestionsCollapsed = !suggestionsCollapsed
             updateSuggestions()
         }
         if (suggestionsCollapsed) return
-
         val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString().orEmpty()
         val prefix = Regex("[\\p{L}\\p{M}]+$").find(before)?.value.orEmpty()
-        val suggestionLimit = if (compactMode) 2 else 3
+        val limit = if (compactMode) 2 else 3
         val personal = PersonalDictionaryStore.suggestions(applicationContext, prefix, languageTag, 3)
         val bundled = wordSuggestions?.suggest(prefix, languageTag, 3).orEmpty()
-        val suggestions = (personal + bundled).distinct().take(suggestionLimit)
-        if (suggestions.isEmpty()) {
-            addToolbarButton(row, YoryLanguageLayouts.forTag(languageTag).shortLabel, 1f) { }
-        } else {
-            suggestions.forEach { suggestion ->
-                addToolbarButton(row, suggestion, 1f) { replaceCurrentWord(suggestion) }
+        val candidates = (personal + bundled).distinct().take(limit)
+        val visible = if (candidates.isEmpty()) listOf(YoryLanguageLayouts.forTag(languageTag).shortLabel) else candidates
+        visible.forEachIndexed { index, suggestion ->
+            addSuggestionLabel(row, suggestion, suggestion.isNotEmpty()) {
+                if (candidates.isNotEmpty()) replaceCurrentWord(suggestion)
+            }
+            if (index < visible.lastIndex) {
+                row.addView(View(this).apply { setBackgroundColor(Color.argb(40, 255, 255, 255)) },
+                    LinearLayout.LayoutParams(dp(1), dp(16)))
             }
         }
+        repeat((limit - visible.size).coerceAtLeast(0)) { addSuggestionLabel(row, "", false) {} }
+    }
+
+    private fun addSuggestionToggleButton(parent: LinearLayout, action: () -> Unit) {
+        val button = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.TRANSPARENT)
+                setStroke(dp(1), Color.argb(170, 190, 190, 190))
+            }
+            isClickable = true
+            isFocusable = true
+            contentDescription = if (suggestionsCollapsed) "Expand suggestions" else "Collapse suggestions"
+            setOnClickListener { performKeyFeedback(this); action() }
+        }
+        button.addView(
+            YoryKeyboardIconView(this, if (suggestionsCollapsed) "chevron-down" else "chevron-up", theme.textArgb),
+            FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER)
+        )
+        parent.addView(button, LinearLayout.LayoutParams(dp(28), dp(28)).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setMargins(dp(2), 0, dp(7), 0)
+        })
+    }
+
+    private fun addSuggestionLabel(parent: LinearLayout, value: String, enabled: Boolean, action: () -> Unit) {
+        val label = TextView(this).apply {
+            text = value
+            gravity = Gravity.CENTER
+            textSize = 16f
+            maxLines = 1
+            setTextColor(theme.textArgb)
+            alpha = if (enabled) 1f else 0.18f
+            background = ColorDrawable(Color.TRANSPARENT)
+            isClickable = enabled
+            isFocusable = enabled
+            if (enabled) setOnClickListener { performKeyFeedback(this); action() }
+        }
+        parent.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
     }
 
     private fun replaceCurrentWord(suggestion: String) {
@@ -1263,15 +1439,10 @@ class YoryInputMethodService : InputMethodService() {
      * Premium dark glass surface. Keep the keyboard geometry and key order untouched;
      * only the material treatment changes.
      */
-    private fun panelBackground(): GradientDrawable {
+    private fun panelBackground(): ColorDrawable {
         val raw = theme.backgroundArgb
         val base = Color.rgb(Color.red(raw), Color.green(raw), Color.blue(raw))
-        val top = blendColors(base, Color.WHITE, 0.035f)
-        val bottom = blendColors(base, Color.BLACK, 0.045f)
-        return GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(top, bottom)).apply {
-            cornerRadius = dp(23).toFloat()
-            setStroke(dp(1), Color.rgb(39, 42, 48))
-        }
+        return ColorDrawable(blendColors(base, Color.WHITE, 0.025f))
     }
 
     private fun keyBackground(label: String, pressed: Boolean = false): GradientDrawable {
@@ -1426,6 +1597,81 @@ private class YoryKeyboardIconView(
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 }
                 canvas.drawText("Aa", 12f, 15f, textPaint)
+            }
+            "chevron-down", "chevron-up" -> {
+                val path = Path().apply {
+                    if (icon == "chevron-down") {
+                        moveTo(5f, 9f); lineTo(12f, 15f); lineTo(19f, 9f)
+                    } else {
+                        moveTo(5f, 15f); lineTo(12f, 9f); lineTo(19f, 15f)
+                    }
+                }
+                canvas.drawPath(path, stroke)
+            }
+            "stickers" -> {
+                canvas.drawRoundRect(RectF(3f, 4f, 18f, 19f), 3f, 3f, stroke)
+                canvas.drawCircle(8f, 9f, 1f, fill)
+                canvas.drawCircle(13f, 9f, 1f, fill)
+                canvas.drawArc(RectF(7f, 9f, 15f, 16f), 15f, 150f, false, stroke)
+                canvas.drawLine(18f, 3f, 18f, 8f, stroke)
+                canvas.drawLine(15.5f, 5.5f, 20.5f, 5.5f, stroke)
+            }
+            "resize" -> {
+                canvas.drawRoundRect(RectF(4f, 4f, 20f, 20f), 2f, 2f, stroke)
+                canvas.drawLine(8f, 8f, 4f, 4f, stroke)
+                canvas.drawLine(4f, 4f, 9f, 4f, stroke)
+                canvas.drawLine(4f, 4f, 4f, 9f, stroke)
+                canvas.drawLine(16f, 16f, 20f, 20f, stroke)
+                canvas.drawLine(20f, 20f, 15f, 20f, stroke)
+                canvas.drawLine(20f, 20f, 20f, 15f, stroke)
+            }
+            "themes" -> {
+                canvas.drawCircle(12f, 12f, 8f, stroke)
+                canvas.drawCircle(9f, 8f, 1.1f, fill)
+                canvas.drawCircle(15f, 9f, 1.1f, fill)
+                canvas.drawCircle(9f, 15f, 1.1f, fill)
+                canvas.drawCircle(15f, 15f, 1.1f, fill)
+            }
+            "modes" -> {
+                canvas.drawRoundRect(RectF(3f, 5f, 21f, 19f), 3f, 3f, stroke)
+                canvas.drawLine(7f, 9f, 17f, 9f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 12f, stroke)
+                canvas.drawLine(7f, 15f, 14f, 15f, stroke)
+            }
+            "share" -> {
+                canvas.drawLine(7f, 12f, 17f, 6f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 18f, stroke)
+                canvas.drawCircle(6f, 12f, 2.5f, stroke)
+                canvas.drawCircle(18f, 5f, 2.5f, stroke)
+                canvas.drawCircle(18f, 19f, 2.5f, stroke)
+            }
+            "autocorrect" -> {
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = iconTint
+                    textAlign = Paint.Align.CENTER
+                    textSize = 11f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+                canvas.drawText("A", 9f, 15f, textPaint)
+                val tick = Path().apply { moveTo(13f, 13f); lineTo(16f, 16f); lineTo(21f, 8f) }
+                canvas.drawPath(tick, stroke)
+            }
+            "create" -> {
+                canvas.drawRoundRect(RectF(3f, 3f, 21f, 21f), 4f, 4f, stroke)
+                canvas.drawLine(12f, 7f, 12f, 17f, stroke)
+                canvas.drawLine(7f, 12f, 17f, 12f, stroke)
+            }
+            "move" -> {
+                canvas.drawLine(12f, 3f, 12f, 21f, stroke)
+                canvas.drawLine(3f, 12f, 21f, 12f, stroke)
+                canvas.drawLine(12f, 3f, 9f, 6f, stroke)
+                canvas.drawLine(12f, 3f, 15f, 6f, stroke)
+                canvas.drawLine(12f, 21f, 9f, 18f, stroke)
+                canvas.drawLine(12f, 21f, 15f, 18f, stroke)
+                canvas.drawLine(3f, 12f, 6f, 9f, stroke)
+                canvas.drawLine(3f, 12f, 6f, 15f, stroke)
+                canvas.drawLine(21f, 12f, 18f, 9f, stroke)
+                canvas.drawLine(21f, 12f, 18f, 15f, stroke)
             }
         }
         canvas.restore()

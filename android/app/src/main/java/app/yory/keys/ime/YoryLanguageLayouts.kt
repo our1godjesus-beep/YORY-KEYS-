@@ -13,7 +13,7 @@ internal data class YoryKeyboardLayout(
 internal object YoryLanguageLayouts {
     val supported: List<YoryKeyboardLayout> = listOf(
         YoryKeyboardLayout("en-US", "English (US)", "English", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), hasBundledDictionary = true),
-        YoryKeyboardLayout("ar", "العربية (مصر)", "العربية", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكذ", "طظئءؤرىةوز"), isRtl = true, hasBundledDictionary = true),
+        YoryKeyboardLayout("ar", "العربية (مصر)", "مصري", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكذ", "طظئءؤرىةوز"), isRtl = true, hasBundledDictionary = true),
         YoryKeyboardLayout("de", "Deutsch (DE)", "Deutsch", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm")),
         YoryKeyboardLayout("es", "Español", "Español", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm")),
         YoryKeyboardLayout("fr", "Français", "Français", listOf("azertyuiop", "qsdfghjklm", "wxcvbn")),
