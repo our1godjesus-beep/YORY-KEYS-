@@ -81,7 +81,7 @@ final class KeyboardViewController: UIInputViewController {
         super.viewDidLoad()
         YoryThemeReader.migrateLegacyDefaultIfNeeded()
         if let savedHeight = UserDefaults.standard.object(forKey: "yory.keyboard.keyHeight.local") as? Double {
-            localKeyHeightOverride = CGFloat(savedHeight).clamped(to: 36...60)
+            localKeyHeightOverride = min(max(CGFloat(savedHeight), 36), 60)
         }
         view.backgroundColor = YoryThemeReader.backgroundColor
         let savedLanguage = UserDefaults(suiteName: "group.app.yory.keys")?.string(forKey: "yory.active.language") ?? (YoryThemeReader.isArabic ? "ar" : "en-US")
@@ -1143,8 +1143,13 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let slots = compactMode ? 2 : 3
+        let suggestionsStack = UIStackView()
+        suggestionsStack.axis = .horizontal
+        suggestionsStack.distribution = .fillEqually
+        suggestionsStack.spacing = 0
         for index in 0..<slots {
             let suggestion = candidates.indices.contains(index) ? candidates[index] : ""
+            let cell = UIView()
             let button = UIButton(type: .system)
             button.setTitle(suggestion, for: .normal)
             button.setTitleColor(YoryThemeReader.textColor.withAlphaComponent(suggestion.isEmpty ? 0.18 : 1), for: .normal)
@@ -1157,14 +1162,29 @@ final class KeyboardViewController: UIInputViewController {
                     self?.replaceCurrentWord(with: suggestion)
                 }, for: .touchUpInside)
             }
-            suggestionRow.addArrangedSubview(button)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(button)
+            NSLayoutConstraint.activate([
+                button.leadingAnchor.constraint(equalTo: cell.leadingAnchor),
+                button.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: index < slots - 1 ? -1 : 0),
+                button.topAnchor.constraint(equalTo: cell.topAnchor),
+                button.bottomAnchor.constraint(equalTo: cell.bottomAnchor)
+            ])
             if index < slots - 1 {
                 let divider = UIView()
                 divider.backgroundColor = UIColor.white.withAlphaComponent(0.16)
-                divider.widthAnchor.constraint(equalToConstant: 1).isActive = true
-                suggestionRow.addArrangedSubview(divider)
+                divider.translatesAutoresizingMaskIntoConstraints = false
+                cell.addSubview(divider)
+                NSLayoutConstraint.activate([
+                    divider.widthAnchor.constraint(equalToConstant: 1),
+                    divider.topAnchor.constraint(equalTo: cell.topAnchor, constant: 8),
+                    divider.bottomAnchor.constraint(equalTo: cell.bottomAnchor, constant: -8),
+                    divider.trailingAnchor.constraint(equalTo: cell.trailingAnchor)
+                ])
             }
+            suggestionsStack.addArrangedSubview(cell)
         }
+        suggestionRow.addArrangedSubview(suggestionsStack)
         updateKeyboardHeight()
     }
 
@@ -1328,7 +1348,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func setKeyboardHeight(_ value: CGFloat) {
-        let safe = value.clamped(to: 36...60)
+        let safe = min(max(value, 36), 60)
         localKeyHeightOverride = safe
         UserDefaults.standard.set(Double(safe), forKey: "yory.keyboard.keyHeight.local")
         resizeHeightSlider?.value = Float(safe)
