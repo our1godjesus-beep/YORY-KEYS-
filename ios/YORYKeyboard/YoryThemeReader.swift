@@ -35,7 +35,7 @@ enum YoryThemeReader {
         defaults.set(1.0, forKey: "opacity")
         defaults.set(12.0, forKey: "cornerRadius")
         defaults.set(4.0, forKey: "keySpacing")
-        defaults.set(46.0, forKey: "keyHeight")
+        defaults.set(40.0, forKey: "keyHeight")
         defaults.set("squircle", forKey: "keyShape")
     }
     static var keySpacing: CGFloat {
@@ -49,7 +49,7 @@ enum YoryThemeReader {
         return ["system", "rounded", "serif", "mono"].contains(value) ? value : "system"
     }
     static var keyHeight: CGFloat {
-        CGFloat(settings?.double(forKey: "keyHeight") ?? 46).clamped(to: 32...60)
+        CGFloat(settings?.double(forKey: "keyHeight") ?? 40).clamped(to: 32...60)
     }
     static var longPressDuration: TimeInterval {
         (settings?.double(forKey: "yory.layout.longPressDuration") ?? 0.45).clamped(to: 0.2...0.9)
