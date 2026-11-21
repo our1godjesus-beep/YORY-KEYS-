@@ -3,7 +3,11 @@ package app.yory.keys.ime
 import android.content.Intent
 import android.content.ClipboardManager
 import android.media.AudioManager
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.ColorDrawable
@@ -15,6 +19,7 @@ import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
@@ -175,13 +180,13 @@ class YoryInputMethodService : InputMethodService() {
         order.filter { it in visible }.forEach { tool ->
             when (tool) {
                 "emoji" -> if (prefs.getBoolean("emoji_key", true)) {
-                    addToolbarButton(toolbar, "☺", 1f) {
+                    addToolbarIconButton(toolbar, "emoji", "Emoji picker", 1f) {
                         emojiMode = !emojiMode
                         if (emojiMode) refreshEmojiPicker()
                         refreshKeyboard()
                     }
                 }
-                "language" -> addToolbarButton(toolbar, "⇄", 1f) {
+                "language" -> addToolbarIconButton(toolbar, "language", "Switch language", 1f) {
                     cycleLanguage()
                     shifted = false
                     refreshKeyboard()
@@ -196,8 +201,8 @@ class YoryInputMethodService : InputMethodService() {
                     }
                     refreshKeyboard()
                 }
-                "settings" -> addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
-                "more" -> addToolbarButton(toolbar, if (toolsMode) "×" else "⋯", 1f) {
+                "settings" -> addToolbarIconButton(toolbar, "settings", "Open YORY Studio", 1f) { openStudio() }
+                "more" -> addToolbarIconButton(toolbar, if (toolsMode) "close" else "more", if (toolsMode) "Close tools" else "More tools", 1f) {
                     toolsMode = !toolsMode
                     if (toolsMode) {
                         emojiMode = false
@@ -209,13 +214,13 @@ class YoryInputMethodService : InputMethodService() {
                 }
                 "clipboard" -> if (theme.clipboardEnabled && !incognitoMode &&
                     !sensitiveField && !numericField && !emailField && !urlField) {
-                    addToolbarButton(toolbar, "▣", 1f) {
+                    addToolbarIconButton(toolbar, "clipboard", "Clipboard history", 1f) {
                         clipboardMode = !clipboardMode
                         refreshKeyboard()
                         refreshClipboardRow()
                     }
                 }
-                "privacy" -> addToolbarButton(toolbar, if (incognitoMode) "◉" else "◎", 1f) {
+                "privacy" -> addToolbarIconButton(toolbar, if (incognitoMode) "privacy-off" else "privacy", if (incognitoMode) "Incognito mode on" else "Incognito mode off", 1f) {
                     incognitoMode = !incognitoMode
                     if (incognitoMode) clipboardMode = false
                     refreshToolbar()
@@ -226,8 +231,8 @@ class YoryInputMethodService : InputMethodService() {
             }
         }
         if (toolbar.childCount == 0) {
-            addToolbarButton(toolbar, "⇄", 1f) { cycleLanguage(); refreshKeyboard(); updateSuggestions() }
-            addToolbarButton(toolbar, "⚙", 1f) { openStudio() }
+            addToolbarIconButton(toolbar, "language", "Switch language", 1f) { cycleLanguage(); refreshKeyboard(); updateSuggestions() }
+            addToolbarIconButton(toolbar, "settings", "Open YORY Studio", 1f) { openStudio() }
         }
     }
 
@@ -289,7 +294,7 @@ class YoryInputMethodService : InputMethodService() {
             addSpecialLetterRow(container, activeLayout.rows[2], compact = true)
         } else {
             addKeyRow(container, activeLayout.rows[0])
-            addKeyRow(container, activeLayout.rows[1])
+            addKeyRow(container, activeLayout.rows[1], horizontalInsetDp = 10)
             addSpecialLetterRow(container, activeLayout.rows[2])
         }
         addBottomRow(container)
@@ -480,11 +485,13 @@ class YoryInputMethodService : InputMethodService() {
         parent: LinearLayout,
         letters: String,
         compact: Boolean = false,
-        secondaryHints: List<String> = emptyList()
+        secondaryHints: List<String> = emptyList(),
+        horizontalInsetDp: Int = 0
     ) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
         }
         letters.forEachIndexed { index, char ->
             val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
@@ -552,7 +559,7 @@ class YoryInputMethodService : InputMethodService() {
         panel.addView(heading, LinearLayout.LayoutParams(-1, dp(25)))
 
         val tools = mutableListOf<Triple<String, String, () -> Unit>>()
-        tools.add(Triple("Emoji", "☺") {
+        tools.add(Triple("Emoji", "emoji") {
             toolsMode = false
             emojiMode = true
             refreshToolbar()
@@ -560,14 +567,14 @@ class YoryInputMethodService : InputMethodService() {
             refreshEmojiPicker()
             updateSuggestions()
         })
-        tools.add(Triple("Languages", "文") {
+        tools.add(Triple("Languages", "language") {
             toolsMode = false
             cycleLanguage(1)
             refreshToolbar()
             refreshKeyboard()
             updateSuggestions()
         })
-        tools.add(Triple("Symbols", "123") {
+        tools.add(Triple("Symbols", "symbols") {
             toolsMode = false
             symbolMode = true
             symbolPage = 0
@@ -575,7 +582,7 @@ class YoryInputMethodService : InputMethodService() {
             refreshKeyboard()
         })
         if (theme.clipboardEnabled && !sensitiveField && !numericField && !emailField && !urlField && !incognitoMode) {
-            tools.add(Triple("Clipboard", "▣") {
+            tools.add(Triple("Clipboard", "clipboard") {
                 toolsMode = false
                 clipboardMode = true
                 refreshToolbar()
@@ -583,7 +590,7 @@ class YoryInputMethodService : InputMethodService() {
                 refreshClipboardRow()
             })
         }
-        tools.add(Triple("Incognito", "◉") {
+        tools.add(Triple("Incognito", "privacy") {
             toolsMode = false
             incognitoMode = !incognitoMode
             if (incognitoMode) clipboardMode = false
@@ -592,19 +599,19 @@ class YoryInputMethodService : InputMethodService() {
             updateSuggestions()
             refreshClipboardListener()
         })
-        tools.add(Triple("Next keyboard", "⌨") {
+        tools.add(Triple("Next keyboard", "keyboard") {
             toolsMode = false
             switchToNextInputMethod(false)
             refreshToolbar()
             refreshKeyboard()
         })
-        tools.add(Triple("Clear words", "Aa") {
+        tools.add(Triple("Clear words", "text") {
             PersonalDictionaryStore.clear(applicationContext)
             toolsMode = false
             refreshKeyboard()
             updateSuggestions()
         })
-        tools.add(Triple("Studio", "⚙") {
+        tools.add(Triple("Studio", "settings") {
             toolsMode = false
             openStudio()
             refreshToolbar()
@@ -634,12 +641,7 @@ class YoryInputMethodService : InputMethodService() {
                         action()
                     }
                 }
-                val glyph = TextView(this).apply {
-                    text = icon
-                    textSize = 22f
-                    gravity = Gravity.CENTER
-                    setTextColor(theme.textArgb)
-                }
+                val glyph = YoryKeyboardIconView(this, icon, theme.textArgb)
                 val caption = TextView(this).apply {
                     text = title
                     textSize = 10.5f
@@ -690,7 +692,7 @@ class YoryInputMethodService : InputMethodService() {
         addKey(
             row,
             "‹  ${YoryLanguageLayouts.forTag(languageTag).shortLabel}  ›",
-            3.8f,
+            3.3f,
             {
                 learnCurrentWord()
                 currentInputConnection?.commitText(" ", 1)
@@ -981,6 +983,41 @@ class YoryInputMethodService : InputMethodService() {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             runCatching { showAsDropDown(anchor, 0, -dp(68)) }
         }
+    }
+
+    private fun addToolbarIconButton(
+        parent: LinearLayout,
+        icon: String,
+        accessibilityLabel: String,
+        weight: Float,
+        action: () -> Unit
+    ) {
+        val surfaceLabel = when (icon) {
+            "emoji" -> "☺"
+            "language" -> "⇄"
+            "settings" -> "⚙"
+            "clipboard" -> "▣"
+            "privacy", "privacy-off" -> "◎"
+            "more", "close" -> "⋯"
+            else -> icon
+        }
+        val button = FrameLayout(this).apply {
+            background = keyBackground(surfaceLabel)
+            isClickable = true
+            isFocusable = true
+            contentDescription = accessibilityLabel
+            setOnClickListener {
+                performKeyFeedback(this)
+                action()
+            }
+        }
+        button.addView(
+            YoryKeyboardIconView(this, icon, theme.accentArgb),
+            FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        )
+        parent.addView(button, LinearLayout.LayoutParams(0, dp(34), weight).apply {
+            setMargins(dp(3), dp(1), dp(3), dp(1))
+        })
     }
 
     private fun addToolbarButton(parent: LinearLayout, label: String, weight: Float, action: () -> Unit) {
@@ -1279,4 +1316,118 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+}
+
+
+/**
+ * Original monochrome YORY keyboard toolbar glyphs. Drawing in a normalized 24×24
+ * viewport avoids font/emoji fallback differences between Android manufacturers.
+ */
+private class YoryKeyboardIconView(
+    context: android.content.Context,
+    private val icon: String,
+    tint: Int
+) : View(context) {
+    private val iconTint = tint
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = iconTint
+        style = Paint.Style.STROKE
+        strokeWidth = 1.8f
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = iconTint
+        style = Paint.Style.FILL
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val side = kotlin.math.min(width.toFloat(), height.toFloat()).coerceAtLeast(1f)
+        canvas.save()
+        canvas.translate((width - side) / 2f, (height - side) / 2f)
+        canvas.scale(side / 24f, side / 24f)
+        when (icon) {
+            "emoji" -> {
+                canvas.drawCircle(12f, 12f, 8.2f, stroke)
+                canvas.drawCircle(9f, 9.5f, 0.9f, fill)
+                canvas.drawCircle(15f, 9.5f, 0.9f, fill)
+                val smile = Path().apply {
+                    moveTo(7.8f, 14f)
+                    quadTo(12f, 18.2f, 16.2f, 14f)
+                }
+                canvas.drawPath(smile, stroke)
+            }
+            "language" -> {
+                canvas.drawCircle(12f, 12f, 9f, stroke)
+                canvas.drawOval(RectF(8f, 3f, 16f, 21f), stroke)
+                canvas.drawLine(3.5f, 12f, 20.5f, 12f, stroke)
+                canvas.drawLine(5.2f, 7.5f, 18.8f, 7.5f, stroke)
+                canvas.drawLine(5.2f, 16.5f, 18.8f, 16.5f, stroke)
+            }
+            "settings" -> {
+                for (i in 0 until 8) {
+                    canvas.save()
+                    canvas.rotate(i * 45f, 12f, 12f)
+                    canvas.drawLine(12f, 1.8f, 12f, 5f, stroke)
+                    canvas.restore()
+                }
+                canvas.drawCircle(12f, 12f, 7.2f, stroke)
+                canvas.drawCircle(12f, 12f, 2.8f, stroke)
+            }
+            "clipboard" -> {
+                canvas.drawRoundRect(RectF(5f, 4.5f, 19f, 21f), 2f, 2f, stroke)
+                canvas.drawRoundRect(RectF(9f, 2.5f, 15f, 6.5f), 1.5f, 1.5f, stroke)
+                canvas.drawLine(8f, 10f, 16f, 10f, stroke)
+                canvas.drawLine(8f, 14f, 16f, 14f, stroke)
+                canvas.drawLine(8f, 18f, 13f, 18f, stroke)
+            }
+            "privacy", "privacy-off" -> {
+                val eye = Path().apply {
+                    moveTo(2.5f, 12f)
+                    quadTo(7f, 5.3f, 12f, 5.3f)
+                    quadTo(17f, 5.3f, 21.5f, 12f)
+                    quadTo(17f, 18.7f, 12f, 18.7f)
+                    quadTo(7f, 18.7f, 2.5f, 12f)
+                }
+                canvas.drawPath(eye, stroke)
+                canvas.drawCircle(12f, 12f, 3f, stroke)
+                if (icon == "privacy-off") canvas.drawLine(4f, 20f, 20f, 4f, stroke)
+            }
+            "more" -> {
+                canvas.drawCircle(5f, 12f, 1.7f, fill)
+                canvas.drawCircle(12f, 12f, 1.7f, fill)
+                canvas.drawCircle(19f, 12f, 1.7f, fill)
+            }
+            "close" -> {
+                canvas.drawLine(6f, 6f, 18f, 18f, stroke)
+                canvas.drawLine(18f, 6f, 6f, 18f, stroke)
+            }
+            "keyboard" -> {
+                canvas.drawRoundRect(RectF(2.5f, 5f, 21.5f, 19f), 2f, 2f, stroke)
+                val dots = listOf(8f to 9f, 12f to 9f, 16f to 9f, 8f to 13f, 12f to 13f, 16f to 13f)
+                dots.forEach { (x, y) -> canvas.drawCircle(x, y, 0.7f, fill) }
+                canvas.drawLine(8f, 16.5f, 16f, 16.5f, stroke)
+            }
+            "symbols" -> {
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = iconTint
+                    textAlign = Paint.Align.CENTER
+                    textSize = 7.2f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+                canvas.drawText("123", 12f, 15f, textPaint)
+            }
+            "text" -> {
+                val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = iconTint
+                    textAlign = Paint.Align.CENTER
+                    textSize = 8f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+                canvas.drawText("Aa", 12f, 15f, textPaint)
+            }
+        }
+        canvas.restore()
+    }
 }

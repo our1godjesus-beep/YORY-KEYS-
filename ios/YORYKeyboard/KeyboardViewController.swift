@@ -209,7 +209,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func buildInterface() {
         root.axis = .vertical
-        root.spacing = YoryThemeReader.keySpacing
+        root.spacing = max(3, min(5, YoryThemeReader.keySpacing))
         root.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(root)
         let heightConstraint = view.heightAnchor.constraint(equalToConstant: 270)
@@ -270,7 +270,7 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.distribution = .fillEqually
         suggestionRow.spacing = 6
         root.addArrangedSubview(suggestionRow)
-        let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 28)
+        let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 30)
         suggestionRowHeightConstraint = suggestionHeight
         suggestionHeight.isActive = true
 
@@ -307,7 +307,7 @@ final class KeyboardViewController: UIInputViewController {
         refreshEmojiPicker()
 
         keysStack.axis = .vertical
-        keysStack.spacing = 6
+        keysStack.spacing = max(3, min(5, YoryThemeReader.keySpacing))
         root.addArrangedSubview(keysStack)
         rebuildKeys()
         updateSuggestions()
@@ -378,7 +378,13 @@ final class KeyboardViewController: UIInputViewController {
             let hints = (isArabicRow && index == 0)
                 ? Dictionary(uniqueKeysWithValues: zip(baseLabels, ["1","2","3","4","5","6","7","8","9","0","-","="]))
                 : [:]
-            keysStack.addArrangedSubview(makeRow(labels, compact: isArabicRow, secondaryHints: hints))
+            let homeRowInset: CGFloat = (!symbolMode && !isArabicRow && index == 1) ? 10 : 0
+            keysStack.addArrangedSubview(makeRow(
+                labels,
+                compact: isArabicRow,
+                secondaryHints: hints,
+                horizontalInset: homeRowInset
+            ))
         }
 
         let bottom = UIStackView()
@@ -386,14 +392,22 @@ final class KeyboardViewController: UIInputViewController {
         bottom.axis = .horizontal
         bottom.spacing = 4
         bottom.distribution = .fill
-        bottom.addArrangedSubview(keyButton(symbolMode ? "ABC" : "!#1", action: symbolMode ? #selector(exitSymbols) : #selector(toggleSymbols)))
-        if symbolMode {
-            bottom.addArrangedSubview(keyButton(symbolPage == 0 ? "2/2" : "1/2", action: #selector(toggleSymbolPage)))
+        func appendBottomKey(_ button: UIButton, width: CGFloat) {
+            bottom.addArrangedSubview(button)
+            button.widthAnchor.constraint(equalTo: bottom.widthAnchor, multiplier: width).isActive = true
         }
-        bottom.addArrangedSubview(keyButton("🌐", action: #selector(toggleLanguage)))
         let fieldSymbol = currentKeyboardType == .emailAddress ? "@" : (currentKeyboardType == .URL ? "/" : ",")
-        bottom.addArrangedSubview(keyButton(fieldSymbol))
-        let space = keyButton("‹  ${activeLayout.spaceLabel}  ›", action: #selector(insertSpace))
+        if symbolMode {
+            appendBottomKey(keyButton("ABC", action: #selector(exitSymbols)), width: 0.12)
+            appendBottomKey(keyButton(symbolPage == 0 ? "2/2" : "1/2", action: #selector(toggleSymbolPage)), width: 0.09)
+            appendBottomKey(keyButton("🌐", action: #selector(toggleLanguage)), width: 0.09)
+            appendBottomKey(keyButton(fieldSymbol), width: 0.07)
+        } else {
+            appendBottomKey(keyButton("!#1", action: #selector(toggleSymbols)), width: 0.14)
+            appendBottomKey(keyButton("🌐", action: #selector(toggleLanguage)), width: 0.10)
+            appendBottomKey(keyButton(fieldSymbol), width: 0.08)
+        }
+        let space = keyButton("‹  \(activeLayout.spaceLabel)  ›", action: #selector(insertSpace))
         space.accessibilityLabel = "Space, " + activeLayout.spaceLabel
         space.accessibilityHint = "Swipe left for the next added language or right for the previous added language"
         let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(handleSpacebarSwipe(_:)))
@@ -402,10 +416,9 @@ final class KeyboardViewController: UIInputViewController {
         swipeRight.direction = .right
         space.addGestureRecognizer(swipeLeft)
         space.addGestureRecognizer(swipeRight)
-        bottom.addArrangedSubview(space)
-        bottom.addArrangedSubview(keyButton("."))
-        bottom.addArrangedSubview(keyButton(returnKeyTitle, action: #selector(insertReturn)))
-        space.widthAnchor.constraint(equalTo: bottom.widthAnchor, multiplier: symbolMode ? 0.33 : 0.38).isActive = true
+        appendBottomKey(space, width: symbolMode ? 0.38 : 0.40)
+        appendBottomKey(keyButton("."), width: symbolMode ? 0.07 : 0.08)
+        appendBottomKey(keyButton(returnKeyTitle, action: #selector(insertReturn)), width: symbolMode ? 0.10 : 0.12)
         keysStack.addArrangedSubview(bottom)
         if YoryThemeReader.numberRowEnabled && YoryThemeReader.numberPosition == "bottom" {
             keysStack.addArrangedSubview(makeRow(Array("1234567890").map(String.init)))
@@ -419,22 +432,37 @@ final class KeyboardViewController: UIInputViewController {
     private func makeRow(
         _ labels: [String],
         compact: Bool = false,
-        secondaryHints: [String: String] = [:]
+        secondaryHints: [String: String] = [:],
+        horizontalInset: CGFloat = 0
     ) -> UIStackView {
         let row = UIStackView()
         row.semanticContentAttribute = isArabic && !numericInput ? .forceRightToLeft : .forceLeftToRight
         row.axis = .horizontal
         row.spacing = compact ? max(1, YoryThemeReader.keySpacing * 0.35) : YoryThemeReader.keySpacing
-        row.distribution = .fillEqually
-        labels.forEach { label in
+        let hasWideModifiers = labels.contains("⇧") || labels.contains("⌫")
+        row.distribution = hasWideModifiers ? .fill : .fillEqually
+        if horizontalInset > 0 {
+            row.isLayoutMarginsRelativeArrangement = true
+            row.layoutMargins = UIEdgeInsets(top: 0, left: horizontalInset, bottom: 0, right: horizontalInset)
+        }
+        let totalUnits = labels.reduce(CGFloat(0)) { total, label in
+            total + ((label == "⇧" || label == "⌫") ? 1.25 : 1.0)
+        }
+        for label in labels {
+            let key: UIButton
             if label == "⇧" {
-                row.addArrangedSubview(keyButton(label, action: #selector(toggleShift), compact: compact))
+                key = keyButton(label, action: #selector(toggleShift), compact: compact)
             } else if label == "⌫" {
-                row.addArrangedSubview(keyButton(label, action: #selector(deleteBackward), compact: compact))
+                key = keyButton(label, action: #selector(deleteBackward), compact: compact)
             } else {
                 let display = isShifted ? label.uppercased() : label
-                row.addArrangedSubview(keyButton(display, secondaryHint: secondaryHints[label], compact: compact))
+                key = keyButton(display, secondaryHint: secondaryHints[label], compact: compact)
             }
+            if hasWideModifiers {
+                let units: CGFloat = (label == "⇧" || label == "⌫") ? 1.25 : 1.0
+                key.widthAnchor.constraint(equalTo: row.widthAnchor, multiplier: 0.90 * units / totalUnits).isActive = true
+            }
+            row.addArrangedSubview(key)
         }
         return row
     }
@@ -450,9 +478,13 @@ final class KeyboardViewController: UIInputViewController {
         } else {
             rowCount = CGFloat(4 + (YoryThemeReader.numberRowEnabled ? 1 : 0) + (YoryThemeReader.arrowKeysEnabled ? 1 : 0))
         }
-        let innerGaps = max(0, rowCount - 1) * 5
+        let rowGap = max(3, min(5, YoryThemeReader.keySpacing))
+        let innerGaps = max(0, rowCount - 1) * rowGap
         let emojiPanelHeight: CGFloat = emojiMode ? (emojiCategory == "People" ? 126 : 98) : 0
-        let required = 78 + rowCount * YoryThemeReader.keyHeight + innerGaps + emojiPanelHeight
+        let suggestionHeight = suggestionRowHeightConstraint?.constant ?? 30
+        // 14pt outer insets + 32pt toolbar + dynamic suggestions + two row gaps.
+        let topChrome: CGFloat = 14 + 32 + suggestionHeight + rowGap * 2
+        let required = topChrome + rowCount * YoryThemeReader.keyHeight + innerGaps + emojiPanelHeight
         keyboardHeightConstraint?.constant = min(430, max(240, required))
     }
 
@@ -545,13 +577,25 @@ final class KeyboardViewController: UIInputViewController {
         compact: Bool = false
     ) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
-        let baseFontSize = compact
-            ? min(15.5, YoryThemeReader.fontSize)
-            : (title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize)
-        let displayedFontSize = YoryThemeReader.largeKeyTextEnabled && !compact ? baseFontSize * 1.08 : baseFontSize
-        button.titleLabel?.font = keyboardFont(size: displayedFontSize, weight: .medium)
-        button.setTitleColor(YoryThemeReader.textColor, for: .normal)
+        let controlIcons: [String: String] = [
+            "⇧": "shift",
+            "⌫": "delete.left",
+            "🌐": "globe",
+            "↵": "return"
+        ]
+        if let symbolName = controlIcons[title], let image = UIImage(systemName: symbolName) {
+            button.setImage(image.withRenderingMode(.alwaysTemplate), for: .normal)
+            button.tintColor = YoryThemeReader.textColor
+            button.imageView?.contentMode = .scaleAspectFit
+        } else {
+            button.setTitle(title, for: .normal)
+            let baseFontSize = compact
+                ? min(15.5, YoryThemeReader.fontSize)
+                : (title.count > 2 ? max(10, YoryThemeReader.fontSize - 6) : YoryThemeReader.fontSize)
+            let displayedFontSize = YoryThemeReader.largeKeyTextEnabled && !compact ? baseFontSize * 1.08 : baseFontSize
+            button.titleLabel?.font = keyboardFont(size: displayedFontSize, weight: .medium)
+            button.setTitleColor(YoryThemeReader.textColor, for: .normal)
+        }
         button.backgroundColor = YoryThemeReader.keyColor.withAlphaComponent(YoryThemeReader.opacity)
         button.layer.cornerRadius = {
             switch YoryThemeReader.keyShape {
@@ -587,7 +631,12 @@ final class KeyboardViewController: UIInputViewController {
         button.layer.shadowOpacity = 0.42
         button.layer.shadowRadius = 2
         button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.accessibilityLabel = title
+        button.accessibilityLabel = [
+            "⇧": "Shift",
+            "⌫": "Delete",
+            "🌐": "Switch language",
+            "↵": "Return"
+        ][title] ?? title
         button.addTarget(self, action: action ?? #selector(insertKey(_:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(keyTouchDown(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(keyTouchUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
@@ -611,7 +660,10 @@ final class KeyboardViewController: UIInputViewController {
 
     @objc private func keyTouchUp(_ sender: UIButton) {
         sender.backgroundColor = YoryThemeReader.keyColor.withAlphaComponent(YoryThemeReader.opacity)
-        sender.layer.borderColor = UIColor.white.withAlphaComponent(0.10).cgColor
+        let utilityKey = ["Shift", "Delete", "Return", "Switch language", "!#1", "ABC", "123"].contains(sender.accessibilityLabel ?? "")
+        sender.layer.borderColor = (utilityKey
+            ? YoryThemeReader.accentColor.withAlphaComponent(0.27)
+            : UIColor.white.withAlphaComponent(0.10)).cgColor
         UIView.animate(withDuration: 0.10) {
             sender.transform = .identity
         }
@@ -648,7 +700,8 @@ final class KeyboardViewController: UIInputViewController {
             "•••": "ellipsis",
             "×": "xmark",
             "◉": "eye.slash",
-            "◎": "eye"
+            "◎": "eye",
+            "▣": "clipboard"
         ]
         if let iconName = iconNames[title], let image = UIImage(systemName: iconName) {
             button.setImage(image, for: .normal)
@@ -668,7 +721,7 @@ final class KeyboardViewController: UIInputViewController {
         button.layer.shadowRadius = 2
         button.layer.shadowOffset = CGSize(width: 0, height: 1)
         button.addTarget(self, action: action, for: .touchUpInside)
-        button.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 32).isActive = true
         return button
     }
 
@@ -1063,7 +1116,7 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.distribution = .fillEqually
         suggestionRow.spacing = 6
         let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
-        suggestionRowHeightConstraint?.constant = suggestionsCollapsed ? 18 : (compactMode ? 22 : 29)
+        suggestionRowHeightConstraint?.constant = suggestionsCollapsed ? 19 : (compactMode ? 24 : 30)
         view.setNeedsLayout()
         suggestionRow.isHidden = incognitoMode || emojiMode || numericInput || !YoryThemeReader.wordSuggestionsEnabled
         guard !incognitoMode && !emojiMode && !numericInput && !toolsMode && YoryThemeReader.wordSuggestionsEnabled else {
