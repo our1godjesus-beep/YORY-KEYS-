@@ -694,7 +694,41 @@ class YoryInputMethodService : InputMethodService() {
             setTextColor(theme.textArgb)
             gravity = Gravity.CENTER
         }
-        panel.addView(title, LinearLayout.LayoutParams(-1, dp(24)))
+        panel.addView(title, LinearLayout.LayoutParams(-1, dp(22)))
+
+        val resizeFrame = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.argb(8, 65, 105, 255))
+                cornerRadius = dp(2).toFloat()
+                setStroke(dp(2), Color.rgb(65, 105, 255))
+            }
+            contentDescription = "Keyboard resize boundary. Use the height slider below."
+        }
+        fun handleView(width: Int, height: Int, gravity: Int) {
+            resizeFrame.addView(View(this).apply {
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(4).toFloat()
+                    setColor(Color.rgb(65, 105, 255))
+                }
+            }, FrameLayout.LayoutParams(dp(width), dp(height), gravity))
+        }
+        handleView(34, 7, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
+        handleView(34, 7, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.START)
+        handleView(7, 24, Gravity.CENTER_VERTICAL or Gravity.END)
+        val moveHandle = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.rgb(65, 105, 255))
+            }
+            contentDescription = "Resize controls use the height slider"
+        }
+        moveHandle.addView(
+            YoryKeyboardIconView(this, "move", Color.WHITE),
+            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+        )
+        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER))
+        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(56)))
 
         val value = TextView(this).apply {
             text = "${theme.keyHeightDp.toInt()} dp"
@@ -736,9 +770,10 @@ class YoryInputMethodService : InputMethodService() {
                 setTextColor(theme.textArgb)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
-                    setColor(Color.argb(32, 255, 255, 255))
-                    setStroke(dp(1), Color.argb(55, 255, 255, 255))
+                    setColor(Color.WHITE)
+                    setStroke(dp(1), Color.WHITE)
                 }
+                setTextColor(Color.BLACK)
                 setOnClickListener { performKeyFeedback(this); action() }
             }
             actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
@@ -1625,6 +1660,18 @@ private class YoryKeyboardIconView(
                 canvas.drawRoundRect(RectF(3f, 3f, 21f, 21f), 4f, 4f, stroke)
                 canvas.drawLine(12f, 7f, 12f, 17f, stroke)
                 canvas.drawLine(7f, 12f, 17f, 12f, stroke)
+            }
+            "move" -> {
+                canvas.drawLine(12f, 3f, 12f, 21f, stroke)
+                canvas.drawLine(3f, 12f, 21f, 12f, stroke)
+                canvas.drawLine(12f, 3f, 9f, 6f, stroke)
+                canvas.drawLine(12f, 3f, 15f, 6f, stroke)
+                canvas.drawLine(12f, 21f, 9f, 18f, stroke)
+                canvas.drawLine(12f, 21f, 15f, 18f, stroke)
+                canvas.drawLine(3f, 12f, 6f, 9f, stroke)
+                canvas.drawLine(3f, 12f, 6f, 15f, stroke)
+                canvas.drawLine(21f, 12f, 18f, 9f, stroke)
+                canvas.drawLine(21f, 12f, 18f, 15f, stroke)
             }
         }
         canvas.restore()
