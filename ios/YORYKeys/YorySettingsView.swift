@@ -223,6 +223,7 @@ private struct YorySettingsDetailView: View {
                         glassToggle("Word suggestions", detail: "Show local word suggestions while typing", isOn: $wordSuggestions)
                         glassToggle("Auto-capitalization", detail: "Capitalize the first letter of sentences", isOn: $autoCaps)
                         glassToggle("Personal dictionary", detail: "Learn accepted words locally on this device", isOn: $personalLearningEnabled)
+                        settingsInfo("iOS supplementary lexicon", "YORY can use the system-provided word and shortcut list for suggestions and corrections. It is supplied by iOS to the keyboard extension and is not uploaded by YORY.")
                     }
                     Section("PERSONAL DICTIONARY") {
                         settingsInfo("On-device learning", "Accepted words can be learned locally. Sensitive password, numeric, email and URL fields are excluded.")
