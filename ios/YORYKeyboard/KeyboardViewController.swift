@@ -68,7 +68,6 @@ final class KeyboardViewController: UIInputViewController {
     private var isToolsPanelVisible = false
     private var displayedToolsResizeMode: Bool?
     private var localKeyHeightOverride: CGFloat?
-    private var resizeHeightSlider: UISlider?
     private var resizeHeightLabel: UILabel?
     private var suggestionToggleButton: UIButton?
     private var suggestionButtons: [UIButton] = []
@@ -101,7 +100,7 @@ final class KeyboardViewController: UIInputViewController {
         buildInterface()
         requestSupplementaryLexicon { [weak self] lexicon in
             guard let self else { return }
-            let entries = lexicon.entries.map {
+            let entries = Array(lexicon.entries).map {
                 (input: $0.userInput.lowercased(), output: $0.documentText)
             }
             self.systemLexicon = Dictionary(
@@ -1259,10 +1258,10 @@ final class KeyboardViewController: UIInputViewController {
             let prefix = String(context[range])
             if prefix.count >= 2 {
                 let local = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
-                let system = sortedSystemLexicon.lazy
+                let system = Array(sortedSystemLexicon.lazy
                     .filter { $0.input.hasPrefix(prefix.lowercased()) }
                     .prefix(3)
-                    .map(\.output)
+                    .map(\.output))
                 var seen = Set<String>()
                 candidates = (local + system).filter { seen.insert($0.lowercased()).inserted }
                     .prefix(compactMode ? 2 : 3).map { $0 }
@@ -1449,16 +1448,6 @@ final class KeyboardViewController: UIInputViewController {
         resizeHeightLabel = value
         container.addArrangedSubview(value)
 
-        let slider = UISlider()
-        slider.minimumValue = 36
-        slider.maximumValue = 60
-        slider.value = Float(activeKeyHeight)
-        slider.minimumTrackTintColor = YoryThemeReader.accentColor
-        slider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.20)
-        slider.addTarget(self, action: #selector(resizeHeightChanged(_:)), for: .valueChanged)
-        resizeHeightSlider = slider
-        container.addArrangedSubview(slider)
-
         let actions = UIStackView()
         actions.axis = .horizontal
         actions.distribution = .fillEqually
@@ -1504,15 +1493,10 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    @objc private func resizeHeightChanged(_ sender: UISlider) {
-        setKeyboardHeight(CGFloat(sender.value))
-    }
-
     private func setKeyboardHeight(_ value: CGFloat) {
         let safe = min(max(value, 36), 60)
         localKeyHeightOverride = safe
         UserDefaults.standard.set(Double(safe), forKey: "yory.keyboard.keyHeight.local")
-        resizeHeightSlider?.value = Float(safe)
         resizeHeightLabel?.text = "\(Int(safe)) pt"
         updateKeyboardHeight()
     }
