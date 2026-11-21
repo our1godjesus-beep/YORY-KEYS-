@@ -605,9 +605,9 @@ class YoryInputMethodService : InputMethodService() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        addKey(row, "⇧", 1.25f, { shifted = !shifted; refreshKeyboard() }, compact = compact)
+        addKey(row, "⇧", 1.25f, { shifted = !shifted; updateDynamicKeyLabels() }, compact = compact)
         letters.forEach { char ->
-            val label = if (shifted && char.isLetter()) char.uppercaseChar().toString() else char.toString()
+            val label = char.toString()
             addKey(row, label, 1f, { handleKey(label) }, compact = compact)
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = compact)
@@ -969,19 +969,14 @@ class YoryInputMethodService : InputMethodService() {
             updateSuggestions()
         }
         addKey(row, if (emailField) "@" else if (urlField) "/" else ",", 0.9f) {
-            learnCurrentWord()
-            currentInputConnection?.commitText(if (emailField) "@" else if (urlField) "/" else ",", 1)
-            updateSuggestions()
+            commitWordBoundary(if (emailField) "@" else if (urlField) "/" else ",")
         }
         addKey(
             row,
             "‹  ${YoryLanguageLayouts.forTag(languageTag).shortLabel}  ›",
             4.2f,
             {
-                learnCurrentWord()
-                currentInputConnection?.commitText(" ", 1)
-                refreshAutomaticShift()
-                updateSuggestions()
+                commitWordBoundary(" ")
             },
             onSwipeDirection = { deltaX ->
                 cycleLanguage(if (deltaX < 0f) 1 else -1)
@@ -992,15 +987,24 @@ class YoryInputMethodService : InputMethodService() {
             }
         )
         addKey(row, ".", 1f, {
-            learnCurrentWord()
-            currentInputConnection?.commitText(".", 1)
-            updateSuggestions()
+            commitWordBoundary(".")
         }, secondaryLegend = "؟!")
         addKey(row, "↵", 1.6f) {
+            val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
+            val correction = if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
+                getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+                token?.let { wordSuggestions?.correct(it, languageTag) }
+            } else null
+            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
+                currentInputConnection?.deleteSurroundingText(token.length, 0)
+                currentInputConnection?.commitText(correction, 1)
+            }
             learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
+            updateDynamicKeyLabels()
             updateSuggestions()
         }
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(theme.keyHeightDp + 4f)))
