@@ -72,6 +72,7 @@ final class KeyboardViewController: UIInputViewController {
     private var resizeHeightLabel: UILabel?
     private var suggestionToggleButton: UIButton?
     private var suggestionButtons: [UIButton] = []
+    private var systemLexicon: [String: String] = [:]
     private var letterKeyButtons: [(button: UIButton, base: String)] = []
     private var keyHeightConstraints: [NSLayoutConstraint] = []
     private var effectiveKeyHeightValue: CGFloat = 40
@@ -97,6 +98,14 @@ final class KeyboardViewController: UIInputViewController {
         primaryLanguage = languageTag
         applyCurrentTheme()
         buildInterface()
+        requestSupplementaryLexicon { [weak self] lexicon in
+            guard let self else { return }
+            self.systemLexicon = Dictionary(
+                lexicon.entries.map { ($0.userInput.lowercased(), $0.documentText) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            self.updateSuggestions()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -773,7 +782,7 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func insertKey(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
         let rawValue = sender.accessibilityIdentifier ?? title
-        if rawValue.range(of: "^[^\\p{L}\\p{M}]+$", options: .regularExpression) != nil {
+        if rawValue.range(of: "^[\\s\\p{P}\\p{S}]+$", options: .regularExpression) != nil {
             commitWordBoundary(rawValue)
             return
         }
@@ -1261,10 +1270,18 @@ final class KeyboardViewController: UIInputViewController {
         let candidates: [String]
         if let range = context.range(of: "[\\p{L}\\p{M}]+$", options: .regularExpression) {
             let prefix = String(context[range])
-            candidates = prefix.count >= 2
-                ? Array(YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
-                    .prefix(compactMode ? 2 : 3))
-                : []
+            if prefix.count >= 2 {
+                let local = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
+                let system = systemLexicon
+                    .filter { $0.key.hasPrefix(prefix.lowercased()) }
+                    .sorted { $0.key < $1.key }
+                    .map(\.value)
+                var seen = Set<String>()
+                candidates = (local + system).filter { seen.insert($0.lowercased()).inserted }
+                    .prefix(compactMode ? 2 : 3).map { $0 }
+            } else {
+                candidates = []
+            }
         } else {
             candidates = []
         }
@@ -1565,8 +1582,9 @@ final class KeyboardViewController: UIInputViewController {
             let context = textDocumentProxy.documentContextBeforeInput ?? ""
             if let range = context.range(of: "[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) {
                 let token = String(context[range])
-                if let correction = YoryLocalWordSuggestions.correct(token, languageTag: languageTag),
-                   correction != token {
+                let systemCorrection = systemLexicon[token.lowercased()]
+                let correction = systemCorrection ?? YoryLocalWordSuggestions.correct(token, languageTag: languageTag)
+                if let correction, correction != token {
                     for _ in token { textDocumentProxy.deleteBackward() }
                     textDocumentProxy.insertText(correction)
                 }
