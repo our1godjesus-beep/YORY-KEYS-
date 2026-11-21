@@ -1420,7 +1420,7 @@ private class YoryKeyboardIconView(
             }
             "text" -> {
                 val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = tint
+                    color = iconTint
                     textAlign = Paint.Align.CENTER
                     textSize = 8f
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
