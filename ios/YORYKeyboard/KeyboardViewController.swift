@@ -493,7 +493,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateKeyboardHeight() {
         if toolsMode {
-            let panelHeight: CGFloat = resizeMode ? 164 : 210
+            let panelHeight: CGFloat = resizeMode ? 190 : 220
             let chrome = 4 + 36 + panelHeight + 8
             keyboardHeightConstraint?.constant = min(430, max(240, chrome))
             return
@@ -1101,7 +1101,7 @@ final class KeyboardViewController: UIInputViewController {
             suggestionRow.axis = .vertical
             suggestionRow.distribution = .fill
             suggestionRow.spacing = 0
-            suggestionRowHeightConstraint?.constant = resizeMode ? 164 : 220
+            suggestionRowHeightConstraint?.constant = resizeMode ? 190 : 220
             suggestionRow.addArrangedSubview(resizeMode ? makeResizePanel() : makeToolsGrid())
             view.setNeedsLayout()
             updateKeyboardHeight()
@@ -1279,9 +1279,9 @@ final class KeyboardViewController: UIInputViewController {
         container.axis = .vertical
         container.alignment = .fill
         container.distribution = .fill
-        container.spacing = 5
+        container.spacing = 4
         container.isLayoutMarginsRelativeArrangement = true
-        container.layoutMargins = UIEdgeInsets(top: 5, left: 7, bottom: 3, right: 7)
+        container.layoutMargins = UIEdgeInsets(top: 4, left: 7, bottom: 3, right: 7)
 
         let title = UILabel()
         title.text = "RESIZE KEYBOARD"
@@ -1290,8 +1290,66 @@ final class KeyboardViewController: UIInputViewController {
         title.textAlignment = .center
         container.addArrangedSubview(title)
 
+        let frame = UIView()
+        frame.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.035)
+        frame.layer.borderColor = UIColor.systemBlue.cgColor
+        frame.layer.borderWidth = 2
+        frame.translatesAutoresizingMaskIntoConstraints = false
+        frame.heightAnchor.constraint(equalToConstant: 54).isActive = true
+
+        func addHandle(width: CGFloat, height: CGFloat, centerX: NSLayoutXAxisAnchor? = nil,
+                       centerY: NSLayoutYAxisAnchor? = nil, leading: NSLayoutXAxisAnchor? = nil,
+                       trailing: NSLayoutXAxisAnchor? = nil, top: NSLayoutYAxisAnchor? = nil,
+                       bottom: NSLayoutYAxisAnchor? = nil, tag: Int = 0, draggable: Bool = false) {
+            let handle = UIView()
+            handle.backgroundColor = UIColor.systemBlue
+            handle.layer.cornerRadius = min(width, height) / 2
+            handle.translatesAutoresizingMaskIntoConstraints = false
+            frame.addSubview(handle)
+            var constraints = [
+                handle.widthAnchor.constraint(equalToConstant: width),
+                handle.heightAnchor.constraint(equalToConstant: height)
+            ]
+            if let centerX { constraints.append(handle.centerXAnchor.constraint(equalTo: centerX)) }
+            if let centerY { constraints.append(handle.centerYAnchor.constraint(equalTo: centerY)) }
+            if let leading { constraints.append(handle.leadingAnchor.constraint(equalTo: leading)) }
+            if let trailing { constraints.append(handle.trailingAnchor.constraint(equalTo: trailing)) }
+            if let top { constraints.append(handle.topAnchor.constraint(equalTo: top)) }
+            if let bottom { constraints.append(handle.bottomAnchor.constraint(equalTo: bottom)) }
+            NSLayoutConstraint.activate(constraints)
+            handle.accessibilityLabel = draggable ? "Drag to resize keyboard height" : "iOS controls keyboard width"
+            handle.isAccessibilityElement = true
+            handle.tag = tag
+            if draggable {
+                handle.isUserInteractionEnabled = true
+                handle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(resizeFramePanned(_:))))
+            }
+        }
+
+        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, top: frame.topAnchor, tag: 1, draggable: true)
+        addHandle(width: 38, height: 8, centerX: frame.centerXAnchor, bottom: frame.bottomAnchor, tag: -1, draggable: true)
+        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, leading: frame.leadingAnchor)
+        addHandle(width: 8, height: 26, centerY: frame.centerYAnchor, trailing: frame.trailingAnchor)
+
+        let position = UIButton(type: .system)
+        position.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right"), for: .normal)
+        position.tintColor = .white
+        position.backgroundColor = UIColor.systemBlue
+        position.layer.cornerRadius = 22
+        position.accessibilityLabel = "Keyboard position is managed by iOS"
+        position.translatesAutoresizingMaskIntoConstraints = false
+        frame.addSubview(position)
+        NSLayoutConstraint.activate([
+            position.centerXAnchor.constraint(equalTo: frame.centerXAnchor),
+            position.centerYAnchor.constraint(equalTo: frame.centerYAnchor),
+            position.widthAnchor.constraint(equalToConstant: 44),
+            position.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        position.isEnabled = false
+        container.addArrangedSubview(frame)
+
         let value = UILabel()
-        value.font = .systemFont(ofSize: 13, weight: .medium)
+        value.font = .systemFont(ofSize: 12, weight: .medium)
         value.textColor = YoryThemeReader.textColor
         value.textAlignment = .center
         value.text = "\(Int(activeKeyHeight)) pt"
@@ -1315,15 +1373,15 @@ final class KeyboardViewController: UIInputViewController {
 
         let reset = UIButton(type: .system)
         reset.setTitle("Reset", for: .normal)
-        reset.setTitleColor(YoryThemeReader.textColor, for: .normal)
-        reset.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        reset.setTitleColor(.black, for: .normal)
+        reset.backgroundColor = .white
         reset.layer.cornerRadius = 18
         reset.addAction(UIAction { [weak self] _ in self?.setKeyboardHeight(40) }, for: .touchUpInside)
 
         let done = UIButton(type: .system)
         done.setTitle("OK", for: .normal)
         done.setTitleColor(.black, for: .normal)
-        done.backgroundColor = YoryThemeReader.textColor
+        done.backgroundColor = .white
         done.layer.cornerRadius = 18
         done.addAction(UIAction { [weak self] _ in
             guard let self else { return }
@@ -1335,12 +1393,22 @@ final class KeyboardViewController: UIInputViewController {
             self.rebuildKeys()
         }, for: .touchUpInside)
 
-        reset.heightAnchor.constraint(equalToConstant: 34).isActive = true
-        done.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        reset.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        done.heightAnchor.constraint(equalToConstant: 32).isActive = true
         actions.addArrangedSubview(reset)
         actions.addArrangedSubview(done)
         container.addArrangedSubview(actions)
         return container
+    }
+
+    @objc private func resizeFramePanned(_ gesture: UIPanGestureRecognizer) {
+        guard let handle = gesture.view else { return }
+        if gesture.state == .changed {
+            let delta = gesture.translation(in: view).y
+            let direction: CGFloat = handle.tag == 1 ? -1 : 1
+            setKeyboardHeight(activeKeyHeight + (delta * direction * 0.35))
+            gesture.setTranslation(.zero, in: view)
+        }
     }
 
     @objc private func resizeHeightChanged(_ sender: UISlider) {
