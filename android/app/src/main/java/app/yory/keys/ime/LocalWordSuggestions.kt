@@ -5,11 +5,6 @@ import java.util.Locale
 
 /** Offline prefix-completion baseline. This is not a neural prediction model. */
 class LocalWordSuggestions(private val context: Context) {
-    private val dictionaries = mapOf(
-        "en" to (loadWords(context, "dictionaries/en-US.txt") + commonWords["en"].orEmpty()).distinct(),
-        "ar" to (loadWords(context, "dictionaries/ar.txt") + commonWords["ar"].orEmpty()).distinct()
-    )
-
     private val commonWords = mapOf(
         "en" to listOf(
             "also", "another", "anyone", "anything", "answer", "around", "away",
@@ -58,6 +53,11 @@ class LocalWordSuggestions(private val context: Context) {
             "غلط", "كبير", "صغير", "طويل", "قصير", "واسع", "ضيق", "أبيض",
             "أسود", "أزرق", "أحمر", "رمادي", "قوي", "قوية", "رائع", "رائعة"
         )
+    )
+
+    private val dictionaries = mapOf(
+        "en" to (loadWords(context, "dictionaries/en-US.txt") + commonWords["en"].orEmpty()).distinct(),
+        "ar" to (loadWords(context, "dictionaries/ar.txt") + commonWords["ar"].orEmpty()).distinct()
     )
 
     fun suggest(prefix: String, languageTag: String, limit: Int = 3): List<String> {
