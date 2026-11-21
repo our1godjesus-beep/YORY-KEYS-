@@ -1154,12 +1154,7 @@ final class KeyboardViewController: UIInputViewController {
             button.titleLabel?.lineBreakMode = .byTruncatingTail
             button.contentHorizontalAlignment = .center
             button.accessibilityLabel = "Word suggestion"
-            button.addAction(UIAction { [weak self] _ in
-                guard let self,
-                      let value = button.title(for: .normal),
-                      !value.isEmpty else { return }
-                self.replaceCurrentWord(with: value)
-            }, for: .touchUpInside)
+            button.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
             button.translatesAutoresizingMaskIntoConstraints = false
             cell.addSubview(button)
             NSLayoutConstraint.activate([
@@ -1557,6 +1552,11 @@ final class KeyboardViewController: UIInputViewController {
         return button
     }
 
+    @objc private func suggestionTapped(_ sender: UIButton) {
+        guard let value = sender.title(for: .normal), !value.isEmpty else { return }
+        replaceCurrentWord(with: value)
+    }
+
     private func updateShiftedLetterKeys() {
         for entry in letterKeyButtons {
             entry.button.setTitle(isShifted ? entry.base.uppercased() : entry.base, for: .normal)
@@ -1564,7 +1564,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func commitWordBoundary(_ boundary: String) {
-        if YoryThemeReader.autoCorrectEnabled && !incognitoMode && !numericInput &&
+        if YoryThemeReader.autoCorrectEnabled && autocorrectionType != .no &&
+            !incognitoMode && !numericInput &&
             currentKeyboardType != .emailAddress && currentKeyboardType != .URL {
             let context = textDocumentProxy.documentContextBeforeInput ?? ""
             if let range = context.range(of: "[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) {
