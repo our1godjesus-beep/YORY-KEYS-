@@ -73,6 +73,7 @@ final class KeyboardViewController: UIInputViewController {
     private var suggestionToggleButton: UIButton?
     private var suggestionButtons: [UIButton] = []
     private var systemLexicon: [String: String] = [:]
+    private var sortedSystemLexicon: [(input: String, output: String)] = []
     private var letterKeyButtons: [(button: UIButton, base: String)] = []
     private var keyHeightConstraints: [NSLayoutConstraint] = []
     private var effectiveKeyHeightValue: CGFloat = 40
@@ -100,10 +101,14 @@ final class KeyboardViewController: UIInputViewController {
         buildInterface()
         requestSupplementaryLexicon { [weak self] lexicon in
             guard let self else { return }
+            let entries = lexicon.entries.map {
+                (input: $0.userInput.lowercased(), output: $0.documentText)
+            }
             self.systemLexicon = Dictionary(
-                lexicon.entries.map { ($0.userInput.lowercased(), $0.documentText) },
+                entries.map { ($0.input, $0.output) },
                 uniquingKeysWith: { first, _ in first }
             )
+            self.sortedSystemLexicon = entries.sorted { $0.input < $1.input }
             self.updateSuggestions()
         }
     }
@@ -1254,10 +1259,10 @@ final class KeyboardViewController: UIInputViewController {
             let prefix = String(context[range])
             if prefix.count >= 2 {
                 let local = YoryLocalWordSuggestions.suggestions(prefix: prefix, languageTag: languageTag)
-                let system = systemLexicon
-                    .filter { $0.key.hasPrefix(prefix.lowercased()) }
-                    .sorted { $0.key < $1.key }
-                    .map(\.value)
+                let system = sortedSystemLexicon.lazy
+                    .filter { $0.input.hasPrefix(prefix.lowercased()) }
+                    .prefix(3)
+                    .map(\.output)
                 var seen = Set<String>()
                 candidates = (local + system).filter { seen.insert($0.lowercased()).inserted }
                     .prefix(compactMode ? 2 : 3).map { $0 }
