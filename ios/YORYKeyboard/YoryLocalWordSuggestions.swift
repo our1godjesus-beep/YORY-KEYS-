@@ -94,6 +94,7 @@ enum YoryLocalWordSuggestions {
     private static let personalWordsKey = "yory.personal.words.v1"
     private static let legacyClearRequestedKey = "yory.personal.words.clearLegacyRequested"
     private static var cachedPersonalWords: [String: [String: Int]]?
+    private static var rankedPersonalWordsCache: [String: [(word: String, count: Int)]] = [:]
     private static var localDefaults: UserDefaults {
         UserDefaults(suiteName: "group.app.yory.keys") ?? .standard
     }
@@ -107,6 +108,7 @@ enum YoryLocalWordSuggestions {
             UserDefaults.standard.removeObject(forKey: personalWordsKey)
             shared.set(false, forKey: legacyClearRequestedKey)
             cachedPersonalWords = [:]
+            rankedPersonalWordsCache = [:]
             return
         }
 
@@ -142,10 +144,12 @@ enum YoryLocalWordSuggestions {
         all[language] = languageWords
         defaults.set(all, forKey: personalWordsKey)
         cachedPersonalWords = all
+        rankedPersonalWordsCache[language] = nil
     }
 
     static func clearPersonalWords() {
         cachedPersonalWords = [:]
+        rankedPersonalWordsCache = [:]
         localDefaults.removeObject(forKey: personalWordsKey)
         UserDefaults.standard.removeObject(forKey: personalWordsKey)
         localDefaults.set(false, forKey: legacyClearRequestedKey)
@@ -158,11 +162,14 @@ enum YoryLocalWordSuggestions {
             cachedPersonalWords = localDefaults.dictionary(forKey: personalWordsKey) as? [String: [String: Int]] ?? [:]
         }
         let all = cachedPersonalWords ?? [:]
-        return (all[language] ?? [:])
-            .filter { matchesPrefix($0.key, prefix: prefix) }
-            .sorted { $0.value > $1.value }
+        let ranked = rankedPersonalWordsCache[language] ?? (all[language] ?? [:])
+            .map { (word: $0.key, count: $0.value) }
+            .sorted { $0.count > $1.count }
+        rankedPersonalWordsCache[language] = ranked
+        return ranked.lazy
+            .filter { matchesPrefix($0.word, prefix: prefix) }
             .prefix(max(1, min(limit, 5)))
-            .map { $0.key }
+            .map { $0.word }
     }
 
     /// Search-only Arabic normalization. Returned words keep their original spelling.
