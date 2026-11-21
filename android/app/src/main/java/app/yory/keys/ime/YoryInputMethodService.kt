@@ -28,7 +28,6 @@ import android.view.Window
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
-import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import java.util.concurrent.ExecutorService
@@ -80,9 +79,6 @@ class YoryInputMethodService : InputMethodService() {
     private var suggestionToggle: FrameLayout? = null
     private var suggestionToggleGlyph: TextView? = null
     private var imeWindow: Window? = null
-    private var resizeFrameView: FrameLayout? = null
-    private var resizeHeightValue: TextView? = null
-    private var resizeHeightSlider: SeekBar? = null
     private var resizeWidthPercent = 1f
     private var resizeOffsetXdp = 0f
     private var resizeOffsetYdp = 0f
@@ -210,10 +206,9 @@ class YoryInputMethodService : InputMethodService() {
     private fun applyKeyboardWindowGeometry(window: Window? = imeWindow) {
         val target = window ?: runCatching { getWindow().window }.getOrNull() ?: return
         val metrics = resources.displayMetrics
-        val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val widthPercent = prefs.getFloat("keyboard_width_percent", resizeWidthPercent).coerceIn(0.70f, 1f)
-        val offsetX = prefs.getFloat("keyboard_offset_x_dp", resizeOffsetXdp).coerceIn(-120f, 120f)
-        val offsetY = prefs.getFloat("keyboard_offset_y_dp", resizeOffsetYdp).coerceIn(0f, 300f)
+        val widthPercent = resizeWidthPercent.coerceIn(0.70f, 1f)
+        val offsetX = resizeOffsetXdp.coerceIn(-120f, 120f)
+        val offsetY = resizeOffsetYdp.coerceIn(0f, 300f)
         val widthPx = if (widthPercent >= 0.995f) WindowManager.LayoutParams.MATCH_PARENT
             else (metrics.widthPixels * widthPercent).toInt().coerceAtLeast(dp(260))
         val params = target.attributes
@@ -959,14 +954,10 @@ class YoryInputMethodService : InputMethodService() {
                     }
                     true
                 }
-                android.view.MotionEvent.ACTION_UP -> {
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
                     if (mode == "top" || mode == "bottom") {
                         YoryThemeStore.save(applicationContext, theme)
                     }
-                    persistResizeGeometry()
-                    true
-                }
-                android.view.MotionEvent.ACTION_CANCEL -> {
                     persistResizeGeometry()
                     true
                 }
