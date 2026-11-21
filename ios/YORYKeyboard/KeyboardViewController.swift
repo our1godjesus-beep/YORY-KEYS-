@@ -804,16 +804,6 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private func playKeyClick() {
-        if YoryThemeReader.soundEnabled && hasFullAccess {
-            UIDevice.current.playInputClick()
-        }
-        if YoryThemeReader.hapticsEnabled {
-            let feedback = UIImpactFeedbackGenerator(style: .light)
-            feedback.prepare()
-            feedback.impactOccurred(intensity: YoryThemeReader.hapticIntensity)
-        }
-    }
 
     @objc private func deleteBackward() {
         playKeyClick()
@@ -870,10 +860,6 @@ final class KeyboardViewController: UIInputViewController {
         cycleLanguage(direction: 1)
     }
 
-    @objc private func toggleLanguage() {
-        playKeyClick()
-        cycleLanguage(direction: 1)
-    }
 
     private func cycleLanguage(direction: Int) {
         toolsMode = false
@@ -1612,6 +1598,5 @@ final class KeyboardViewController: UIInputViewController {
         updateSuggestions()
     }
 
-    @objc private func switchKeyboard() { advanceToNextInputMode() }
     @objc private func switchKeyboard() { advanceToNextInputMode() }
 }
