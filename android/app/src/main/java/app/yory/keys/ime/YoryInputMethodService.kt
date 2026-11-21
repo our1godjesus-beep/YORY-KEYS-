@@ -71,6 +71,9 @@ class YoryInputMethodService : InputMethodService() {
     private var emojiCategory = "Recent"
     private var emojiSkinTone = ""
     private var keysContainer: LinearLayout? = null
+    private var keyboardMainArea: FrameLayout? = null
+    private var keyboardContent: LinearLayout? = null
+    private var resizeOverlay: FrameLayout? = null
     private var wordSuggestions: LocalWordSuggestions? = null
     private val dynamicKeyLabels = mutableListOf<Triple<TextView, String, String?>>()
     private val suggestionLabels = mutableListOf<TextView>()
@@ -94,11 +97,13 @@ class YoryInputMethodService : InputMethodService() {
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", "en-US") ?: "en-US"
         theme = YoryThemeStore.load(applicationContext)
+        loadResizeGeometry()
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(4), dp(4), dp(4), dp(4))
             background = panelBackground()
+            clipChildren = false
         }
         keyboardRoot = root
 
@@ -111,20 +116,36 @@ class YoryInputMethodService : InputMethodService() {
         root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(36)))
         refreshToolbar()
 
+        val mainArea = FrameLayout(this).apply {
+            clipChildren = false
+            clipToPadding = false
+        }
+        keyboardMainArea = mainArea
+        root.addView(mainArea, LinearLayout.LayoutParams(-1, -2))
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            clipChildren = false
+            clipToPadding = false
+        }
+        keyboardContent = content
+        mainArea.addView(content, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+
         suggestionRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(0, dp(2), 0, dp(2))
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
-        suggestionRow?.layoutDirection = View.LAYOUT_DIRECTION_LTR
         buildSuggestionRow()
-        root.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
+        content.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
 
         clipboardRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            visibility = View.GONE
         }
-        root.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
+        content.addView(clipboardRow, LinearLayout.LayoutParams(-1, dp(42)))
 
         moreToolsPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -132,7 +153,7 @@ class YoryInputMethodService : InputMethodService() {
             visibility = View.GONE
             setPadding(dp(8), dp(6), dp(8), dp(6))
         }
-        root.addView(moreToolsPanel, LinearLayout.LayoutParams(-1, -2))
+        content.addView(moreToolsPanel, LinearLayout.LayoutParams(-1, -2))
 
         emojiRow = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -140,12 +161,16 @@ class YoryInputMethodService : InputMethodService() {
             visibility = View.GONE
         }
         refreshEmojiPicker()
-        root.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(104)))
+        content.addView(emojiRow, LinearLayout.LayoutParams(-1, dp(104)))
 
         keysContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            clipChildren = false
         }
-        root.addView(keysContainer, LinearLayout.LayoutParams(-1, -2))
+        content.addView(keysContainer, LinearLayout.LayoutParams(-1, -2))
+
+        resizeOverlay = createResizeOverlay()
+        mainArea.addView(resizeOverlay, FrameLayout.LayoutParams(-1, -1))
 
         refreshKeyboard()
         updateSuggestions()
@@ -221,6 +246,7 @@ class YoryInputMethodService : InputMethodService() {
         incognitoMode = false
         toolsMode = false
         resizeMode = false
+        resizeOverlay?.visibility = View.GONE
         symbolPage = 0
         suggestionsCollapsed = false
         refreshAutomaticShift()
@@ -269,16 +295,24 @@ class YoryInputMethodService : InputMethodService() {
                     refreshKeyboard()
                 }
                 "settings" -> addToolbarIconButton(toolbar, "settings", "Open YORY Studio", 1f) { openStudio() }
-                "more" -> addToolbarIconButton(toolbar, if (toolsMode) "close" else "more", if (toolsMode) "Close tools" else "More tools", 1f) {
-                    toolsMode = !toolsMode
-                    if (toolsMode) {
-                        resizeMode = false
-                        emojiMode = false
-                        clipboardMode = false
+                "more" -> addToolbarIconButton(
+                    toolbar,
+                    if (toolsMode || resizeMode) "close" else "more",
+                    if (toolsMode || resizeMode) "Close tools" else "More tools",
+                    1f
+                ) {
+                    if (resizeMode) {
+                        finishResizeOverlay()
+                    } else {
+                        toolsMode = !toolsMode
+                        if (toolsMode) {
+                            emojiMode = false
+                            clipboardMode = false
+                        }
+                        refreshToolbar()
+                        refreshKeyboard()
+                        updateSuggestions()
                     }
-                    refreshToolbar()
-                    refreshKeyboard()
-                    updateSuggestions()
                 }
                 "clipboard" -> if (!incognitoMode && !sensitiveField &&
                     !numericField && !emailField && !urlField) {
@@ -645,7 +679,7 @@ class YoryInputMethodService : InputMethodService() {
         val panel = moreToolsPanel ?: return
         panel.removeAllViews()
         if (resizeMode) {
-            refreshResizePanel(panel)
+            panel.visibility = View.GONE
             return
         }
 
@@ -676,8 +710,7 @@ class YoryInputMethodService : InputMethodService() {
                 refreshClipboardListener()
             },
             ToolItem("Resize", "resize") {
-                resizeMode = true
-                refreshMoreTools()
+                startResizeOverlay()
             },
             ToolItem("Themes", "themes") { openStudio() },
             ToolItem("Modes", "modes") {
@@ -748,137 +781,138 @@ class YoryInputMethodService : InputMethodService() {
         }
     }
 
-    private fun refreshResizePanel(panel: LinearLayout) {
-        val title = TextView(this).apply {
-            text = "ADJUST KEYBOARD SIZE"
-            textSize = 11f
-            letterSpacing = 0.10f
-            setTextColor(theme.textArgb)
-            gravity = Gravity.CENTER
+    private fun createResizeOverlay(): FrameLayout {
+        val overlay = FrameLayout(this).apply {
+            visibility = View.GONE
+            background = ColorDrawable(Color.argb(164, 0, 0, 0))
+            isClickable = true
+            isFocusable = true
+            clipChildren = false
+            contentDescription = "Adjust keyboard size and position"
         }
-        panel.addView(title, LinearLayout.LayoutParams(-1, dp(22)))
 
-        val resizeFrame = FrameLayout(this).apply {
+        val bounds = FrameLayout(this).apply {
             background = GradientDrawable().apply {
-                setColor(Color.argb(8, 65, 105, 255))
+                setColor(Color.argb(4, 65, 105, 255))
                 cornerRadius = dp(2).toFloat()
                 setStroke(dp(2), Color.rgb(65, 105, 255))
             }
-            contentDescription = "Drag top and bottom to resize height, side handles to resize width, and the center handle to move the keyboard."
             clipChildren = false
         }
-        resizeFrameView = resizeFrame
+        overlay.addView(bounds, FrameLayout.LayoutParams(-1, -1).apply {
+            setMargins(dp(2), dp(2), dp(2), dp(2))
+        })
 
-        fun handle(width: Int, height: Int, gravity: Int, mode: String) {
-            resizeFrame.addView(View(this).apply {
+        fun addHandle(width: Int, height: Int, gravity: Int, mode: String) {
+            bounds.addView(View(this).apply {
                 background = GradientDrawable().apply {
                     cornerRadius = dp(4).toFloat()
                     setColor(Color.rgb(65, 105, 255))
                 }
-                setOnTouchListener(resizeHandleTouch(mode))
                 contentDescription = when (mode) {
-                    "top", "bottom" -> "Resize keyboard height"
-                    "left", "right" -> "Resize keyboard width"
-                    else -> "Move keyboard"
+                    "top", "bottom" -> "Drag to resize keyboard height"
+                    "left", "right" -> "Drag to resize keyboard width"
+                    else -> "Drag to move keyboard"
                 }
+                setOnTouchListener(resizeHandleTouch(mode))
             }, FrameLayout.LayoutParams(dp(width), dp(height), gravity))
         }
-        handle(34, 8, Gravity.TOP or Gravity.CENTER_HORIZONTAL, "top")
-        handle(34, 8, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, "bottom")
-        handle(8, 28, Gravity.CENTER_VERTICAL or Gravity.START, "left")
-        handle(8, 28, Gravity.CENTER_VERTICAL or Gravity.END, "right")
+        addHandle(38, 8, Gravity.TOP or Gravity.CENTER_HORIZONTAL, "top")
+        addHandle(38, 8, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL, "bottom")
+        addHandle(8, 28, Gravity.CENTER_VERTICAL or Gravity.START, "left")
+        addHandle(8, 28, Gravity.CENTER_VERTICAL or Gravity.END, "right")
 
         val moveHandle = FrameLayout(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.rgb(65, 105, 255))
             }
-            contentDescription = "Move keyboard"
+            contentDescription = "Drag to move keyboard"
             setOnTouchListener(resizeHandleTouch("move"))
         }
         moveHandle.addView(
             YoryKeyboardIconView(this, "move", Color.WHITE),
-            FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+            FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER)
         )
-        resizeFrame.addView(moveHandle, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER))
-        panel.addView(resizeFrame, LinearLayout.LayoutParams(-1, dp(60)))
-        updateResizePreviewFrame()
-
-        val value = TextView(this).apply {
-            text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
-            textSize = 12f
-            setTextColor(theme.textArgb)
-            gravity = Gravity.CENTER
-        }
-        resizeHeightValue = value
-        panel.addView(value, LinearLayout.LayoutParams(-1, dp(22)))
-
-        val slider = SeekBar(this).apply {
-            max = 24
-            progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
-            progressTintList = android.content.res.ColorStateList.valueOf(theme.accentArgb)
-            thumbTintList = android.content.res.ColorStateList.valueOf(theme.textArgb)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (fromUser) {
-                        val height = 36 + progress
-                        value.text = "${height} dp · ${(resizeWidthPercent * 100).toInt()}%"
-                        updateResizePreviewFrame()
-                    }
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                    theme = theme.copy(keyHeightDp = (36 + (seekBar?.progress ?: 4)).toFloat())
-                    YoryThemeStore.save(applicationContext, theme)
-                    value.text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
-                    updateResizePreviewFrame()
-                }
-            })
-        }
-        resizeHeightSlider = slider
-        panel.addView(slider, LinearLayout.LayoutParams(-1, dp(34)))
+        bounds.addView(moveHandle, FrameLayout.LayoutParams(dp(46), dp(46), Gravity.CENTER))
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        fun addActionButton(label: String, action: () -> Unit) {
+        fun actionPill(label: String, action: () -> Unit) {
             val button = TextView(this).apply {
                 text = label
                 gravity = Gravity.CENTER
-                textSize = 13f
+                textSize = 14f
                 setTextColor(Color.BLACK)
                 background = GradientDrawable().apply {
-                    cornerRadius = dp(18).toFloat()
+                    cornerRadius = dp(22).toFloat()
                     setColor(Color.WHITE)
-                    setStroke(dp(1), Color.WHITE)
                 }
+                isClickable = true
+                isFocusable = true
+                minHeight = dp(44)
                 setOnClickListener { performKeyFeedback(this); action() }
             }
-            actions.addView(button, LinearLayout.LayoutParams(0, dp(34), 1f).apply {
-                setMargins(dp(6), 0, dp(6), 0)
+            actions.addView(button, LinearLayout.LayoutParams(0, dp(44), 1f).apply {
+                setMargins(dp(7), 0, dp(7), 0)
             })
         }
-        addActionButton("Reset") {
-            resizeWidthPercent = 1f
-            resizeOffsetXdp = 0f
-            resizeOffsetYdp = 0f
-            theme = theme.copy(keyHeightDp = 40f)
-            YoryThemeStore.save(applicationContext, theme)
-            persistResizeGeometry()
-            panel.removeAllViews()
-            refreshResizePanel(panel)
+        actionPill("Reset") { resetResizeGeometry() }
+        actionPill("OK") { finishResizeOverlay() }
+        overlay.addView(actions, FrameLayout.LayoutParams(dp(300), dp(48), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
+            bottomMargin = dp(18)
+        })
+        return overlay
+    }
+
+    private fun startResizeOverlay() {
+        toolsMode = false
+        resizeMode = true
+        emojiMode = false
+        clipboardMode = false
+        refreshToolbar()
+        refreshKeyboard()
+        updateSuggestions()
+        resizeOverlay?.visibility = View.VISIBLE
+        resizeOverlay?.bringToFront()
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun finishResizeOverlay() {
+        resizeMode = false
+        resizeOverlay?.visibility = View.GONE
+        persistResizeGeometry()
+        refreshToolbar()
+        refreshKeyboard()
+        updateSuggestions()
+        applyKeyboardWindowGeometry()
+    }
+
+    private fun resetResizeGeometry() {
+        resizeWidthPercent = 1f
+        resizeOffsetXdp = 0f
+        resizeOffsetYdp = 0f
+        theme = theme.copy(keyHeightDp = 40f)
+        YoryThemeStore.save(applicationContext, theme)
+        updateLiveKeyHeights()
+        persistResizeGeometry()
+    }
+
+    private fun updateLiveKeyHeights() {
+        val container = keysContainer ?: return
+        for (rowIndex in 0 until container.childCount) {
+            val row = container.getChildAt(rowIndex) as? LinearLayout ?: continue
+            row.layoutParams = row.layoutParams.apply { height = dp(theme.keyHeightDp + 4f) }
+            for (keyIndex in 0 until row.childCount) {
+                val key = row.getChildAt(keyIndex)
+                key.layoutParams = key.layoutParams.apply { height = dp(theme.keyHeightDp) }
+            }
         }
-        addActionButton("OK") {
-            persistResizeGeometry()
-            resizeMode = false
-            toolsMode = false
-            refreshToolbar()
-            refreshKeyboard()
-            updateSuggestions()
-            applyKeyboardWindowGeometry()
-        }
-        panel.addView(actions, LinearLayout.LayoutParams(-1, dp(38)))
+        container.requestLayout()
+        keyboardContent?.requestLayout()
+        keyboardMainArea?.requestLayout()
     }
 
     private fun resizeHandleTouch(mode: String): View.OnTouchListener {
@@ -897,50 +931,47 @@ class YoryInputMethodService : InputMethodService() {
                     val dy = (event.rawY - previousY) / density
                     previousX = event.rawX
                     previousY = event.rawY
+                    val screenWidthDp = resources.displayMetrics.widthPixels / density
                     when (mode) {
-                        "left" -> resizeWidthPercent = (resizeWidthPercent - dx / (resources.displayMetrics.widthPixels / density)).coerceIn(0.70f, 1f)
-                        "right" -> resizeWidthPercent = (resizeWidthPercent + dx / (resources.displayMetrics.widthPixels / density)).coerceIn(0.70f, 1f)
+                        "left" -> {
+                            resizeWidthPercent = (resizeWidthPercent - dx / screenWidthDp).coerceIn(0.70f, 1f)
+                            resizeOffsetXdp = (resizeOffsetXdp + dx / 2f).coerceIn(-120f, 120f)
+                            applyKeyboardWindowGeometry()
+                        }
+                        "right" -> {
+                            resizeWidthPercent = (resizeWidthPercent + dx / screenWidthDp).coerceIn(0.70f, 1f)
+                            resizeOffsetXdp = (resizeOffsetXdp + dx / 2f).coerceIn(-120f, 120f)
+                            applyKeyboardWindowGeometry()
+                        }
                         "top" -> {
                             theme = theme.copy(keyHeightDp = (theme.keyHeightDp - dy * 0.38f).coerceIn(36f, 60f))
-                            YoryThemeStore.save(applicationContext, theme)
-                            resizeHeightSlider?.progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+                            updateLiveKeyHeights()
                         }
                         "bottom" -> {
                             theme = theme.copy(keyHeightDp = (theme.keyHeightDp + dy * 0.38f).coerceIn(36f, 60f))
-                            YoryThemeStore.save(applicationContext, theme)
-                            resizeHeightSlider?.progress = (theme.keyHeightDp.toInt() - 36).coerceIn(0, 24)
+                            updateLiveKeyHeights()
                         }
                         "move" -> {
                             resizeOffsetXdp = (resizeOffsetXdp + dx).coerceIn(-120f, 120f)
                             resizeOffsetYdp = (resizeOffsetYdp - dy).coerceIn(0f, 300f)
-                            val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE).edit()
-                                .putFloat("keyboard_offset_x_dp", resizeOffsetXdp)
-                                .putFloat("keyboard_offset_y_dp", resizeOffsetYdp)
-                                .apply()
                             applyKeyboardWindowGeometry()
                         }
                     }
-                    resizeHeightValue?.text = "${theme.keyHeightDp.toInt()} dp · ${(resizeWidthPercent * 100).toInt()}%"
-                    updateResizePreviewFrame()
                     true
                 }
-                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                android.view.MotionEvent.ACTION_UP -> {
+                    if (mode == "top" || mode == "bottom") {
+                        YoryThemeStore.save(applicationContext, theme)
+                    }
+                    persistResizeGeometry()
+                    true
+                }
+                android.view.MotionEvent.ACTION_CANCEL -> {
                     persistResizeGeometry()
                     true
                 }
                 else -> true
             }
-        }
-    }
-
-    private fun updateResizePreviewFrame() {
-        val frame = resizeFrameView ?: return
-        val widthDp = (resources.displayMetrics.widthPixels / resources.displayMetrics.density * resizeWidthPercent).toInt()
-        val heightDp = (56 + (theme.keyHeightDp - 40f) * 2f).toInt().coerceIn(40, 96)
-        frame.layoutParams = (frame.layoutParams as LinearLayout.LayoutParams).apply {
-            width = dp(widthDp.toFloat())
-            height = dp(heightDp.toFloat())
-            gravity = Gravity.CENTER
         }
     }
 
