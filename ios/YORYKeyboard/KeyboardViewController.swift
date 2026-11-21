@@ -925,7 +925,7 @@ final class KeyboardViewController: UIInputViewController {
     private func learnCurrentWord() {
         guard hasFullAccess,
               !incognitoMode,
-              !textDocumentProxy.isSecureTextEntry,
+              textDocumentProxy.isSecureTextEntry != true,
               YoryThemeReader.personalLearningEnabled,
               !numericInput,
               currentKeyboardType != .emailAddress,
@@ -1230,7 +1230,7 @@ final class KeyboardViewController: UIInputViewController {
         suggestionRow.semanticContentAttribute = .forceLeftToRight
         let compactMode = UserDefaults(suiteName: "group.app.yory.keys")?.bool(forKey: "yory.input.compactMode") ?? false
         let visible = !incognitoMode && !emojiMode && !numericInput &&
-            !textDocumentProxy.isSecureTextEntry &&
+            textDocumentProxy.isSecureTextEntry != true &&
             currentKeyboardType != .emailAddress && currentKeyboardType != .URL &&
             textDocumentProxy.autocorrectionType != .no && YoryThemeReader.wordSuggestionsEnabled
         let normalHeight: CGFloat = suggestionsCollapsed ? 19 : (compactMode ? 24 : 32)
@@ -1556,7 +1556,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func commitWordBoundary(_ boundary: String) {
         if YoryThemeReader.autoCorrectEnabled && textDocumentProxy.autocorrectionType != .no &&
-            !textDocumentProxy.isSecureTextEntry && !incognitoMode && !numericInput &&
+            textDocumentProxy.isSecureTextEntry != true && !incognitoMode && !numericInput &&
             currentKeyboardType != .emailAddress && currentKeyboardType != .URL {
             let context = textDocumentProxy.documentContextBeforeInput ?? ""
             if let range = context.range(of: "[\\p{L}\\p{M}]{2,32}$", options: .regularExpression) {
