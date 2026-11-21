@@ -8,8 +8,8 @@ This is the measurement contract for a responsive keyboard inspired by the inter
 
 - Panel: #090A0C, near-black and opaque.
 - Keycap: #202328 with #F2EEE7 text; champagne #C9AE80 is a restrained utility/selection accent.
-- Standard key height: 46 dp/pt, with an allowed runtime range around 42–50 dp/pt.
-- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range. Match vertical row gaps to horizontal key gaps across Android and iOS.
+- Reference-matched default key height: 40 dp/pt, with the existing customization range retained. Use the same default on Android and iOS.
+- Standard key gap: 4 dp/pt; keep 3–5 dp/pt as the comfortable range. Match row gaps and key row containers to the actual key-cap height; the Android row container must include its top/bottom touch margins.
 - Latin home row: inset by about 10 dp/pt per side; preserve full-width first and modifier rows. Arabic rows use their own RTL/letter-count geometry rather than copying Latin insets.
 - Bottom action row: spacebar occupies about 39–40% of available width; distribute the remaining width proportionally between symbols, language, punctuation and Return. Never let intrinsic title widths distort the row.
 - Toolbar controls: use consistent 19–21 dp/pt original outline icons with generous touch regions; avoid font-dependent Unicode ornament icons for command actions.
