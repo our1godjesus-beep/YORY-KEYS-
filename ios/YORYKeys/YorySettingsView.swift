@@ -561,64 +561,63 @@ private struct YoryRegistrationInviteSheet: View {
 
             ScrollView(.vertical) {
                 VStack(spacing: 15) {
-                Image(systemName: "icloud.and.arrow.up")
-                    .font(.system(size: 27, weight: .medium))
-                    .foregroundStyle(mint)
-                    .frame(width: 62, height: 62)
-                    .background(mint.opacity(0.12), in: Circle())
-                    .overlay(Circle().stroke(mint.opacity(0.28), lineWidth: 1))
-
-                Text("YORY STUDIO")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(2.1)
-                    .foregroundStyle(violet)
-
-                Text(copy.title)
-                    .font(.system(size: 23, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.96, green: 0.96, blue: 0.95))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(copy.message)
-                    .font(.system(size: 14, weight: .regular))
-                    .lineSpacing(3)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button {
-                    dismiss()
-                    onRegister()
-                } label: {
-                    Text(copy.primary)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.04, green: 0.12, blue: 0.12))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(mint, in: RoundedRectangle(cornerRadius: 16))
+                    Image(systemName: "icloud.and.arrow.up")
+                        .font(.system(size: 27, weight: .medium))
+                        .foregroundStyle(mint)
+                        .frame(width: 62, height: 62)
+                        .background(mint.opacity(0.12), in: Circle())
+                        .overlay(Circle().stroke(mint.opacity(0.28), lineWidth: 1))
+    
+                    Text("YORY STUDIO")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.1)
+                        .foregroundStyle(violet)
+    
+                    Text(copy.title)
+                        .font(.system(size: 23, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.96, green: 0.96, blue: 0.95))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+    
+                    Text(copy.message)
+                        .font(.system(size: 14, weight: .regular))
+                        .lineSpacing(3)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+    
+                    Button {
+                        dismiss()
+                        onRegister()
+                    } label: {
+                        Text(copy.primary)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.04, green: 0.12, blue: 0.12))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(mint, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+    
+                    Button(copy.secondary) {
+                        dismiss()
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+    
+                    Text(copy.privacy)
+                        .font(.system(size: 11))
+                        .lineSpacing(2)
+                        .foregroundStyle(.white.opacity(0.50))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.plain)
-
-                Button(copy.secondary) {
-                    dismiss()
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(0.88))
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-
-                Text(copy.privacy)
-                    .font(.system(size: 11))
-                    .lineSpacing(2)
-                    .foregroundStyle(.white.opacity(0.50))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 26)
-            .padding(.top, 18)
-            .padding(.bottom, 22)
-            .frame(maxWidth: 520)
-                }
+                .padding(.horizontal, 26)
+                .padding(.top, 18)
+                .padding(.bottom, 22)
+                .frame(maxWidth: 520)
             }
         }
     }
