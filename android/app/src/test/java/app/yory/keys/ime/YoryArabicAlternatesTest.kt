@@ -28,6 +28,18 @@ class YoryArabicAlternatesTest {
         assertTrue(YoryArabicAlternates.isTashkeel("َ"))
         assertEquals("◌َ", YoryArabicAlternates.displayLabel("َ"))
         assertEquals("فتحة (Fatha)", YoryArabicAlternates.accessibilityLabel("َ"))
+        assertEquals("الحرف ب مع فتحة (Fatha)", YoryArabicAlternates.accessibilityLabel("َ", "ب"))
         assertEquals("أ", YoryArabicAlternates.displayLabel("أ"))
+    }
+
+    @Test
+    fun selectingTashkeelInsertsTheHeldBaseLetterAndTheCombiningMark() {
+        assertEquals("بَ", YoryArabicAlternates.insertionText("ب", "َ"))
+        assertEquals("تّ", YoryArabicAlternates.insertionText("ت", "ّ"))
+    }
+
+    @Test
+    fun selectingALetterVariantDoesNotPrependTheOriginalKey() {
+        assertEquals("أ", YoryArabicAlternates.insertionText("ا", "أ"))
     }
 }

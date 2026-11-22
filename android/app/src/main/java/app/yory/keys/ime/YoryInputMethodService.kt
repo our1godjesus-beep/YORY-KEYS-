@@ -1162,7 +1162,7 @@ class YoryInputMethodService : InputMethodService() {
                             handler.removeCallbacks(longPressTask)
                             background = keyBackground(label)
                             if (longPressConsumed && pendingLongPressOptions.isNotEmpty()) {
-                                showLongPressOptionsPopup(touched, pendingLongPressOptions)
+                                showLongPressOptionsPopup(touched, pendingLongPressOptions, label)
                             }
                         }
                         android.view.MotionEvent.ACTION_CANCEL -> {
@@ -1256,7 +1256,7 @@ class YoryInputMethodService : InputMethodService() {
         handler.postDelayed({ if (popup.isShowing) popup.dismiss() }, 260)
     }
 
-    private fun showLongPressOptionsPopup(anchor: View, options: List<String>) {
+    private fun showLongPressOptionsPopup(anchor: View, options: List<String>, baseLabel: String) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -1269,10 +1269,9 @@ class YoryInputMethodService : InputMethodService() {
         }
         lateinit var popup: PopupWindow
         options.forEach { candidate ->
-            val isArabicMark = YoryArabicAlternates.isTashkeel(candidate)
             val choice = TextView(this).apply {
                 text = YoryArabicAlternates.displayLabel(candidate)
-                contentDescription = YoryArabicAlternates.accessibilityLabel(candidate)
+                contentDescription = YoryArabicAlternates.accessibilityLabel(candidate, baseLabel)
                 gravity = Gravity.CENTER
                 textSize = theme.fontSizeSp
                 setTextColor(theme.textArgb)
@@ -1281,7 +1280,7 @@ class YoryInputMethodService : InputMethodService() {
                 setOnClickListener {
                     performKeyFeedback(this)
                     // Insert the combining mark itself, not its dotted-circle preview.
-                    currentInputConnection?.commitText(candidate, 1)
+                    currentInputConnection?.commitText(YoryArabicAlternates.insertionText(baseLabel, candidate), 1)
                     refreshAutomaticShift()
                     updateSuggestions()
                     popup.dismiss()

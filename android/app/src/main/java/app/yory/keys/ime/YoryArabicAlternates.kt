@@ -48,6 +48,15 @@ internal object YoryArabicAlternates {
     fun displayLabel(value: String): String =
         if (isTashkeel(value)) "◌$value" else value
 
-    fun accessibilityLabel(value: String): String =
-        markNames[value] ?: "حرف بديل $value"
+    fun accessibilityLabel(value: String, baseLetter: String? = null): String =
+        when {
+            isTashkeel(value) && !baseLetter.isNullOrBlank() ->
+                "الحرف " + baseLetter + " مع " + markNames.getValue(value)
+            isTashkeel(value) -> markNames.getValue(value)
+            else -> "حرف بديل " + value
+        }
+
+    /** A diacritic long-press choice inserts its held base letter before the mark. */
+    fun insertionText(baseLetter: String, option: String): String =
+        if (isTashkeel(option)) baseLetter + option else option
 }
