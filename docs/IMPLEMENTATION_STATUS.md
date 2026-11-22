@@ -235,3 +235,14 @@ The following code work supersedes older "not implemented" bullets above where n
 - This is an in-app invitation, not an OS push notification. Do not request notification permission for it. Any later push/service alerts require a separate explicit opt-in and OS permission where applicable.
 - Do not imply that planned cloud services are currently available. No typed text, editor context, clipboard payload, OTP/payment data or plaintext personal dictionary may be sent to promote registration.
 - Registration and cloud sync remain optional. Offline mode and local keyboard functionality must continue if the user never registers or later signs out.
+
+
+## Optional online registration invitation — implementation slice (2026-11-22)
+
+- Android YORY Studio now hosts a native Compose bottom sheet invitation for guests who chose Continue Offline, once Android reports a validated internet connection. iOS YORY Studio presents a native SwiftUI sheet when a network path is available.
+- The invitation is delayed briefly after Studio opens to avoid interrupting the launch/setup flow. It is not displayed in the keyboard UI or typing path and does not gate local functionality.
+- Copy selection uses the device locale's region first, then a supported device language as a fallback. Initial copy is available in Arabic, English, German, Spanish, French, Italian and Portuguese. Arabic presentation uses right-to-left layout. The country/region signal comes from device locale settings; no location permission or GPS lookup is used.
+- The presentation uses a restrained midnight surface, sea-glass mint action color and a subtle violet brand accent, with native platform sheet behavior, comfortable spacing and large touch targets.
+- A local 30-day cooldown is saved before presentation so closing the app cannot cause the invitation to reappear on every launch. “Not now” dismisses it, and the Account settings page provides a later Create account / Sign in route.
+- The invitation is not a push notification. No notification permission is requested. Upcoming cloud services are described as future capabilities; the message does not transmit typing, clipboard or personal dictionary content.
+- Source code is present for Android and iOS. CI and physical-device presentation, localization, connectivity-transition and accessibility QA are still required; this feature is **implemented_unverified**, not production-ready.

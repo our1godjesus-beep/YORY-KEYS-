@@ -29,7 +29,11 @@ import app.yory.keys.ime.ClipboardHistoryStore
 private data class SettingsItem(val icon: String, val title: String, val subtitle: String = "")
 
 @Composable
-fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
+fun YoryStudioScreen(
+    onSignOut: () -> Unit = {},
+    canOfferRegistration: Boolean = false,
+    onRegister: () -> Unit = {}
+) {
     val context = LocalContext.current
     var page by remember { mutableStateOf<String?>(null) }
     var editingThemes by remember { mutableStateOf(false) }
@@ -89,7 +93,13 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
                 Spacer(Modifier.height(84.dp))
             }
         } else {
-            SettingsDetailPage(page = page!!, onBack = { page = null }, onSignOut = onSignOut)
+            SettingsDetailPage(
+                page = page!!,
+                onBack = { page = null },
+                onSignOut = onSignOut,
+                canOfferRegistration = canOfferRegistration,
+                onRegister = onRegister
+            )
         }
         FloatingActionButton(
             onClick = {
@@ -105,11 +115,21 @@ fun YoryStudioScreen(onSignOut: () -> Unit = {}) {
         ) {
             Text("⌨", fontSize = 23.sp)
         }
+        YoryRegistrationInvitationHost(
+            canOfferRegistration = canOfferRegistration,
+            onRegister = onRegister
+        )
     }
 }
 
 @Composable
-private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -> Unit) {
+private fun SettingsDetailPage(
+    page: String,
+    onBack: () -> Unit,
+    onSignOut: () -> Unit,
+    canOfferRegistration: Boolean,
+    onRegister: () -> Unit
+) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("yory_user_settings", Context.MODE_PRIVATE) }
     var refresh by remember { mutableIntStateOf(0) }
@@ -333,8 +353,16 @@ private fun SettingsDetailPage(page: String, onBack: () -> Unit, onSignOut: () -
                     }
                 }
                 "Account" -> {
-                    InfoCard("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
-                    Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) { Text("Connect account / sign out") }
+                    InfoCard("YORY account", "An account is optional. Your keyboard, themes and local settings continue to work offline.")
+                    if (canOfferRegistration) {
+                        Button(onClick = onRegister, modifier = Modifier.fillMaxWidth()) {
+                            Text("Create account / sign in")
+                        }
+                    } else {
+                        Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+                            Text("Sign out")
+                        }
+                    }
                 }
                 "YORY Rewards", "Achievements" -> InfoCard("Coming to YORY", "This section is part of the settings structure. Rewards and achievement tracking are not connected in this preview.")
                 "Help & Feedback" -> {
