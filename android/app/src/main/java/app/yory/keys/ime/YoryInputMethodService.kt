@@ -1417,6 +1417,11 @@ class YoryInputMethodService : InputMethodService() {
         // Do not learn an automatic replacement as though the user had accepted it.
         if (!corrected) learnCurrentWord()
         connection.commitText(boundary, 1)
+        refreshAutomaticShift()
+        updateDynamicKeyLabels()
+        updateSuggestions()
+    }
+
     private fun applyLocalAutocorrection(boundary: String?): Boolean {
         val connection = currentInputConnection ?: return false
         if (incognitoMode || sensitiveField || numericField || emailField || urlField ||
@@ -1459,11 +1464,6 @@ class YoryInputMethodService : InputMethodService() {
         }
         pendingAutocorrection = null
         return true
-    }
-
-        refreshAutomaticShift()
-        updateDynamicKeyLabels()
-        updateSuggestions()
     }
 
     private fun cycleLanguage(direction: Int = 1) {
