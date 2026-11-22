@@ -536,6 +536,16 @@
         "ios"
       ],
       "notes": "A monetization catalogue defines free and planned premium benefits, but no billing SDK, purchase UI, prices or live entitlements are implemented. Do not show purchase CTAs until platform billing, restore, refund and support flows pass review."
+    },
+    {
+      "id": "optional-online-registration-invitation",
+      "name": "Optional online registration invitation",
+      "status": "not_implemented",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Product contract approved: a non-blocking, dismissible in-app invitation in YORY Studio when online, with local dismissal/frequency cap and no keyboard-surface interruption. Separate OS notification permission is not requested for this invitation. UI and behavior implementation plus platform QA remain."
     }
   ]
 }

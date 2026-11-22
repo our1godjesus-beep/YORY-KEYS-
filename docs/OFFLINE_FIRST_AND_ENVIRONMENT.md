@@ -15,6 +15,8 @@
 - No network calls, telemetry, analytics, crash-upload SDKs, or remote requests are allowed from the keypress/input hot path.
 
 The Android host app may restore a still-valid encrypted session from local storage without network access. An expired session is retained locally; the app does not attempt a refresh-token request during startup. iOS follows the same rule with Keychain. Account creation, explicit sign-in and cloud-only features require internet. If a session expires while offline, the user can continue in offline mode and sign in again after reconnecting.
+When connectivity becomes available, YORY Studio may show a small, optional in-app invitation explaining that account registration unlocks upcoming cloud services. It must never block keyboard activation, typing, local settings or offline use. The invitation is dismissible, has a clear "Not now" choice, respects a locally saved dismissal/preference and uses a conservative frequency cap. Provide a separate way to revisit registration from YORY Studio.
+Do not request operating-system notification permission just to display this in-app invitation. Any future push/service alerts require a separate explicit opt-in and OS permission where applicable. Do not claim planned services are already available, and never transmit typed text, editor context, clipboard content or plaintext personal dictionary data to promote registration. Registration remains optional; core keyboard functionality never depends on it.
 
 ## Local environment setup
 1. Copy .env.example to .env in the repository root.

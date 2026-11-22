@@ -224,3 +224,14 @@ The following code work supersedes older "not implemented" bullets above where n
 - iOS App Group writes for personal learning, active language and the keyboard-side clear action are now gated on the user's optional Full Access choice. Basic keyboard typing remains available without it; no keystroke upload is implemented.
 - `shared/specs/monetization-catalog.json` defines Free, planned Studio Plus, planned YORY Plus and a future creator-theme marketplace. Purchases are explicitly disabled; prices are unset and no billing SDK or paywall has been added.
 - The next commercial release gate is Arabic/English device QA, measured correction/prediction quality, and launch privacy/store-readiness. Payment accounts, taxes and payouts require an eligible adult account owner and appropriate guardian involvement.
+
+
+## Optional online registration invitation
+
+- Product decision: offline-first with optional cloud services, not offline-only.
+- When the device is online and the user has not already dismissed the invitation, YORY Studio may display a non-blocking, dismissible in-app message inviting the user to register to access upcoming cloud services.
+- The invitation must be shown at a calm Studio surface (not on the keyboard typing surface or per-keypress path), with clear Register and Not now actions. Never block enabling/selecting the keyboard or any local feature.
+- Store the user's dismissal/choice locally and apply a conservative frequency cap. A dismissed invitation must not reappear on every launch; allow the user to find registration later in Studio settings.
+- This is an in-app invitation, not an OS push notification. Do not request notification permission for it. Any later push/service alerts require a separate explicit opt-in and OS permission where applicable.
+- Do not imply that planned cloud services are currently available. No typed text, editor context, clipboard payload, OTP/payment data or plaintext personal dictionary may be sent to promote registration.
+- Registration and cloud sync remain optional. Offline mode and local keyboard functionality must continue if the user never registers or later signs out.
