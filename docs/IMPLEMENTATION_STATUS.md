@@ -246,3 +246,16 @@ The following code work supersedes older "not implemented" bullets above where n
 - A local 30-day cooldown is saved before presentation so closing the app cannot cause the invitation to reappear on every launch. “Not now” dismisses it, and the Account settings page provides a later Create account / Sign in route.
 - The invitation is not a push notification. No notification permission is requested. Upcoming cloud services are described as future capabilities; the message does not transmit typing, clipboard or personal dictionary content.
 - Source code is present for Android and iOS. CI and physical-device presentation, localization, connectivity-transition and accessibility QA are still required; this feature is **implemented_unverified**, not production-ready.
+
+
+## Reference-matched keyboard geometry and long-press alternatives (2026-11-22)
+
+- Reworked the Android and iOS keyboard surface against the supplied Arabic and German QWERTZ screenshots: restrained monochrome charcoal keycaps, rounded/squircle geometry, stronger primary glyphs, small muted secondary legends, and more breathing room in the top toolbar and suggestion strip.
+- Standard key height now targets 46 dp/pt and adapts down to the available keyboard height. The toolbar and suggestion strip use a 42 dp/pt and 40 dp/pt target respectively; shorter screens retain scroll/adaptive sizing rather than forcing clipped keys.
+- Preserved the reference row structure: Arabic keeps its 12-key top row, 11-key middle row and 10-letter final row with a wider delete key; QWERTZ retains 10 / 9 / Shift + 7 letters + Delete. The bottom row keeps 123, emoji, field-aware punctuation, a wide language-labelled spacebar, punctuation and Return/Enter.
+- Existing Android toolbar controls remain real actions; iOS adds a working suggestion-strip collapse/expand control to its seven-position toolbar. No microphone or web-search control is presented as functional where those capabilities are not connected.
+- Added a position-based secondary-legend map so numbers and symbols follow the physical key position on QWERTY, QWERTZ, AZERTY and Arabic layouts. Arabic top-row legends display Western and Eastern Arabic digits together.
+- Android now opens a horizontally scrollable alternate-character popup after a configured long press; the user lifts and then taps the desired symbol/alternate. iOS uses the native button alternate menu. The options include numbers, punctuation and language-specific accented letters; Arabic letters expose the available hamza variants and ten combining marks. Selecting an Arabic combining mark inserts it with the base letter.
+- The default keyboard theme was moved to a neutral monochrome Obsidian palette. Migrations only replace the known untouched legacy default; saved custom themes are preserved.
+- Added Android unit tests for Arabic legend positions, QWERTZ/AZERTY physical-position mapping, alternate-option composition and disabled settings.
+- Current source status: implemented on Android and iOS; automated CI and real-device touch, sizing, RTL, accessibility and host-app screenshot QA remain release gates. Android's alternate popup is tap-to-select after release; an in-contact sliding picker is not claimed.

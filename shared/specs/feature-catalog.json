@@ -29,7 +29,7 @@
         "android",
         "ios"
       ],
-      "notes": "Basic Arabic and English rows and language switching exist. Android Arabic long-press now exposes common alif/hamza variants and ten combining marks; full language-specific layouts, comprehensive punctuation, mixed-script cursor behavior and RTL device QA remain."
+      "notes": "Arabic and English layouts run on Android and iOS. Arabic has a right-to-left 12/11/10-row key arrangement with secondary number/symbol legends; common hamza variants and ten combining marks are exposed on long-press. Physical RTL, mixed-script, sizing and accessibility QA remain."
     },
     {
       "id": "theme-studio",
@@ -272,11 +272,12 @@
     {
       "id": "long-press-alternates",
       "name": "Long-press alternate characters",
-      "status": "partial_implementation",
+      "status": "implemented_unverified",
       "platforms": [
-        "android"
+        "android",
+        "ios"
       ],
-      "notes": "Android exposes English accent variants and, in Arabic mode, common alif/hamza alternatives plus ten combining marks (eight standard tashkeel marks, dagger alif and madda above) through a horizontally scrollable accessible popup. iOS full Arabic mark-set parity, insertion/touch behavior and physical-device QA remain."
+      "notes": "Android shows position-mapped secondary legends and a horizontally scrollable popup after long-press, selected by tapping after release. iOS uses the native alternate menu for held keys. Number and symbol choices follow physical key positions across QWERTY/QWERTZ/AZERTY and Arabic; language-specific accents are present for German, French, Spanish, Portuguese and Italian, and Arabic letter keys expose hamza variants plus ten combining marks inserted with the base letter. Automated CI and physical-device touch/accessibility QA remain; Android does not claim an in-contact slide-to-select interaction."
     },
     {
       "id": "gradient-theme-editor",
@@ -525,7 +526,7 @@
         "android",
         "ios"
       ],
-      "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German, Spanish, French, Portuguese and Italian. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
+      "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German QWERTZ, Spanish, French AZERTY, Portuguese and Italian. Secondary-key legends and long-press alternate options follow physical row positions for the supported layouts. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
     },
     {
       "id": "freemium-entitlements",

@@ -24,10 +24,12 @@ class YoryThemeTest {
     @Test
     fun defaultThemeIsObsidianLuxe() {
         assertEquals("Obsidian Luxe", YoryTheme.default.name)
-        assertEquals(0xFF090A0C.toInt(), YoryTheme.default.backgroundArgb)
-        assertEquals(0xFF202328.toInt(), YoryTheme.default.keyArgb)
-        assertEquals(0xFFF2EEE7.toInt(), YoryTheme.default.textArgb)
-        assertEquals(0xFFC9AE80.toInt(), YoryTheme.default.accentArgb)
+        assertEquals(0xFF141414.toInt(), YoryTheme.default.backgroundArgb)
+        assertEquals(0xFF252525.toInt(), YoryTheme.default.keyArgb)
+        assertEquals(0xFFF7F7F7.toInt(), YoryTheme.default.textArgb)
+        assertEquals(0xFFB9B9B9.toInt(), YoryTheme.default.accentArgb)
+        assertEquals(0xFF626262.toInt(), YoryTheme.default.keyPressedArgb)
+        assertEquals(46f, YoryTheme.default.keyHeightDp)
     }
 
     @Test

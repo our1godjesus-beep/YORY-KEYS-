@@ -147,7 +147,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let defaults = UserDefaults(suiteName: "group.app.yory.keys")
-        let defaultOrder = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
+        let defaultOrder = ["emoji", "suggestions", "language", "symbols", "switch", "tools", "privacy"]
         let storedOrder = defaults?.stringArray(forKey: "yory.toolbar.order") ?? defaultOrder
         let order = storedOrder.filter { defaultOrder.contains($0) } + defaultOrder.filter { !storedOrder.contains($0) }
         let visible = Set(defaults?.stringArray(forKey: "yory.toolbar.visible") ?? defaultOrder)
@@ -158,6 +158,8 @@ final class KeyboardViewController: UIInputViewController {
                 if YoryThemeReader.emojiKeyEnabled {
                     toolbar.addArrangedSubview(toolButton("☺", accessibilityLabel: "Emoji picker", action: #selector(toggleEmoji)))
                 }
+            case "suggestions":
+                toolbar.addArrangedSubview(toolButton("Aa", accessibilityLabel: "Toggle word suggestions", action: #selector(toggleSuggestionsToolbar)))
             case "language":
                 toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
@@ -240,7 +242,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func buildInterface() {
         root.axis = .vertical
-        root.spacing = 4
+        root.spacing = 5
         root.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(root)
         let heightConstraint = view.heightAnchor.constraint(equalToConstant: 260)
@@ -259,7 +261,7 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.distribution = .fillEqually
         toolbar.spacing = 2
         let toolbarDefaults = UserDefaults(suiteName: "group.app.yory.keys")
-        let defaultOrder = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
+        let defaultOrder = ["emoji", "suggestions", "language", "symbols", "switch", "tools", "privacy"]
         let storedOrder = toolbarDefaults?.stringArray(forKey: "yory.toolbar.order") ?? defaultOrder
         let order = storedOrder.filter { defaultOrder.contains($0) } + defaultOrder.filter { !storedOrder.contains($0) }
         let visible = Set(toolbarDefaults?.stringArray(forKey: "yory.toolbar.visible") ?? defaultOrder)
@@ -269,6 +271,8 @@ final class KeyboardViewController: UIInputViewController {
                 if YoryThemeReader.emojiKeyEnabled {
                     toolbar.addArrangedSubview(toolButton("☺", accessibilityLabel: "Emoji picker", action: #selector(toggleEmoji)))
                 }
+            case "suggestions":
+                toolbar.addArrangedSubview(toolButton("Aa", accessibilityLabel: "Toggle word suggestions", action: #selector(toggleSuggestionsToolbar)))
             case "language":
                 toolbar.addArrangedSubview(toolButton("⇄", accessibilityLabel: "Switch language", action: #selector(toggleLanguage)))
             case "symbols":
@@ -297,14 +301,14 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.backgroundColor = UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1)
         toolbarRow = toolbar
         root.addArrangedSubview(toolbar)
-        toolbar.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        toolbar.heightAnchor.constraint(equalToConstant: 42).isActive = true
 
         suggestionRow.axis = .horizontal
         suggestionRow.distribution = .fill
         suggestionRow.spacing = 4
         suggestionRow.semanticContentAttribute = .forceLeftToRight
         root.addArrangedSubview(suggestionRow)
-        let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 32)
+        let suggestionHeight = suggestionRow.heightAnchor.constraint(equalToConstant: 40)
         suggestionRowHeightConstraint = suggestionHeight
         suggestionHeight.isActive = true
         buildSuggestionControls()
@@ -416,16 +420,11 @@ final class KeyboardViewController: UIInputViewController {
                     labels.append("⌫")
                 }
             }
-            let hints: [String: String]
-            if isArabicRow && index == 0 {
-                hints = Dictionary(uniqueKeysWithValues: zip(baseLabels, ["1","2","3","4","5","6","7","8","9","0","-","="]))
-            } else if isArabicRow && index == 1 {
-                hints = Dictionary(uniqueKeysWithValues: zip(baseLabels, ["@","#","&","پ","لا","أ","=","(",")","گ","*"]))
-            } else if isArabicRow && index == 2 {
-                hints = Dictionary(uniqueKeysWithValues: zip(baseLabels, ["−","~","−","+","؛",":","/","ژ","”","◌"]))
-            } else {
-                hints = [:]
-            }
+            let hints = symbolMode ? [:] : secondaryHints(
+                for: baseLabels,
+                rowIndex: index,
+                isArabic: isArabicRow
+            )
             let homeRowInset: CGFloat = isArabicRow && index > 0 ? 10 : ((!symbolMode && !isArabicRow && index == 1) ? 10 : 0)
             keysStack.addArrangedSubview(makeRow(
                 labels,
@@ -478,6 +477,38 @@ final class KeyboardViewController: UIInputViewController {
         updateKeyboardHeight()
     }
 
+    private func secondaryHints(
+        for labels: [String],
+        rowIndex: Int,
+        isArabic: Bool
+    ) -> [String: String] {
+        let legends: [String]
+        if isArabic {
+            switch rowIndex {
+            case 0:
+                legends = ["1 ١", "2 ٢", "3 ٣", "4 ٤", "5 ٥", "6 ٦", "7 ٧", "8 ٨", "9 ٩", "0 ٠", "-", "="]
+            case 1:
+                legends = ["@", "#", "&", "پ", "لا", "أ", "=", "(", ")", "گ", "*"]
+            default:
+                legends = ["−", "~", "−", "+", "؛", ":", "/", "ژ", "”", "◌"]
+            }
+        } else {
+            switch rowIndex {
+            case 0:
+                legends = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+            case 1:
+                legends = ["@", "$", "&", "-", "+", "(", ")", "/", ":"]
+            default:
+                legends = ["!", "?", "'", "\"", ";", "_", "."]
+            }
+        }
+        var result: [String: String] = [:]
+        for (index, key) in labels.enumerated() where index < legends.count {
+            result[key] = legends[index]
+        }
+        return result
+    }
+
     private func makeRow(
         _ labels: [String],
         compact: Bool = false,
@@ -525,7 +556,7 @@ final class KeyboardViewController: UIInputViewController {
     private func updateKeyboardHeight() {
         if toolsMode {
             let panelHeight: CGFloat = resizeMode ? 190 : 220
-            let chrome = 4 + 36 + panelHeight + 8
+            let chrome = 4 + 42 + panelHeight + 8
             let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
             let maximum = min(430, max(240, screenHeight * 0.48))
             keyboardHeightConstraint?.constant = min(maximum, max(220, chrome))
@@ -537,7 +568,7 @@ final class KeyboardViewController: UIInputViewController {
         let innerGaps = max(0, rowCount - 1) * rowGap
         let emojiPanelHeight: CGFloat = emojiMode ? (emojiCategory == "People" ? 126 : 98) : 0
         let suggestionHeight = suggestionRowHeightConstraint?.constant ?? 32
-        let topChrome: CGFloat = 8 + 36 + suggestionHeight + rowGap * 2
+        let topChrome: CGFloat = 8 + 42 + suggestionHeight + rowGap * 2
         let screenHeight = view.window?.windowScene?.screen.bounds.height ?? UIScreen.main.bounds.height
         let maximum = min(430, max(240, screenHeight * 0.48))
         let availableForKeys = max(0, maximum - topChrome - innerGaps - emojiPanelHeight)
@@ -547,24 +578,40 @@ final class KeyboardViewController: UIInputViewController {
         keyHeightConstraints.forEach { $0.constant = effectiveKeyHeightValue }
     }
 
-    private func longPressMenu(for title: String) -> UIMenu? {
-        guard title.count == 1, title.first?.isLetter == true else { return nil }
+    private func longPressMenu(for title: String, secondaryHint: String?) -> UIMenu? {
+        guard title.count == 1 else { return nil }
         var choices: [String] = []
         let key = title.lowercased()
-        if YoryThemeReader.longPressSymbolsEnabled && !isArabic {
-            let symbols: [String: String] = [
-                "q":"1","w":"2","e":"3","r":"4","t":"5","y":"6","u":"7","i":"8","o":"9","p":"0",
-                "a":"@","s":"$","d":"&","f":"-","g":"+","h":"(","j":")","k":"/","l":":",
-                "z":"!","x":"?","c":"'","v":"\"","b":";","n":"_","m":"."
-            ]
-            if let symbol = symbols[key] { choices.append(symbol) }
+
+        if YoryThemeReader.longPressSymbolsEnabled, let secondaryHint, !secondaryHint.isEmpty {
+            choices.append(contentsOf: secondaryHint.split(whereSeparator: { $0.isWhitespace })
+                .map(String.init).filter { $0 != "◌" })
         }
-        if YoryThemeReader.accentedCharactersEnabled {
+
+        if title.first?.isLetter == true && YoryThemeReader.accentedCharactersEnabled {
             let accents: [String: [String]]
             if isArabic {
-                accents = ["ا":["أ","إ","آ"], "و":["ؤ"], "ي":["ئ","ى"], "ه":["ة"]]
+                let marks = ["َ","ُ","ِ","ْ","ّ","ً","ٌ","ٍ","ٰ","ٓ"]
+                let letterVariants: [String: [String]] = [
+                    "ا":["أ","إ","آ","ٱ"], "و":["ؤ"], "ي":["ئ","ى"], "ه":["ة"]
+                ]
+                accents = [key: (letterVariants[key] ?? []) + marks]
             } else if languageTag == "de" {
                 accents = ["a":["ä"], "o":["ö"], "u":["ü"], "s":["ß"]]
+            } else if languageTag == "fr" {
+                accents = [
+                    "a":["à","â","æ"], "e":["é","è","ê","ë"],
+                    "i":["î","ï"], "o":["ô","œ"], "u":["ù","û","ü"], "c":["ç"]
+                ]
+            } else if languageTag == "es" {
+                accents = ["a":["á"], "e":["é"], "i":["í"], "o":["ó"], "u":["ú","ü"], "n":["ñ"]]
+            } else if languageTag == "pt" {
+                accents = [
+                    "a":["á","à","â","ã"], "e":["é","ê"], "i":["í"],
+                    "o":["ó","ô","õ"], "u":["ú"], "c":["ç"]
+                ]
+            } else if languageTag == "it" {
+                accents = ["a":["à"], "e":["è","é"], "i":["ì"], "o":["ò"], "u":["ù"]]
             } else {
                 accents = [
                     "a":["á","à","â","ä","ã","å"], "e":["é","è","ê","ë"],
@@ -574,13 +621,20 @@ final class KeyboardViewController: UIInputViewController {
             }
             choices.append(contentsOf: accents[key] ?? [])
         }
+
         let unique = Array(NSOrderedSet(array: choices)) as? [String] ?? choices
         guard !unique.isEmpty else { return nil }
         let actions = unique.map { candidate in
-            UIAction(title: candidate) { [weak self] _ in
+            let marks = ["َ","ُ","ِ","ْ","ّ","ً","ٌ","ٍ","ٰ","ٓ"]
+            let displayTitle = isArabic && marks.contains(candidate) ? "◌" + candidate : candidate
+            return UIAction(title: displayTitle) { [weak self] _ in
                 self?.playKeyClick()
-                self?.textDocumentProxy.insertText(candidate)
+                let insertion = self?.isArabic == true && marks.contains(candidate)
+                    ? title + candidate
+                    : candidate
+                self?.textDocumentProxy.insertText(insertion)
                 self?.refreshAutomaticShift()
+                self?.updateShiftedLetterKeys()
                 self?.updateSuggestions()
             }
         }
@@ -703,7 +757,7 @@ final class KeyboardViewController: UIInputViewController {
         let keyHeight = button.heightAnchor.constraint(equalToConstant: effectiveKeyHeightValue)
         keyHeight.isActive = true
         keyHeightConstraints.append(keyHeight)
-        if let menu = longPressMenu(for: title) {
+        if let menu = longPressMenu(for: title, secondaryHint: secondaryHint) {
             button.menu = menu
             button.showsMenuAsPrimaryAction = false
         }
@@ -757,7 +811,7 @@ final class KeyboardViewController: UIInputViewController {
         let iconNames: [String: String] = [
             "☺": "face.smiling",
             "⇄": "globe",
-            "Aa": "character",
+            "Aa": "textformat",
             "⌨": "keyboard",
             "•••": "ellipsis",
             "×": "xmark",
@@ -889,6 +943,13 @@ final class KeyboardViewController: UIInputViewController {
     @objc private func handleSpacebarSwipe(_ recognizer: UISwipeGestureRecognizer) {
         playKeyClick()
         cycleLanguage(direction: recognizer.direction == .left ? 1 : -1)
+    }
+
+    @objc private func toggleSuggestionsToolbar() {
+        playKeyClick()
+        suggestionsCollapsed.toggle()
+        buildSuggestionControls()
+        updateSuggestions()
     }
 
     @objc private func toggleSymbols() {

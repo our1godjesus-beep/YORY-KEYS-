@@ -19,6 +19,18 @@ object YoryThemeStore {
             save(context, fallback)
             return fallback
         }
+        val isUntouchedObsidianDefault =
+            prefs.getString("name", null) == "Obsidian Luxe" &&
+            prefs.getInt("background", 0xFF090A0C.toInt()) == 0xFF090A0C.toInt() &&
+            prefs.getInt("key", 0xFF202328.toInt()) == 0xFF202328.toInt() &&
+            prefs.getInt("text", 0xFFF2EEE7.toInt()) == 0xFFF2EEE7.toInt() &&
+            prefs.getInt("accent", 0xFFC9AE80.toInt()) == 0xFFC9AE80.toInt() &&
+            prefs.getInt("key_pressed", 0xFFB8945D.toInt()) == 0xFFB8945D.toInt() &&
+            prefs.getFloat("height", 40f) == 40f
+        if (isUntouchedObsidianDefault) {
+            save(context, fallback)
+            return fallback
+        }
         return YoryTheme(
             name = prefs.getString("name", fallback.name) ?: fallback.name,
             backgroundArgb = prefs.getInt("background", fallback.backgroundArgb),
