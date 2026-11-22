@@ -58,6 +58,7 @@ class YoryInputMethodService : InputMethodService() {
     private var resizeMode = false
     private var suggestionsCollapsed = false
     private var sensitiveField = false
+    private var pendingAutocorrection: PendingAutocorrection? = null
     private var numericField = false
     private var emailField = false
     private var urlField = false
@@ -237,6 +238,7 @@ class YoryInputMethodService : InputMethodService() {
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", languageTag) ?: languageTag
         sensitiveField = isSensitive(info)
+        pendingAutocorrection = null
         val inputClass = info.inputType and InputType.TYPE_MASK_CLASS
         val variation = info.inputType and InputType.TYPE_MASK_VARIATION
         numericField = inputClass == InputType.TYPE_CLASS_NUMBER ||
@@ -1037,17 +1039,9 @@ class YoryInputMethodService : InputMethodService() {
             commitWordBoundary(".")
         }, secondaryLegend = "؟!")
         addKey(row, "↵", 1.6f) {
-            val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
-            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
-            val correction = if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
-                getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
-                token?.let { wordSuggestions?.correct(it, languageTag) }
-            } else null
-            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
-                currentInputConnection?.deleteSurroundingText(token.length, 0)
-                currentInputConnection?.commitText(correction, 1)
-            }
-            learnCurrentWord()
+            pendingAutocorrection = null
+            val corrected = applyLocalAutocorrection(boundary = null)
+            if (!corrected) learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
@@ -1372,7 +1366,10 @@ class YoryInputMethodService : InputMethodService() {
         val connection: InputConnection = currentInputConnection ?: return
         when (label) {
             "⌫" -> {
-                connection.deleteSurroundingTextInCodePoints(1, 0)
+                if (!undoPendingAutocorrection(connection)) {
+                    pendingAutocorrection = null
+                    connection.deleteSurroundingTextInCodePoints(1, 0)
+                }
                 refreshAutomaticShift()
                 updateDynamicKeyLabels()
                 updateSuggestions()
@@ -1386,6 +1383,7 @@ class YoryInputMethodService : InputMethodService() {
                 if (label.length == 1 && !label[0].isLetterOrDigit() && label !in setOf("'", "’")) {
                     commitWordBoundary(label)
                 } else {
+                    pendingAutocorrection = null
                     val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
                     connection.commitText(output, 1)
                     refreshAutomaticShift()
@@ -1414,18 +1412,55 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun commitWordBoundary(boundary: String) {
         val connection = currentInputConnection ?: return
-        if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
-            getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
-            val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
-            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
-            val correction = token?.let { wordSuggestions?.correct(it, languageTag) }
-            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
-                connection.deleteSurroundingText(token.length, 0)
-                connection.commitText(correction, 1)
-            }
-        }
-        learnCurrentWord()
+        pendingAutocorrection = null
+        val corrected = applyLocalAutocorrection(boundary)
+        // Do not learn an automatic replacement as though the user had accepted it.
+        if (!corrected) learnCurrentWord()
         connection.commitText(boundary, 1)
+    private fun applyLocalAutocorrection(boundary: String?): Boolean {
+        val connection = currentInputConnection ?: return false
+        if (incognitoMode || sensitiveField || numericField || emailField || urlField ||
+            !getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+            return false
+        }
+
+        val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+        val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value ?: return false
+        val correction = wordSuggestions?.correct(token, languageTag) ?: return false
+        if (correction == token) return false
+
+        connection.beginBatchEdit()
+        try {
+            connection.deleteSurroundingText(token.length, 0)
+            connection.commitText(correction, 1)
+        } finally {
+            connection.endBatchEdit()
+        }
+        pendingAutocorrection = boundary?.let {
+            PendingAutocorrection(original = token, corrected = correction, boundary = it)
+        }
+        return true
+    }
+
+    private fun undoPendingAutocorrection(connection: InputConnection): Boolean {
+        val pending = pendingAutocorrection ?: return false
+        val before = connection.getTextBeforeCursor(pending.suffix.length + 16, 0)?.toString().orEmpty()
+        if (!pending.matchesBeforeCursor(before)) {
+            pendingAutocorrection = null
+            return false
+        }
+
+        connection.beginBatchEdit()
+        try {
+            connection.deleteSurroundingText(pending.suffix.length, 0)
+            connection.commitText(pending.original, 1)
+        } finally {
+            connection.endBatchEdit()
+        }
+        pendingAutocorrection = null
+        return true
+    }
+
         refreshAutomaticShift()
         updateDynamicKeyLabels()
         updateSuggestions()
@@ -1504,6 +1539,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        pendingAutocorrection = null
         if (resizeMode) {
             resizeMode = false
             resizeOverlay?.visibility = View.GONE

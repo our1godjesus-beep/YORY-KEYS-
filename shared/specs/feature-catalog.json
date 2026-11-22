@@ -391,11 +391,11 @@
     {
       "id": "local-autocorrect",
       "name": "Local language-aware autocorrect",
-      "status": "not_implemented",
+      "status": "prototype",
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "A conservative on-device spelling-correction prototype uses a small curated English/Arabic correction map plus a unique one-edit candidate fallback. Android now restores the original word when Backspace is pressed immediately after an automatic correction. This is not context-aware prediction; lexical coverage, language-specific evaluation and physical-device QA remain."
     },
     {
       "id": "language-pack-signatures",
