@@ -19,13 +19,19 @@ struct YoryLaunchFlowView: View {
                     introCompleted = true
                 }
             } else if authenticated || offlineMode {
-                ContentView(onSignOut: {
-                    Task {
-                        await YoryAuthService.signOut()
-                        authenticated = false
+                ContentView(
+                    onSignOut: {
+                        Task {
+                            await YoryAuthService.signOut()
+                            authenticated = false
+                            offlineMode = false
+                        }
+                    },
+                    canOfferRegistration: offlineMode && !authenticated,
+                    onRegister: {
                         offlineMode = false
                     }
-                })
+                )
             } else {
                 YoryAuthGateView(
                     onAuthenticated: {

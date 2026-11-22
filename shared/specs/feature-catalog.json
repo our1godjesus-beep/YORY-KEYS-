@@ -29,7 +29,7 @@
         "android",
         "ios"
       ],
-      "notes": "Basic letter rows and language switch; full language layouts, punctuation, dead keys and RTL QA remain."
+      "notes": "Arabic and English layouts run on Android and iOS. Arabic has a right-to-left 12/11/10-row key arrangement with secondary number/symbol legends; common hamza variants and ten combining marks are exposed on long-press. Physical RTL, mixed-script, sizing and accessibility QA remain."
     },
     {
       "id": "theme-studio",
@@ -272,11 +272,12 @@
     {
       "id": "long-press-alternates",
       "name": "Long-press alternate characters",
-      "status": "planned",
+      "status": "implemented_unverified",
       "platforms": [
-        "android"
+        "android",
+        "ios"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "Android shows position-mapped secondary legends and a horizontally scrollable popup after long-press, selected by tapping after release. iOS uses the native alternate menu for held keys. Number and symbol choices follow physical key positions across QWERTY/QWERTZ/AZERTY and Arabic; language-specific accents are present for German, French, Spanish, Portuguese and Italian, and Arabic letter keys expose hamza variants plus ten combining marks inserted with the base letter. Automated CI and physical-device touch/accessibility QA remain; Android does not claim an in-contact slide-to-select interaction."
     },
     {
       "id": "gradient-theme-editor",
@@ -391,11 +392,11 @@
     {
       "id": "local-autocorrect",
       "name": "Local language-aware autocorrect",
-      "status": "not_implemented",
+      "status": "prototype",
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "A conservative on-device spelling-correction prototype uses a small curated English/Arabic correction map plus a unique one-edit candidate fallback. Android now restores the original word when Backspace is pressed immediately after an automatic correction. This is not context-aware prediction; lexical coverage, language-specific evaluation and physical-device QA remain."
     },
     {
       "id": "language-pack-signatures",
@@ -525,7 +526,7 @@
         "android",
         "ios"
       ],
-      "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German, Spanish, French, Portuguese and Italian. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
+      "notes": "Seven offline letter layouts are wired on both platforms: English US, Arabic, German QWERTZ, Spanish, French AZERTY, Portuguese and Italian. Secondary-key legends and long-press alternate options follow physical row positions for the supported layouts. Bundled starter prefix dictionaries are currently only English and Arabic; the remaining layouts have no shipped prediction model. The 120-language catalogue remains a target list."
     },
     {
       "id": "freemium-entitlements",
@@ -536,6 +537,16 @@
         "ios"
       ],
       "notes": "A monetization catalogue defines free and planned premium benefits, but no billing SDK, purchase UI, prices or live entitlements are implemented. Do not show purchase CTAs until platform billing, restore, refund and support flows pass review."
+    },
+    {
+      "id": "optional-online-registration-invitation",
+      "name": "Optional online registration invitation",
+      "status": "implemented_unverified",
+      "platforms": [
+        "android",
+        "ios"
+      ],
+      "notes": "Source implementation exists on Android and iOS: a delayed, dismissible native YORY Studio invitation for guests when online, with a local 30-day frequency cap and a later Account settings entry. Initial localizations: Arabic, English, German, Spanish, French, Italian and Portuguese; device region takes priority and Arabic uses RTL. No location or notification permission is requested. CI and physical-device UI, connectivity, localization and accessibility QA remain; upcoming cloud services are not claimed as currently available."
     }
   ]
 }

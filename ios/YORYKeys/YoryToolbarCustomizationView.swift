@@ -12,6 +12,7 @@ struct YoryToolbarCustomizationView: View {
     private let defaults = UserDefaults(suiteName: "group.app.yory.keys")
     private let options: [YoryToolbarOption] = [
         YoryToolbarOption(id: "emoji", title: "Emoji", detail: "Open emoji shortcuts", symbol: "face.smiling", required: false),
+        YoryToolbarOption(id: "suggestions", title: "Suggestions", detail: "Collapse or expand the word suggestion strip", symbol: "textformat", required: false),
         YoryToolbarOption(id: "language", title: "Language", detail: "Change the active keyboard layout", symbol: "globe", required: false),
         YoryToolbarOption(id: "symbols", title: "Symbols", detail: "Switch to numbers and symbols", symbol: "character", required: false),
         YoryToolbarOption(id: "switch", title: "Next keyboard", detail: "Switch to another installed keyboard", symbol: "keyboard", required: true),
@@ -20,13 +21,13 @@ struct YoryToolbarCustomizationView: View {
     ]
 
     @State private var order: [String] = {
-        let base = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
+        let base = ["emoji", "suggestions", "language", "symbols", "switch", "tools", "privacy"]
         let stored = UserDefaults(suiteName: "group.app.yory.keys")?.stringArray(forKey: "yory.toolbar.order") ?? base
         let valid = stored.filter { base.contains($0) }
         return valid + base.filter { !valid.contains($0) }
     }()
     @State private var visible: Set<String> = {
-        let base = ["emoji", "language", "symbols", "switch", "tools", "privacy"]
+        let base = ["emoji", "suggestions", "language", "symbols", "switch", "tools", "privacy"]
         let stored = UserDefaults(suiteName: "group.app.yory.keys")?.stringArray(forKey: "yory.toolbar.visible") ?? base
         return Set(stored.filter { base.contains($0) } + ["switch"])
     }()

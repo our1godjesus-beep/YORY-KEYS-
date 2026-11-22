@@ -92,7 +92,14 @@ fun YoryAppFlow() {
                 keyboardSetupSeen = true
             }
         )
-        authenticated || offlineMode -> YoryStudioScreen(onSignOut = { returnToAccountGate() })
+        authenticated || offlineMode -> YoryStudioScreen(
+            canOfferRegistration = offlineMode && !authenticated,
+            onSignOut = { returnToAccountGate() },
+            onRegister = {
+                offlineMode = false
+                launchPrefs.edit().putBoolean("offline_mode", false).apply()
+            }
+        )
         else -> YoryAuthGate(
             onAuthenticated = {
                 authenticated = true

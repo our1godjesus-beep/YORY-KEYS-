@@ -17,13 +17,17 @@ import android.widget.PopupWindow
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.text.TextUtils
+import android.text.Layout
+import android.text.style.AlignmentSpan
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -58,6 +62,7 @@ class YoryInputMethodService : InputMethodService() {
     private var resizeMode = false
     private var suggestionsCollapsed = false
     private var sensitiveField = false
+    private var pendingAutocorrection: PendingAutocorrection? = null
     private var numericField = false
     private var emailField = false
     private var urlField = false
@@ -109,7 +114,7 @@ class YoryInputMethodService : InputMethodService() {
             background = ColorDrawable(Color.rgb(34, 34, 34))
         }
         toolbarRoot = toolbar
-        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(36)))
+        root.addView(toolbar, LinearLayout.LayoutParams(-1, dp(42)))
         refreshToolbar()
 
         val mainArea = FrameLayout(this).apply {
@@ -134,7 +139,7 @@ class YoryInputMethodService : InputMethodService() {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
         buildSuggestionRow()
-        content.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(32)))
+        content.addView(suggestionRow, LinearLayout.LayoutParams(-1, dp(40)))
 
         clipboardRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -237,6 +242,7 @@ class YoryInputMethodService : InputMethodService() {
         languageTag = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
             .getString("active_language", languageTag) ?: languageTag
         sensitiveField = isSensitive(info)
+        pendingAutocorrection = null
         val inputClass = info.inputType and InputType.TYPE_MASK_CLASS
         val variation = info.inputType and InputType.TYPE_MASK_VARIATION
         numericField = inputClass == InputType.TYPE_CLASS_NUMBER ||
@@ -397,21 +403,40 @@ class YoryInputMethodService : InputMethodService() {
         val layoutPrefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
         val showNumberRow = !symbolMode && layoutPrefs.getBoolean("number_row", false)
         val numberPosition = layoutPrefs.getString("number_position", "top") ?: "top"
+        val showLongPressLegends = layoutPrefs.getBoolean("long_press_symbols", true)
         if (showNumberRow && numberPosition == "top") addKeyRow(container, "1234567890")
 
         if (symbolMode) {
             addSymbolLayout(container)
-        } else if (activeLayout.isRtl) {
-            val digitHints = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "=")
-            val secondHints = listOf("@", "#", "&", "پ", "لا", "أ", "=", "(", ")", "گ", "*")
-            val thirdHints = listOf("−", "~", "−", "+", "؛", ":", "/", "ژ", "”", "◌")
-            addKeyRow(container, activeLayout.rows[0], compact = true, secondaryHints = digitHints)
-            addKeyRow(container, activeLayout.rows[1], compact = true, secondaryHints = secondHints, horizontalInsetDp = 10)
-            addArabicFinalRow(container, activeLayout.rows[2], thirdHints, horizontalInsetDp = 10)
         } else {
-            addKeyRow(container, activeLayout.rows[0])
-            addKeyRow(container, activeLayout.rows[1], horizontalInsetDp = 10)
-            addSpecialLetterRow(container, activeLayout.rows[2])
+            val firstHints = if (showLongPressLegends) {
+                YoryKeyLegends.forRow(languageTag, 0, activeLayout.rows[0])
+            } else emptyMap()
+            val secondHints = if (showLongPressLegends) {
+                YoryKeyLegends.forRow(languageTag, 1, activeLayout.rows[1])
+            } else emptyMap()
+            val thirdHints = if (showLongPressLegends) {
+                YoryKeyLegends.forRow(languageTag, 2, activeLayout.rows[2])
+            } else emptyMap()
+
+            addKeyRow(
+                container,
+                activeLayout.rows[0],
+                compact = activeLayout.isRtl,
+                secondaryHints = firstHints
+            )
+            addKeyRow(
+                container,
+                activeLayout.rows[1],
+                compact = activeLayout.isRtl,
+                secondaryHints = secondHints,
+                horizontalInsetDp = 10
+            )
+            if (activeLayout.isRtl) {
+                addArabicFinalRow(container, activeLayout.rows[2], thirdHints, horizontalInsetDp = 10)
+            } else {
+                addSpecialLetterRow(container, activeLayout.rows[2], secondaryHints = thirdHints)
+            }
         }
         addBottomRow(container)
         if (showNumberRow && numberPosition == "bottom") addKeyRow(container, "1234567890")
@@ -601,7 +626,7 @@ class YoryInputMethodService : InputMethodService() {
         parent: LinearLayout,
         letters: String,
         compact: Boolean = false,
-        secondaryHints: List<String> = emptyList(),
+        secondaryHints: Map<String, String> = emptyMap(),
         horizontalInsetDp: Int = 0
     ) {
         val row = LinearLayout(this).apply {
@@ -609,12 +634,12 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
             if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
         }
-        letters.forEachIndexed { index, char ->
+        letters.forEach { char ->
             val label = char.toString()
             addKey(
                 row, label, 1f, { handleKey(label) },
                 compact = compact,
-                secondaryLegend = secondaryHints.getOrNull(index)
+                secondaryLegend = secondaryHints[label]
             )
         }
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
@@ -623,7 +648,7 @@ class YoryInputMethodService : InputMethodService() {
     private fun addArabicFinalRow(
         parent: LinearLayout,
         letters: String,
-        secondaryHints: List<String>,
+        secondaryHints: Map<String, String>,
         horizontalInsetDp: Int = 0
     ) {
         val row = LinearLayout(this).apply {
@@ -633,13 +658,18 @@ class YoryInputMethodService : InputMethodService() {
         }
         letters.forEachIndexed { index, char ->
             val label = char.toString()
-            addKey(row, label, 1f, { handleKey(label) }, compact = true, secondaryLegend = secondaryHints.getOrNull(index))
+            addKey(row, label, 1f, { handleKey(label) }, compact = true, secondaryLegend = secondaryHints[label])
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = true)
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
     }
 
-    private fun addSpecialLetterRow(parent: LinearLayout, letters: String, compact: Boolean = false) {
+    private fun addSpecialLetterRow(
+        parent: LinearLayout,
+        letters: String,
+        compact: Boolean = false,
+        secondaryHints: Map<String, String> = emptyMap()
+    ) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -647,7 +677,14 @@ class YoryInputMethodService : InputMethodService() {
         addKey(row, "⇧", 1.25f, { shifted = !shifted; updateDynamicKeyLabels() }, compact = compact)
         letters.forEach { char ->
             val label = char.toString()
-            addKey(row, label, 1f, { handleKey(label) }, compact = compact)
+            addKey(
+                row,
+                label,
+                1f,
+                { handleKey(label) },
+                compact = compact,
+                secondaryLegend = secondaryHints[label]
+            )
         }
         addKey(row, "⌫", 1.25f, { handleKey("⌫") }, compact = compact)
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
@@ -1037,17 +1074,9 @@ class YoryInputMethodService : InputMethodService() {
             commitWordBoundary(".")
         }, secondaryLegend = "؟!")
         addKey(row, "↵", 1.6f) {
-            val before = currentInputConnection?.getTextBeforeCursor(64, 0)?.toString().orEmpty()
-            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
-            val correction = if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
-                getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
-                token?.let { wordSuggestions?.correct(it, languageTag) }
-            } else null
-            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
-                currentInputConnection?.deleteSurroundingText(token.length, 0)
-                currentInputConnection?.commitText(correction, 1)
-            }
-            learnCurrentWord()
+            pendingAutocorrection = null
+            val corrected = applyLocalAutocorrection(boundary = null)
+            if (!corrected) learnCurrentWord()
             val handled = sendDefaultEditorAction(true)
             if (!handled) currentInputConnection?.commitText("\n", 1)
             refreshAutomaticShift()
@@ -1087,7 +1116,7 @@ class YoryInputMethodService : InputMethodService() {
         var downY = 0f
         var swipeDetected = false
         val longPressTask = Runnable {
-            pendingLongPressOptions = longPressOptions(label)
+            pendingLongPressOptions = longPressOptions(label, secondaryLegend)
             longPressConsumed = pendingLongPressOptions.isNotEmpty()
         }
         val view = TextView(this).apply {
@@ -1153,7 +1182,7 @@ class YoryInputMethodService : InputMethodService() {
                             longPressConsumed = false
                             pendingLongPressOptions = emptyList()
                             background = keyBackground(label, pressed = true)
-                            if (label.length == 1 && label[0].isLetter()) {
+                            if (baseLetter != null || !secondaryLegend.isNullOrBlank()) {
                                 val duration = settings.getInt("long_press_duration", 450).coerceIn(200, 900).toLong()
                                 handler.removeCallbacks(longPressTask)
                                 handler.postDelayed(longPressTask, duration)
@@ -1166,7 +1195,7 @@ class YoryInputMethodService : InputMethodService() {
                             handler.removeCallbacks(longPressTask)
                             background = keyBackground(label)
                             if (longPressConsumed && pendingLongPressOptions.isNotEmpty()) {
-                                showLongPressOptionsPopup(touched, pendingLongPressOptions)
+                                showLongPressOptionsPopup(touched, pendingLongPressOptions, label)
                             }
                         }
                         android.view.MotionEvent.ACTION_CANCEL -> {
@@ -1192,7 +1221,9 @@ class YoryInputMethodService : InputMethodService() {
                 "↵" -> "Return"
                 "space", "English", "العربية", "Deutsch", "Español", "Français", "Português", "Italiano" -> "Space"
                 "⇧" -> "Shift"
-                else -> label
+                else -> if (!secondaryLegend.isNullOrBlank()) {
+                    "${label}. Long press for ${secondaryLegend.replace(" ", ", ")}"
+                } else label
             }
         }
         if (baseLetter != null) dynamicKeyLabels.add(Triple(view, baseLetter, secondaryLegend))
@@ -1203,51 +1234,16 @@ class YoryInputMethodService : InputMethodService() {
         parent.addView(view, params)
     }
 
-    private fun longPressOptions(label: String): List<String> {
-        if (label.length != 1 || !label[0].isLetter()) return emptyList()
-        val key = label.lowercase()
+    private fun longPressOptions(label: String, secondaryLegend: String?): List<String> {
+        if (label.length != 1) return emptyList()
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
-        val options = mutableListOf<String>()
-        if (prefs.getBoolean("long_press_symbols", true) && !languageTag.startsWith("ar")) {
-            val symbol = when (key) {
-                "q" -> "1"; "w" -> "2"; "e" -> "3"; "r" -> "4"; "t" -> "5"
-                "y" -> "6"; "u" -> "7"; "i" -> "8"; "o" -> "9"; "p" -> "0"
-                "a" -> "@"; "s" -> "$"; "d" -> "&"; "f" -> "-"; "g" -> "+"
-                "h" -> "("; "j" -> ")"; "k" -> "/"; "l" -> ":"
-                "z" -> "!"; "x" -> "?"; "c" -> "'"; "v" -> "\""; "b" -> ";"
-                "n" -> "_"; "m" -> "."
-                else -> null
-            }
-            if (symbol != null) options.add(symbol)
-        }
-        if (prefs.getBoolean("accented_chars", true)) {
-            val accents = when {
-                languageTag.startsWith("ar") -> when (key) {
-                    "ا" -> listOf("أ", "إ", "آ")
-                    "و" -> listOf("ؤ")
-                    "ي" -> listOf("ئ", "ى")
-                    "ه" -> listOf("ة")
-                    else -> emptyList()
-                }
-                languageTag.startsWith("de") -> when (key) {
-                    "a" -> listOf("ä"); "o" -> listOf("ö"); "u" -> listOf("ü"); "s" -> listOf("ß")
-                    else -> emptyList()
-                }
-                else -> when (key) {
-                    "a" -> listOf("á", "à", "â", "ä", "ã", "å")
-                    "e" -> listOf("é", "è", "ê", "ë")
-                    "i" -> listOf("í", "ì", "î", "ï")
-                    "o" -> listOf("ó", "ò", "ô", "ö", "õ")
-                    "u" -> listOf("ú", "ù", "û", "ü")
-                    "n" -> listOf("ñ")
-                    "c" -> listOf("ç")
-                    "y" -> listOf("ý", "ÿ")
-                    else -> emptyList()
-                }
-            }
-            options.addAll(accents)
-        }
-        return options.distinct().take(8)
+        return YoryKeyLegends.optionsForKey(
+            key = label,
+            secondaryLegend = secondaryLegend,
+            languageTag = languageTag,
+            showSymbols = prefs.getBoolean("long_press_symbols", true),
+            showAccents = label[0].isLetter() && prefs.getBoolean("accented_chars", true)
+        )
     }
 
     private fun showKeyPreviewPopup(anchor: View, label: String, handler: Handler) {
@@ -1266,40 +1262,57 @@ class YoryInputMethodService : InputMethodService() {
         handler.postDelayed({ if (popup.isShowing) popup.dismiss() }, 260)
     }
 
-    private fun showLongPressOptionsPopup(anchor: View, options: List<String>) {
+    private fun showLongPressOptionsPopup(anchor: View, options: List<String>, baseLabel: String) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(6), dp(4), dp(6), dp(4))
+            setPadding(dp(6), dp(6), dp(6), dp(6))
             background = GradientDrawable().apply {
-                setColor(Color.argb(244, 29, 34, 48))
-                cornerRadius = dp(16).toFloat()
-                setStroke(dp(1), Color.argb(125, 255, 255, 255))
+                setColor(Color.argb(248, 38, 38, 38))
+                cornerRadius = dp(14).toFloat()
+                setStroke(dp(1), Color.argb(118, 255, 255, 255))
             }
         }
         lateinit var popup: PopupWindow
         options.forEach { candidate ->
             val choice = TextView(this).apply {
-                text = candidate
+                text = YoryArabicAlternates.displayLabel(candidate)
+                contentDescription = YoryArabicAlternates.accessibilityLabel(candidate, baseLabel)
                 gravity = Gravity.CENTER
                 textSize = theme.fontSizeSp
                 setTextColor(theme.textArgb)
-                setPadding(dp(10), dp(8), dp(10), dp(8))
+                isFocusable = true
+                setPadding(dp(4), dp(4), dp(4), dp(4))
                 setOnClickListener {
                     performKeyFeedback(this)
-                    currentInputConnection?.commitText(candidate, 1)
+                    // Insert the combining mark itself, not its dotted-circle preview.
+                    currentInputConnection?.commitText(YoryArabicAlternates.insertionText(baseLabel, candidate), 1)
                     refreshAutomaticShift()
                     updateSuggestions()
                     popup.dismiss()
                 }
             }
-            row.addView(choice, LinearLayout.LayoutParams(dp(42), dp(44)))
+            row.addView(choice, LinearLayout.LayoutParams(dp(48), dp(48)))
         }
-        popup = PopupWindow(row, WindowManager.LayoutParams.WRAP_CONTENT, dp(54), true).apply {
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(
+                row,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
+        val maxWidth = dp((resources.configuration.screenWidthDp - 24).coerceAtLeast(180))
+        val contentWidth = dp(options.size * 48 + 12).coerceAtMost(maxWidth)
+        val xOffset = (anchor.width - contentWidth) / 2
+        popup = PopupWindow(scroll, contentWidth, dp(64), true).apply {
             elevation = dp(12).toFloat()
             isOutsideTouchable = true
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            runCatching { showAsDropDown(anchor, 0, -dp(68)) }
+            runCatching { showAsDropDown(anchor, xOffset, -dp(76)) }
         }
     }
 
@@ -1372,7 +1385,10 @@ class YoryInputMethodService : InputMethodService() {
         val connection: InputConnection = currentInputConnection ?: return
         when (label) {
             "⌫" -> {
-                connection.deleteSurroundingTextInCodePoints(1, 0)
+                if (!undoPendingAutocorrection(connection)) {
+                    pendingAutocorrection = null
+                    connection.deleteSurroundingTextInCodePoints(1, 0)
+                }
                 refreshAutomaticShift()
                 updateDynamicKeyLabels()
                 updateSuggestions()
@@ -1386,6 +1402,7 @@ class YoryInputMethodService : InputMethodService() {
                 if (label.length == 1 && !label[0].isLetterOrDigit() && label !in setOf("'", "’")) {
                     commitWordBoundary(label)
                 } else {
+                    pendingAutocorrection = null
                     val output = if (shifted && label.length == 1 && label[0].isLetter()) label.uppercase() else label
                     connection.commitText(output, 1)
                     refreshAutomaticShift()
@@ -1403,6 +1420,8 @@ class YoryInputMethodService : InputMethodService() {
                 android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             setSpan(android.text.style.ForegroundColorSpan(Color.argb(160, 255, 255, 255)),
                 0, secondary.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(AlignmentSpan.Standard(Layout.Alignment.ALIGN_OPPOSITE), 0, secondary.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -1414,21 +1433,58 @@ class YoryInputMethodService : InputMethodService() {
 
     private fun commitWordBoundary(boundary: String) {
         val connection = currentInputConnection ?: return
-        if (!incognitoMode && !sensitiveField && !numericField && !emailField && !urlField &&
-            getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
-            val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
-            val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value
-            val correction = token?.let { wordSuggestions?.correct(it, languageTag) }
-            if (!token.isNullOrEmpty() && !correction.isNullOrEmpty() && correction != token) {
-                connection.deleteSurroundingText(token.length, 0)
-                connection.commitText(correction, 1)
-            }
-        }
-        learnCurrentWord()
+        pendingAutocorrection = null
+        val corrected = applyLocalAutocorrection(boundary)
+        // Do not learn an automatic replacement as though the user had accepted it.
+        if (!corrected) learnCurrentWord()
         connection.commitText(boundary, 1)
         refreshAutomaticShift()
         updateDynamicKeyLabels()
         updateSuggestions()
+    }
+
+    private fun applyLocalAutocorrection(boundary: String?): Boolean {
+        val connection = currentInputConnection ?: return false
+        if (incognitoMode || sensitiveField || numericField || emailField || urlField ||
+            !getSharedPreferences("yory_user_settings", MODE_PRIVATE).getBoolean("auto_correct", true)) {
+            return false
+        }
+
+        val before = connection.getTextBeforeCursor(64, 0)?.toString().orEmpty()
+        val token = Regex("[\\p{L}\\p{M}]{2,32}$").find(before)?.value ?: return false
+        val correction = wordSuggestions?.correct(token, languageTag) ?: return false
+        if (correction == token) return false
+
+        connection.beginBatchEdit()
+        try {
+            connection.deleteSurroundingText(token.length, 0)
+            connection.commitText(correction, 1)
+        } finally {
+            connection.endBatchEdit()
+        }
+        pendingAutocorrection = boundary?.let {
+            PendingAutocorrection(original = token, corrected = correction, boundary = it)
+        }
+        return true
+    }
+
+    private fun undoPendingAutocorrection(connection: InputConnection): Boolean {
+        val pending = pendingAutocorrection ?: return false
+        val before = connection.getTextBeforeCursor(pending.suffix.length + 16, 0)?.toString().orEmpty()
+        if (!pending.matchesBeforeCursor(before)) {
+            pendingAutocorrection = null
+            return false
+        }
+
+        connection.beginBatchEdit()
+        try {
+            connection.deleteSurroundingText(pending.suffix.length, 0)
+            connection.commitText(pending.original, 1)
+        } finally {
+            connection.endBatchEdit()
+        }
+        pendingAutocorrection = null
+        return true
     }
 
     private fun cycleLanguage(direction: Int = 1) {
@@ -1504,6 +1560,7 @@ class YoryInputMethodService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        pendingAutocorrection = null
         if (resizeMode) {
             resizeMode = false
             resizeOverlay?.visibility = View.GONE
@@ -1603,7 +1660,7 @@ class YoryInputMethodService : InputMethodService() {
         val prefs = getSharedPreferences("yory_user_settings", MODE_PRIVATE)
         val compactMode = prefs.getBoolean("compact_mode", false)
         row.layoutDirection = View.LAYOUT_DIRECTION_LTR
-        val desiredHeight = dp(if (suggestionsCollapsed) 19 else if (compactMode) 25 else 32)
+        val desiredHeight = dp(if (suggestionsCollapsed) 19 else if (compactMode) 30 else 40)
         if (row.layoutParams.height != desiredHeight) {
             row.layoutParams = row.layoutParams.apply { height = desiredHeight }
         }
@@ -1737,10 +1794,10 @@ class YoryInputMethodService : InputMethodService() {
             else -> (4 + (if (showNumberRow) 1 else 0) + (if (showArrowRow) 1 else 0)).toFloat()
         }
         val suggestionsHeight = if (!sensitiveField && !numericField && !emailField && !urlField &&
-            !emojiMode && !clipboardMode && !incognitoMode && prefs.getBoolean("word_suggestions", true)) 32f else 0f
+            !emojiMode && !clipboardMode && !incognitoMode && prefs.getBoolean("word_suggestions", true)) 40f else 0f
         val clipboardHeight = if (clipboardMode && theme.clipboardEnabled && !incognitoMode) 42f else 0f
         val emojiHeight = if (emojiMode) 104f else 0f
-        val chrome = 8f + 36f + suggestionsHeight + clipboardHeight + emojiHeight
+        val chrome = 8f + 42f + suggestionsHeight + clipboardHeight + emojiHeight
         val screenHeightDp = resources.displayMetrics.heightPixels / resources.displayMetrics.density
         val maximumImeHeight = (screenHeightDp * 0.54f).coerceIn(250f, 480f)
         val rowHeightBudget = (maximumImeHeight - chrome) / rowCount - 4f

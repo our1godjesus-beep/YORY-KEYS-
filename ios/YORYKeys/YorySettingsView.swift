@@ -1,4 +1,5 @@
 import SwiftUI
+import Network
 
 private let yorySettingsStore = UserDefaults(suiteName: "group.app.yory.keys")
 
@@ -11,6 +12,12 @@ private struct YorySettingsItem: Identifiable {
 
 struct ContentView: View {
     let onSignOut: () -> Void
+    let canOfferRegistration: Bool
+    let onRegister: () -> Void
+    @StateObject private var networkStatus = YoryNetworkReachability()
+    @AppStorage("yory.registration.invite.nextAllowed") private var nextRegistrationInviteAt = 0.0
+    @State private var isRegistrationInvitePresented = false
+
     private let items = [
         YorySettingsItem(title: "Account", subtitle: "Optional account for cloud sync and online features", symbol: "person.crop.circle"),
         YorySettingsItem(title: "YORY Rewards", subtitle: "Discover keyboard milestones", symbol: "medal"),
@@ -67,7 +74,12 @@ struct ContentView: View {
                     } else if title == "Keyboard toolbar" {
                         YoryToolbarCustomizationView()
                     } else {
-                        YorySettingsDetailView(title: title, onSignOut: onSignOut)
+                        YorySettingsDetailView(
+                            title: title,
+                            onSignOut: onSignOut,
+                            canOfferRegistration: canOfferRegistration,
+                            onRegister: onRegister
+                        )
                     }
                 }
             }
@@ -95,12 +107,49 @@ struct ContentView: View {
             .toolbarBackground(.visible, for: .navigationBar)
         }
         .preferredColorScheme(.dark)
+        .task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            evaluateRegistrationInvitation()
+        }
+        .onChange(of: networkStatus.isOnline) { isOnline in
+            guard isOnline else { return }
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                evaluateRegistrationInvitation()
+            }
+        }
+        .onChange(of: canOfferRegistration) { canOffer in
+            guard canOffer else { return }
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                evaluateRegistrationInvitation()
+            }
+        }
+        .sheet(isPresented: $isRegistrationInvitePresented) {
+            YoryRegistrationInviteSheet {
+                isRegistrationInvitePresented = false
+                onRegister()
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func evaluateRegistrationInvitation() {
+        guard canOfferRegistration, networkStatus.isOnline, !isRegistrationInvitePresented else { return }
+        let now = Date().timeIntervalSince1970
+        guard now >= nextRegistrationInviteAt else { return }
+        // Save the cooldown before presentation so relaunching cannot show the invite repeatedly.
+        nextRegistrationInviteAt = now + (30 * 24 * 60 * 60)
+        isRegistrationInvitePresented = true
     }
 }
 
 private struct YorySettingsDetailView: View {
     let title: String
     let onSignOut: () -> Void
+    let canOfferRegistration: Bool
+    let onRegister: () -> Void
 
     @AppStorage("yory.active.language", store: yorySettingsStore) private var activeLanguage = "en-US"
     @State private var addedLanguageTags: [String] = {
@@ -252,9 +301,14 @@ private struct YorySettingsDetailView: View {
                         }
                     }
                 case "Account":
-                    settingsInfo("YORY account", "An account is optional. Create or sign in for cloud features; your keyboard, themes and local settings continue to work offline.")
-                    Button("Connect account / sign out", action: onSignOut)
-                        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    settingsInfo("YORY account", "An account is optional. Your keyboard, themes and local settings continue to work offline.")
+                    if canOfferRegistration {
+                        Button("Create account / sign in", action: onRegister)
+                            .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    } else {
+                        Button("Sign out", role: .destructive, action: onSignOut)
+                            .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    }
                 case "YORY Rewards", "Achievements":
                     settingsInfo("Coming to YORY", "This section is included in the settings structure. Rewards and achievement tracking are not connected in this preview.")
                 case "Help & Feedback":
@@ -369,4 +423,202 @@ private func yoryGlassBackground() -> some View {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     ).ignoresSafeArea()
+}
+
+
+// MARK: - Registration invitation
+
+private final class YoryNetworkReachability: ObservableObject {
+    @Published private(set) var isOnline = false
+    private let monitor = NWPathMonitor()
+    private let queue = DispatchQueue(label: "app.yory.registration-reachability")
+
+    init() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                self?.isOnline = path.status == .satisfied
+            }
+        }
+        monitor.start(queue: queue)
+    }
+
+    deinit {
+        monitor.cancel()
+    }
+}
+
+private struct YoryRegistrationInviteCopy {
+    let title: String
+    let message: String
+    let privacy: String
+    let primary: String
+    let secondary: String
+}
+
+private func yoryRegistrationInviteCopy() -> YoryRegistrationInviteCopy {
+    let preferred = Locale.preferredLanguages.first ?? Locale.current.identifier
+    let locale = Locale(identifier: preferred)
+    let language = locale.languageCode ?? "en"
+    let region = Locale.current.regionCode ?? locale.regionCode ?? ""
+    let supported = Set(["ar", "de", "es", "fr", "it", "pt", "en"])
+    let resolved = yoryInviteLanguage(for: region) ?? (supported.contains(language) ? language : "en")
+
+    switch resolved {
+    case "ar":
+        return YoryRegistrationInviteCopy(
+            title: "تجربتك مع YORY لسه قدامها المزيد",
+            message: "أنشئ حساب YORY لتكون مستعدًا للخدمات السحابية القادمة عند إطلاقها.",
+            privacy: "ستظل لوحة المفاتيح متاحة دون إنترنت. كتاباتك وقاموسك المحلي يظلان على جهازك.",
+            primary: "إنشاء حساب",
+            secondary: "ليس الآن"
+        )
+    case "de":
+        return YoryRegistrationInviteCopy(
+            title: "Mit YORY geht noch mehr",
+            message: "Erstelle ein YORY-Konto, um für kommende Cloud-Funktionen bereit zu sein.",
+            privacy: "Deine Tastatur bleibt offline verfügbar. Deine Texte und dein lokales Wörterbuch bleiben auf deinem Gerät.",
+            primary: "Konto erstellen",
+            secondary: "Nicht jetzt"
+        )
+    case "es":
+        return YoryRegistrationInviteCopy(
+            title: "Tu experiencia con YORY puede crecer",
+            message: "Crea una cuenta YORY para estar preparado cuando lleguen las próximas funciones en la nube.",
+            privacy: "El teclado seguirá funcionando sin conexión. Tus textos y tu diccionario local permanecen en tu dispositivo.",
+            primary: "Crear cuenta",
+            secondary: "Ahora no"
+        )
+    case "fr":
+        return YoryRegistrationInviteCopy(
+            title: "Votre expérience YORY peut aller plus loin",
+            message: "Créez un compte YORY pour être prêt lorsque les prochaines fonctions cloud seront disponibles.",
+            privacy: "Votre clavier reste disponible hors ligne. Vos textes et votre dictionnaire personnel restent sur votre appareil.",
+            primary: "Créer un compte",
+            secondary: "Pas maintenant"
+        )
+    case "it":
+        return YoryRegistrationInviteCopy(
+            title: "Con YORY c'è ancora molto da scoprire",
+            message: "Crea un account YORY per essere pronto quando arriveranno le prossime funzioni cloud.",
+            privacy: "La tastiera continuerà a funzionare offline. I tuoi testi e il dizionario personale restano sul dispositivo.",
+            primary: "Crea account",
+            secondary: "Non ora"
+        )
+    case "pt":
+        return YoryRegistrationInviteCopy(
+            title: "Sua experiência com YORY pode ir além",
+            message: "Crie uma conta YORY para estar pronto quando os próximos recursos na nuvem chegarem.",
+            privacy: "Seu teclado continuará funcionando offline. Seus textos e seu dicionário pessoal ficam no dispositivo.",
+            primary: "Criar conta",
+            secondary: "Agora não"
+        )
+    default:
+        return YoryRegistrationInviteCopy(
+            title: "There's more room to grow with YORY",
+            message: "Create a YORY account to be ready for upcoming cloud features when they arrive.",
+            privacy: "Your keyboard stays available offline. Your typing and local dictionary remain on this device.",
+            primary: "Create account",
+            secondary: "Not now"
+        )
+    }
+}
+
+private func yoryInviteLanguage(for region: String) -> String? {
+    switch region.uppercased() {
+    case "EG", "SA", "AE", "JO", "KW", "QA", "BH", "OM", "IQ", "MA", "DZ", "TN", "LY", "YE":
+        return "ar"
+    case "DE", "AT":
+        return "de"
+    case "ES", "MX", "AR", "CO", "CL", "PE", "VE", "UY", "EC":
+        return "es"
+    case "FR", "BE", "MC":
+        return "fr"
+    case "IT":
+        return "it"
+    case "PT", "BR", "AO", "MZ":
+        return "pt"
+    default:
+        return nil
+    }
+}
+
+private struct YoryRegistrationInviteSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onRegister: () -> Void
+    private let copy = yoryRegistrationInviteCopy()
+
+    private let mint = Color(red: 0.44, green: 0.84, blue: 0.78)
+    private let violet = Color(red: 0.66, green: 0.61, blue: 0.98)
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(red: 0.075, green: 0.095, blue: 0.13), Color(red: 0.045, green: 0.055, blue: 0.08)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            ScrollView(.vertical) {
+                VStack(spacing: 15) {
+                    Image(systemName: "icloud.and.arrow.up")
+                        .font(.system(size: 27, weight: .medium))
+                        .foregroundStyle(mint)
+                        .frame(width: 62, height: 62)
+                        .background(mint.opacity(0.12), in: Circle())
+                        .overlay(Circle().stroke(mint.opacity(0.28), lineWidth: 1))
+    
+                    Text("YORY STUDIO")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.1)
+                        .foregroundStyle(violet)
+    
+                    Text(copy.title)
+                        .font(.system(size: 23, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.96, green: 0.96, blue: 0.95))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+    
+                    Text(copy.message)
+                        .font(.system(size: 14, weight: .regular))
+                        .lineSpacing(3)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+    
+                    Button {
+                        dismiss()
+                        onRegister()
+                    } label: {
+                        Text(copy.primary)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.04, green: 0.12, blue: 0.12))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(mint, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+    
+                    Button(copy.secondary) {
+                        dismiss()
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+    
+                    Text(copy.privacy)
+                        .font(.system(size: 11))
+                        .lineSpacing(2)
+                        .foregroundStyle(.white.opacity(0.50))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 26)
+                .padding(.top, 18)
+                .padding(.bottom, 22)
+                .frame(maxWidth: 520)
+            }
+        }
+    }
 }
