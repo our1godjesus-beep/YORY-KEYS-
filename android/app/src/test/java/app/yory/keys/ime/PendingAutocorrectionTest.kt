@@ -25,7 +25,7 @@ class PendingAutocorrectionTest {
             boundary = " "
         )
         assertFalse(pending.matchesBeforeCursor("Please type the n"))
-        assertFalse(pending.matchesBeforeCursor("Please t|ype the "))
+        assertFalse(pending.matchesBeforeCursor("Please type the"))
     }
 
     @Test

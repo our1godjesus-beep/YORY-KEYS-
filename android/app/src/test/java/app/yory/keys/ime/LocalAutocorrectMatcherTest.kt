@@ -51,11 +51,12 @@ class LocalAutocorrectMatcherTest {
                 normalizeArabic
             )
         )
-        assertNull(
+        assertEquals(
+            "إعداد",
             LocalAutocorrectMatcher.correct(
-                "مدرسة",
+                "اعدا",
                 "ar",
-                listOf("مدرسة", "مدرس"),
+                listOf("إعداد"),
                 normalizeArabic
             )
         )
