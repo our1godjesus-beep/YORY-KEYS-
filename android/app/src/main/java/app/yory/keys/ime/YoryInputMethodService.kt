@@ -626,7 +626,7 @@ class YoryInputMethodService : InputMethodService() {
         parent: LinearLayout,
         letters: String,
         compact: Boolean = false,
-        secondaryHints: List<String> = emptyList(),
+        secondaryHints: Map<String, String> = emptyMap(),
         horizontalInsetDp: Int = 0
     ) {
         val row = LinearLayout(this).apply {
@@ -634,12 +634,12 @@ class YoryInputMethodService : InputMethodService() {
             gravity = Gravity.CENTER
             if (horizontalInsetDp > 0) setPadding(dp(horizontalInsetDp), 0, dp(horizontalInsetDp), 0)
         }
-        letters.forEachIndexed { index, char ->
+        letters.forEach { char ->
             val label = char.toString()
             addKey(
                 row, label, 1f, { handleKey(label) },
                 compact = compact,
-                secondaryLegend = secondaryHints.getOrNull(index)
+                secondaryLegend = secondaryHints[label]
             )
         }
         parent.addView(row, LinearLayout.LayoutParams(-1, dp(effectiveKeyHeightDp() + 4f)))
