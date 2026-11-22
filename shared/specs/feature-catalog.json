@@ -29,7 +29,7 @@
         "android",
         "ios"
       ],
-      "notes": "Basic letter rows and language switch; full language layouts, punctuation, dead keys and RTL QA remain."
+      "notes": "Basic Arabic and English rows and language switching exist. Android Arabic long-press now exposes common alif/hamza variants and ten combining marks; full language-specific layouts, comprehensive punctuation, mixed-script cursor behavior and RTL device QA remain."
     },
     {
       "id": "theme-studio",
@@ -272,11 +272,11 @@
     {
       "id": "long-press-alternates",
       "name": "Long-press alternate characters",
-      "status": "planned",
+      "status": "partial_implementation",
       "platforms": [
         "android"
       ],
-      "notes": "Planned capability or partial platform slice; not production-ready until acceptance criteria and device tests pass."
+      "notes": "Android exposes English accent variants and, in Arabic mode, common alif/hamza alternatives plus ten combining marks (eight standard tashkeel marks, dagger alif and madda above) through a horizontally scrollable accessible popup. iOS full Arabic mark-set parity, insertion/touch behavior and physical-device QA remain."
     },
     {
       "id": "gradient-theme-editor",

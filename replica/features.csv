@@ -34,6 +34,7 @@
 "One-handed, floating and split/thumb modes","layout","could","yes","no","Platform-aware keyboard modes are not implemented."
 "Toolbar customization and reorder","toolbar","should","yes","partial","Android and iOS include local toolbar visibility/order screens; keyboard extensions consume persisted preferences. Essential keyboard-switch/settings access is retained; device QA remains."
 "RTL Arabic keyboard","keyboard","must","yes","partial","Basic Arabic row and direction exist; punctuation, mixed bidi and cursor behavior need QA."
+"Arabic long-press tashkeel and hamza alternates","keyboard","must","yes","partial","Android long-press exposes ten Arabic combining marks and common alif/hamza forms via a horizontally scrollable accessible popup. iOS full mark-set parity and physical insertion QA remain."
 "Keyboard input-trait adaptation","keyboard","must","yes","partial","Some secure/numeric/email/URL traits are handled; full trait matrix remains."
 "Android 3-button and gesture navigation safe areas","platform","must","yes","partial","Android Studio and floating CTA use edge-to-edge/safe-drawing and navigation-bar insets. Emulator/physical 3-button and gesture-navigation testing remains."
 "iOS home-indicator and Dynamic Island safe areas","platform","must","yes","unverified","Native SwiftUI defaults help, but every custom bottom action/extension height needs device validation."
