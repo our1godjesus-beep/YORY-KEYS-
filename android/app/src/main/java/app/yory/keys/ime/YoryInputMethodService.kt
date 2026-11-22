@@ -20,10 +20,12 @@ import android.text.TextUtils
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.view.KeyEvent
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -1216,13 +1218,7 @@ class YoryInputMethodService : InputMethodService() {
         }
         if (prefs.getBoolean("accented_chars", true)) {
             val accents = when {
-                languageTag.startsWith("ar") -> when (key) {
-                    "ا" -> listOf("أ", "إ", "آ")
-                    "و" -> listOf("ؤ")
-                    "ي" -> listOf("ئ", "ى")
-                    "ه" -> listOf("ة")
-                    else -> emptyList()
-                }
+                languageTag.startsWith("ar") -> YoryArabicAlternates.optionsForKey(key)
                 languageTag.startsWith("de") -> when (key) {
                     "a" -> listOf("ä"); "o" -> listOf("ö"); "u" -> listOf("ü"); "s" -> listOf("ß")
                     else -> emptyList()
@@ -1241,7 +1237,7 @@ class YoryInputMethodService : InputMethodService() {
             }
             options.addAll(accents)
         }
-        return options.distinct().take(8)
+        return options.distinct()
     }
 
     private fun showKeyPreviewPopup(anchor: View, label: String, handler: Handler) {
@@ -1264,7 +1260,7 @@ class YoryInputMethodService : InputMethodService() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(6), dp(4), dp(6), dp(4))
+            setPadding(dp(6), dp(6), dp(6), dp(6))
             background = GradientDrawable().apply {
                 setColor(Color.argb(244, 29, 34, 48))
                 cornerRadius = dp(16).toFloat()
@@ -1273,27 +1269,45 @@ class YoryInputMethodService : InputMethodService() {
         }
         lateinit var popup: PopupWindow
         options.forEach { candidate ->
+            val isArabicMark = YoryArabicAlternates.isTashkeel(candidate)
             val choice = TextView(this).apply {
-                text = candidate
+                text = YoryArabicAlternates.displayLabel(candidate)
+                contentDescription = YoryArabicAlternates.accessibilityLabel(candidate)
                 gravity = Gravity.CENTER
                 textSize = theme.fontSizeSp
                 setTextColor(theme.textArgb)
-                setPadding(dp(10), dp(8), dp(10), dp(8))
+                isFocusable = true
+                setPadding(dp(4), dp(4), dp(4), dp(4))
                 setOnClickListener {
                     performKeyFeedback(this)
+                    // Insert the combining mark itself, not its dotted-circle preview.
                     currentInputConnection?.commitText(candidate, 1)
                     refreshAutomaticShift()
                     updateSuggestions()
                     popup.dismiss()
                 }
             }
-            row.addView(choice, LinearLayout.LayoutParams(dp(42), dp(44)))
+            row.addView(choice, LinearLayout.LayoutParams(dp(48), dp(48)))
         }
-        popup = PopupWindow(row, WindowManager.LayoutParams.WRAP_CONTENT, dp(54), true).apply {
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(
+                row,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
+        val maxWidth = dp((resources.configuration.screenWidthDp - 24).coerceAtLeast(180))
+        val contentWidth = dp(options.size * 48 + 12).coerceAtMost(maxWidth)
+        val xOffset = (anchor.width - contentWidth) / 2
+        popup = PopupWindow(scroll, contentWidth, dp(64), true).apply {
             elevation = dp(12).toFloat()
             isOutsideTouchable = true
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            runCatching { showAsDropDown(anchor, 0, -dp(68)) }
+            runCatching { showAsDropDown(anchor, xOffset, -dp(76)) }
         }
     }
 
